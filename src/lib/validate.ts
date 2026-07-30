@@ -110,14 +110,23 @@ function unwrapWrappers(body: HTMLElement): void {
   // Repeatedly unwrap while the body has a single element child (ignoring
   // whitespace) that is a known wrapper.
   for (;;) {
-    const meaningful = Array.from(body.childNodes).filter(
-      (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim()),
-    );
-    if (meaningful.length !== 1) return;
-    const only = meaningful[0];
-    if (only.nodeType !== Node.ELEMENT_NODE) return;
+    let only: Node | null = null;
+    let count = 0;
+
+    let n = body.firstChild;
+    while (n) {
+      if (n.nodeType !== Node.TEXT_NODE || (n.textContent && n.textContent.trim())) {
+        count++;
+        if (count > 1) return;
+        only = n;
+      }
+      n = n.nextSibling;
+    }
+
+    if (count !== 1 || !only || only.nodeType !== Node.ELEMENT_NODE) return;
     const el = only as HTMLElement;
     if (!WRAPPERS.has(el.tagName.toLowerCase())) return;
+
     el.replaceWith(...Array.from(el.childNodes));
   }
 }
@@ -136,8 +145,8 @@ function enforceWhitelist(body: HTMLElement): void {
   for (const el of Array.from(body.querySelectorAll("*"))) {
     if (el.tagName.toLowerCase() === "a") {
       const href = el.getAttribute("href");
-      for (const attr of Array.from(el.attributes)) {
-        el.removeAttribute(attr.name);
+      while (el.attributes.length > 0) {
+        el.removeAttribute(el.attributes[0].name);
       }
       if (href) {
         el.setAttribute("href", href);
@@ -145,8 +154,8 @@ function enforceWhitelist(body: HTMLElement): void {
         el.replaceWith(...Array.from(el.childNodes));
       }
     } else {
-      for (const attr of Array.from(el.attributes)) {
-        el.removeAttribute(attr.name);
+      while (el.attributes.length > 0) {
+        el.removeAttribute(el.attributes[0].name);
       }
     }
   }
