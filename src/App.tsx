@@ -160,7 +160,11 @@ export default function App() {
             runs in your browser.
           </p>
         </div>
-        <button className="ghost" onClick={() => setShowSettings((v) => !v)}>
+        <button
+          className="ghost"
+          onClick={() => setShowSettings((v) => !v)}
+          aria-expanded={showSettings}
+        >
           ⚙ Settings
         </button>
       </header>
@@ -247,7 +251,11 @@ export default function App() {
           </>
         )}
 
-        <button className="ghost small" onClick={() => setShowAdvanced((v) => !v)}>
+        <button
+          className="ghost small"
+          onClick={() => setShowAdvanced((v) => !v)}
+          aria-expanded={showAdvanced}
+        >
           {showAdvanced ? "▾" : "▸"} Advanced
         </button>
         {showAdvanced && (
@@ -317,7 +325,11 @@ export default function App() {
           </p>
           <pre className="code-view">{result.blocks}</pre>
 
-          <button className="ghost small" onClick={() => setShowImages((v) => !v)}>
+          <button
+            className="ghost small"
+            onClick={() => setShowImages((v) => !v)}
+            aria-expanded={showImages}
+          >
             {showImages ? "▾" : "▸"} Images ({result.images.length})
           </button>
           {showImages && result.images.length > 0 && (
@@ -350,6 +362,7 @@ export default function App() {
           <button
             className="ghost small"
             onClick={() => setShowIntermediate((v) => !v)}
+            aria-expanded={showIntermediate}
           >
             {showIntermediate ? "▾" : "▸"} Intermediate HTML
           </button>
