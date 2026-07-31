@@ -302,7 +302,11 @@ export default function App() {
             runs in your browser.
           </p>
         </div>
-        <button className="ghost" onClick={() => setShowSettings((v) => !v)}>
+        <button
+          className="ghost"
+          onClick={() => setShowSettings((v) => !v)}
+          aria-expanded={showSettings}
+        >
           ⚙ Settings
         </button>
       </header>
@@ -451,7 +455,11 @@ export default function App() {
           </>
         )}
 
-        <button className="ghost small" onClick={() => setShowAdvanced((v) => !v)}>
+        <button
+          className="ghost small"
+          onClick={() => setShowAdvanced((v) => !v)}
+          aria-expanded={showAdvanced}
+        >
           {showAdvanced ? "▾" : "▸"} Advanced
         </button>
         {showAdvanced && (
@@ -610,6 +618,7 @@ export default function App() {
           <button
             className="ghost small"
             onClick={() => setShowIntermediate((v) => !v)}
+            aria-expanded={showIntermediate}
           >
             {showIntermediate ? "▾" : "▸"} Intermediate HTML
           </button>
