@@ -11,15 +11,15 @@ export const WHITELIST =
 
 // The model normalizes messy HTML into whitelist HTML. It must never emit
 // Gutenberg block markup (that's the deterministic serializer's job) and must
-// never touch ⟦IMG_n⟧ tokens (image placement stays exact). Keeping the model
-// on judgment (what is content) and off mechanics (block wrapping, image URLs)
+// never touch ⟦ASSET_n⟧ tokens (asset placement stays exact). Keeping the model
+// on judgment (what is content) and off mechanics (block wrapping, asset URLs)
 // is what keeps many pages consistent.
 export const SYSTEM_PROMPT = `You are an HTML normalizer. You receive messy extracted article HTML and return a clean HTML fragment.
 Rules:
 1. Output ONLY these tags: ${WHITELIST}. Convert any h1 to h2. Drop every other tag (div, span, section, figure, figcaption, iframe, script, style, nav, button, form, img) but KEEP their meaningful text content by unwrapping.
 2. On <a> keep only the href attribute. Strip all other attributes from all tags.
 3. Remove boilerplate: navigation, share/social buttons, "related posts", author bios, newsletter or subscribe prompts, cookie/consent notices, comment sections, ad labels, breadcrumb trails.
-4. Image placeholder tokens look like ⟦IMG_0⟧, ⟦IMG_1⟧, etc. Preserve every token EXACTLY as written, each alone in its own <p>, in its original order. Never add, remove, renumber, or reword a token.
+4. Asset placeholder tokens look like ⟦ASSET_0⟧, ⟦ASSET_1⟧, etc. They represent images or unsupported embedded/interactive content. Preserve every token EXACTLY as written, each alone in its own <p>, in its original order. Never add, remove, renumber, or reword a token.
 5. Do not add commentary, titles, or a wrapping document element. Do not wrap the output in Markdown code fences. Return the cleaned HTML fragment only.
 6. Preserve the reading order and all substantive text. Do not summarize or rewrite prose — only restructure and strip.
 7. Text in square brackets beginning with [MIGRATION PLACEHOLDER is an audit marker. Preserve it exactly, alone in its own <p>.`;

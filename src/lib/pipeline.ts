@@ -2,7 +2,6 @@ import { serializeBlocks } from "./blocks";
 import { cleanCacheKey, readCleanCache, writeCleanCache } from "./cache";
 import { extractContent } from "./extract";
 import { cleanHtml, SYSTEM_PROMPT } from "./llm";
-import { preserveUnsupported } from "./placeholders";
 import { TOKEN_PREFIX } from "./tokens";
 import { tokenizeImages } from "./tokenize";
 import {
@@ -43,12 +42,23 @@ export async function convertPage(
   });
 
   onStep({ step: "Images", status: "active" });
-  const preserved = preserveUnsupported(extracted.html);
-  const tokenized = tokenizeImages(preserved.html, input.url);
+  const tokenized = tokenizeImages(extracted.html, input.url);
+  const placeholders = tokenized.images
+    .filter((asset) => asset.type !== "image")
+    .map((asset) => ({
+      index: asset.index,
+      kind: asset.type,
+      source: asset.src,
+      label:
+        `MIGRATION PLACEHOLDER ${asset.index + 1}: ${asset.type}` +
+        (asset.src ? ` — ${asset.src}` : ""),
+    }));
   onStep({
     step: "Images",
     status: "done",
-    note: `${tokenized.images.length} image${tokenized.images.length === 1 ? "" : "s"} tokenized; ${preserved.placeholders.length} placeholder${preserved.placeholders.length === 1 ? "" : "s"}`,
+    note:
+      `${tokenized.images.length} asset${tokenized.images.length === 1 ? "" : "s"} tokenized; ` +
+      `${placeholders.length} placeholder${placeholders.length === 1 ? "" : "s"}`,
   });
 
   const expected = tokenized.images.map((i) => i.index);
@@ -90,22 +100,25 @@ export async function convertPage(
 
   if (lostPositions.length) {
     warnings.push(
-      `Position lost for image${lostPositions.length === 1 ? "" : "s"} ` +
+      `Position lost for asset${lostPositions.length === 1 ? "" : "s"} ` +
         `${lostPositions.join(", ")} — appended at the end of the page.`,
     );
   }
-  if (preserved.placeholders.length) {
-    warnings.push(`${preserved.placeholders.length} unsupported feature${preserved.placeholders.length === 1 ? " was" : "s were"} retained as visible migration placeholders.`);
+  if (placeholders.length) {
+    warnings.push(
+      `${placeholders.length} unsupported feature${placeholders.length === 1 ? " was" : "s were"} ` +
+        "retained as visible migration placeholders.",
+    );
   }
 
   onStep({ step: "Blocks", status: "active" });
-  const imageMap = new Map(tokenized.images.map((i) => [i.index, i]));
-  const blocks = serializeBlocks(validatedHtml, imageMap);
+  const assetMap = new Map(tokenized.images.map((i) => [i.index, i]));
+  const blocks = serializeBlocks(validatedHtml, assetMap);
 
   if (!blocks.trim()) throw new Error("Empty output after block conversion.");
   if (blocks.includes(TOKEN_PREFIX)) {
     throw new Error(
-      "Internal error: an image token leaked into the final markup. " +
+      "Internal error: an asset token leaked into the final markup. " +
         "Please report this page's HTML as a bug.",
     );
   }
@@ -117,7 +130,7 @@ export async function convertPage(
     blocks,
     intermediateHtml: validatedHtml,
     sourceHtml: input.rawHtml,
-    placeholders: preserved.placeholders,
+    placeholders,
     images: tokenized.images,
     lostPositions,
     warnings,

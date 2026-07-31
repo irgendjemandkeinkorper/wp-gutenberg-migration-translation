@@ -15,9 +15,9 @@ The pipeline keeps the LLM on judgment and off mechanics (the design proven in
 
 1. **Extract** — main content isolation via a CSS selector override or
    Mozilla Readability.
-2. **Tokenize images** — every `<img>` becomes a block-level `⟦IMG_n⟧` token;
-   `{src, alt, figcaption}` are recorded outside the LLM's reach, so it can
-   never hallucinate an image.
+2. **Tokenize assets** — images, embeds, media, and forms become block-level
+   `⟦ASSET_n⟧` tokens. Their source attributes and excerpts are recorded
+   outside the LLM's reach, so it cannot hallucinate or silently discard them.
 3. **Clean (Gemini)** — messy HTML is normalized to a 22-tag whitelist
    fragment (`h2 h3 h4 p ul ol li blockquote pre code table thead tbody tr th
    td strong em a br hr sup sub`, `href` only). Boilerplate is dropped.
@@ -95,7 +95,8 @@ Deploys to GitHub Pages automatically on push to `main`
 
 ## Limitations
 
-- No embeds, columns, or galleries — iframes are intentionally stripped.
+- Embeds and forms require manual rebuilding; visible migration placeholders
+  retain their source details. Columns and galleries are not inferred.
 - Cross-origin URL fetch depends on public CORS proxies; paste HTML when it
   fails.
 - Heading levels are clamped to h2–h4.

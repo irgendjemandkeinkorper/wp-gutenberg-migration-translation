@@ -1,9 +1,17 @@
-export interface ImageRef {
+export type AssetType = "image" | "iframe" | "object" | "embed" | "video" | "audio" | "form";
+
+export interface AssetRef {
   index: number;
+  type: AssetType;
   src: string; // absolute URL when a page URL was provided
   alt: string;
   caption: string;
+  tagName: string;
+  attributes: Record<string, string>;
+  excerpt: string;
 }
+
+export type ImageRef = AssetRef;
 
 export interface ExtractResult {
   title: string;
@@ -14,7 +22,7 @@ export interface ExtractResult {
 
 export interface TokenizeResult {
   html: string;
-  images: ImageRef[];
+  images: AssetRef[];
 }
 
 export interface PageResult {
@@ -25,7 +33,7 @@ export interface PageResult {
   /** Exact input HTML retained for migration QA. */
   sourceHtml: string;
   placeholders: MigrationPlaceholder[];
-  images: ImageRef[];
+  images: AssetRef[];
   /** indices whose position was lost and were re-appended at the end */
   lostPositions: number[];
   warnings: string[];
