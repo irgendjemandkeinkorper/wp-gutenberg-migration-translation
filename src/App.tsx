@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { downloadFile, loadBundle, saveBundle } from "./lib/bundle";
 import { fetchPage } from "./lib/fetchPage";
-import { DEFAULT_MODEL, FAST_MODEL } from "./lib/llm";
+import {
+  DEFAULT_PROVIDER,
+  getProviderConfig,
+  isLlmProvider,
+  LLM_PROVIDERS,
+} from "./lib/llm";
 import { convertPage } from "./lib/pipeline";
 import { buildWxr, slugify } from "./lib/wxr";
+import type { LlmProvider } from "./lib/llm";
 import type {
   BundlePage,
   PageResult,
@@ -33,6 +39,40 @@ interface BatchState {
   note?: string;
 }
 
+type ProviderValues = Record<LlmProvider, string>;
+
+function initialProvider(): LlmProvider {
+  const saved = localStorage.getItem("blockify.provider");
+  return isLlmProvider(saved) ? saved : DEFAULT_PROVIDER;
+}
+
+function initialModels(): ProviderValues {
+  const legacyGemini = localStorage.getItem("blockify.model");
+  return {
+    gemini:
+      localStorage.getItem("blockify.model.gemini") ||
+      legacyGemini ||
+      getProviderConfig("gemini").defaultModel,
+    anthropic:
+      localStorage.getItem("blockify.model.anthropic") ||
+      getProviderConfig("anthropic").defaultModel,
+    openai:
+      localStorage.getItem("blockify.model.openai") ||
+      getProviderConfig("openai").defaultModel,
+  };
+}
+
+function initialApiKeys(): ProviderValues {
+  return {
+    gemini:
+      sessionStorage.getItem("blockify.apiKey.gemini") ||
+      localStorage.getItem("blockify.apiKey") ||
+      "",
+    anthropic: sessionStorage.getItem("blockify.apiKey.anthropic") || "",
+    openai: sessionStorage.getItem("blockify.apiKey.openai") || "",
+  };
+}
+
 export default function App() {
   const [tab, setTab] = useState<"paste" | "fetch" | "batch">("paste");
   const [pastedHtml, setPastedHtml] = useState("");
@@ -41,16 +81,9 @@ export default function App() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  const [apiKey, setApiKey] = useState(
-    () => localStorage.getItem("blockify.apiKey") ?? "",
-  );
-  const [model, setModel] = useState(() => {
-    // Snap stale saved IDs (e.g. retired gemini-2.5-*) back to a live model.
-    const stored = localStorage.getItem("blockify.model");
-    return stored === DEFAULT_MODEL || stored === FAST_MODEL
-      ? stored
-      : DEFAULT_MODEL;
-  });
+  const [provider, setProvider] = useState<LlmProvider>(initialProvider);
+  const [apiKeys, setApiKeys] = useState<ProviderValues>(initialApiKeys);
+  const [models, setModels] = useState<ProviderValues>(initialModels);
   const [skipLlm, setSkipLlm] = useState(
     () => localStorage.getItem("blockify.skipLlm") === "1",
   );
@@ -80,9 +113,27 @@ export default function App() {
     () => localStorage.getItem("blockify.targetTemplate") ?? "",
   );
 
+  const providerConfig = getProviderConfig(provider);
+  const apiKey = apiKeys[provider];
+  const model = models[provider];
+
   useEffect(() => saveBundle(bundle), [bundle]);
-  useEffect(() => localStorage.setItem("blockify.apiKey", apiKey), [apiKey]);
-  useEffect(() => localStorage.setItem("blockify.model", model), [model]);
+  useEffect(() => {
+    localStorage.removeItem("blockify.apiKey");
+    localStorage.removeItem("blockify.model");
+  }, []);
+  useEffect(() => localStorage.setItem("blockify.provider", provider), [provider]);
+  useEffect(() => {
+    for (const option of LLM_PROVIDERS) {
+      localStorage.setItem(`blockify.model.${option.id}`, models[option.id]);
+      const keyName = `blockify.apiKey.${option.id}`;
+      if (apiKeys[option.id]) {
+        sessionStorage.setItem(keyName, apiKeys[option.id]);
+      } else {
+        sessionStorage.removeItem(keyName);
+      }
+    }
+  }, [apiKeys, models]);
   useEffect(
     () => localStorage.setItem("blockify.skipLlm", skipLlm ? "1" : "0"),
     [skipLlm],
@@ -93,6 +144,14 @@ export default function App() {
     () => new Set(result?.lostPositions ?? []),
     [result],
   );
+
+  function setApiKey(value: string) {
+    setApiKeys((current) => ({ ...current, [provider]: value }));
+  }
+
+  function setModel(value: string) {
+    setModels((current) => ({ ...current, [provider]: value }));
+  }
 
   function onStep(u: StepUpdate) {
     setSteps((prev) => {
@@ -105,7 +164,7 @@ export default function App() {
   async function convert() {
     if (!apiKey && !skipLlm) {
       setShowSettings(true);
-      setError("Add your Gemini API key in Settings first.");
+      setError(`Add your ${providerConfig.shortName} API key in Settings first.`);
       return;
     }
     setBusy(true);
@@ -131,6 +190,7 @@ export default function App() {
           selector: selector.trim() || undefined,
           apiKey,
           model,
+          provider,
           skipLlm,
         },
         onStep,
@@ -192,7 +252,10 @@ export default function App() {
   async function convertBatch() {
     if (!apiKey && !skipLlm) {
       setShowSettings(true);
-      setError("Add your Gemini API key in Settings first (or enable Skip LLM).");
+      setError(
+        `Add your ${providerConfig.shortName} API key in Settings first ` +
+          "(or enable Skip LLM).",
+      );
       return;
     }
     setBatchBusy(true);
@@ -210,6 +273,7 @@ export default function App() {
             selector: selector.trim() || undefined,
             apiKey,
             model,
+            provider,
             skipLlm,
           },
           () => {},
@@ -294,59 +358,152 @@ export default function App() {
 
   return (
     <div className="app">
-      <header>
-        <div>
-          <h1>Blockify</h1>
+      <header className="hero">
+        <div className="hero-copy">
+          <p className="eyebrow">Blockify · Migration workspace</p>
+          <h1>From legacy HTML to clean Gutenberg.</h1>
           <p className="tagline">
-            Non-WordPress page → Gutenberg blocks → WXR import file. Everything
-            runs in your browser.
+            Extract real content, preserve migration risks, and package polished
+            WordPress imports without losing the source trail.
           </p>
+          <div className="hero-flow" aria-label="Migration workflow">
+            <span>HTML source</span>
+            <span aria-hidden="true">→</span>
+            <span>Gutenberg blocks</span>
+            <span aria-hidden="true">→</span>
+            <span>WXR package</span>
+          </div>
         </div>
-        <button className="ghost" onClick={() => setShowSettings((v) => !v)}>
-          ⚙ Settings
-        </button>
+        <div className="hero-actions">
+          <span className="provider-status">
+            <span className="status-dot" aria-hidden="true" />
+            {skipLlm ? "Local cleanup" : `${providerConfig.shortName} · ${model}`}
+          </span>
+          <button
+            type="button"
+            className="settings-trigger"
+            aria-expanded={showSettings}
+            onClick={() => setShowSettings((visible) => !visible)}
+          >
+            <span aria-hidden="true">⚙</span>
+            AI settings
+          </button>
+        </div>
       </header>
 
       {showSettings && (
-        <section className="panel settings">
-          <label>
-            Gemini API key
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="AIza…  (stored only in this browser)"
-            />
-          </label>
-          <label>
-            Model
-            <select value={model} onChange={(e) => setModel(e.target.value)}>
-              <option value={DEFAULT_MODEL}>{DEFAULT_MODEL} (recommended)</option>
-              <option value={FAST_MODEL}>{FAST_MODEL} (fastest, cheapest)</option>
-            </select>
-          </label>
-          <p className="hint">
-            The key is kept in localStorage and sent only to
-            generativelanguage.googleapis.com.
-          </p>
+        <section className="panel settings settings-panel">
+          <div className="panel-heading">
+            <div>
+              <p className="section-kicker">AI cleanup</p>
+              <h2>Choose your provider</h2>
+              <p>
+                Each provider uses the same guarded normalization prompt and
+                deterministic token validation.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="icon-button"
+              aria-label="Close AI settings"
+              onClick={() => setShowSettings(false)}
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="provider-switcher" role="group" aria-label="AI provider">
+            {LLM_PROVIDERS.map((option) => (
+              <button
+                type="button"
+                key={option.id}
+                className={option.id === provider ? "provider-option active" : "provider-option"}
+                aria-pressed={option.id === provider}
+                onClick={() => setProvider(option.id)}
+              >
+                <span>{option.shortName}</span>
+                <small>{option.models[0].label}</small>
+              </button>
+            ))}
+          </div>
+
+          <div className="settings-grid">
+            <label>
+              {providerConfig.keyLabel}
+              <input
+                type="password"
+                value={apiKey}
+                autoComplete="off"
+                spellCheck={false}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder={providerConfig.keyPlaceholder}
+              />
+              <span className="field-help">
+                Need one?{" "}
+                <a href={providerConfig.keyUrl} target="_blank" rel="noreferrer">
+                  Open {providerConfig.shortName} key settings
+                </a>
+              </span>
+            </label>
+            <label>
+              Model
+              <select value={model} onChange={(e) => setModel(e.target.value)}>
+                {providerConfig.models.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label} · {option.note}
+                  </option>
+                ))}
+              </select>
+              <span className="field-help">Requests go only to {providerConfig.apiHost}.</span>
+            </label>
+          </div>
+
+          <div className="security-note" role="note">
+            <strong>Private-browser mode.</strong> Keys are kept only for this
+            browser tab, never included in an export, and sent directly to the
+            selected provider. For a public production deployment, route AI
+            requests through a backend so credentials never reach the browser.
+            {provider === "openai" && (
+              <> Use an OpenAI Platform API key; a ChatGPT subscription is separate.</>
+            )}
+          </div>
         </section>
       )}
 
-      <section className="panel">
-        <div className="tabs">
+      <section className="panel source-panel">
+        <div className="panel-heading source-heading">
+          <div>
+            <p className="section-kicker">01 · Source</p>
+            <h2>Prepare a page for conversion</h2>
+            <p>Paste one page, fetch a URL, or load a local crawl for a full-site batch.</p>
+          </div>
+          <span className="template-chip">
+            {targetTemplate || "Template not selected"}
+          </span>
+        </div>
+        <div className="tabs" role="tablist" aria-label="Source method">
           <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "paste"}
             className={tab === "paste" ? "tab active" : "tab"}
             onClick={() => setTab("paste")}
           >
             Paste HTML
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "fetch"}
             className={tab === "fetch" ? "tab active" : "tab"}
             onClick={() => setTab("fetch")}
           >
             Fetch URL
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "batch"}
             className={tab === "batch" ? "tab active" : "tab"}
             onClick={() => setTab("batch")}
           >
@@ -354,18 +511,25 @@ export default function App() {
           </button>
         </div>
 
-        <label>
-          Target GolfNow template
-          <select value={targetTemplate} onChange={(e) => setTargetTemplate(e.target.value)}>
-            <option value="">Not selected</option>
-            {GOLFNOW_TEMPLATES.map((name) => <option key={name} value={name}>{name}</option>)}
-          </select>
-        </label>
-        <p className="hint">
-          Saved with every imported page for implementation and QA. Review the{" "}
-          <a href="https://golfnowbusiness.com/template-library/" target="_blank" rel="noreferrer">template library</a>.
-        </p>
+        <div className="template-row">
+          <label className="template-field">
+            Target GolfNow template
+            <select value={targetTemplate} onChange={(e) => setTargetTemplate(e.target.value)}>
+              <option value="">Not selected</option>
+              {GOLFNOW_TEMPLATES.map((name) => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+          </label>
+          <p className="hint">
+            Stored with each page for implementation and QA. Compare against the{" "}
+            <a href="https://golfnowbusiness.com/template-library/" target="_blank" rel="noreferrer">
+              template library
+            </a>.
+          </p>
+        </div>
 
+        <div className="input-stage">
         {tab === "batch" ? (
           <>
             <p className="hint">
@@ -376,6 +540,7 @@ export default function App() {
               model) and added to the WXR bundle.
             </p>
             <input
+              className="file-input"
               type="file"
               accept=".json,application/json"
               onChange={(e) => {
@@ -450,12 +615,20 @@ export default function App() {
             </p>
           </>
         )}
+        </div>
 
-        <button className="ghost small" onClick={() => setShowAdvanced((v) => !v)}>
-          {showAdvanced ? "▾" : "▸"} Advanced
-        </button>
-        {showAdvanced && (
-          <div style={{ marginTop: "10px" }}>
+        <div className="conversion-options">
+          <button
+            type="button"
+            className="disclosure-button"
+            aria-expanded={showAdvanced}
+            onClick={() => setShowAdvanced((visible) => !visible)}
+          >
+            <span aria-hidden="true">{showAdvanced ? "−" : "+"}</span>
+            Advanced extraction
+          </button>
+          {showAdvanced && (
+          <div className="advanced-fields">
             <label>
               Content CSS selector{" "}
               <span className="muted">
@@ -469,26 +642,32 @@ export default function App() {
               />
             </label>
           </div>
-        )}
+          )}
 
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={skipLlm}
-            onChange={(e) => setSkipLlm(e.target.checked)}
-          />
-          Skip LLM cleanup (no API call)
-        </label>
-        {skipLlm && (
-          <p className="hint">
-            Deterministic mode: off-whitelist tags are stripped in code, but
-            nothing judges boilerplate — best for already-clean pages combined
-            with a content CSS selector. No API key needed.
+          <label className="checkbox toggle-card">
+            <input
+              type="checkbox"
+              checked={skipLlm}
+              onChange={(e) => setSkipLlm(e.target.checked)}
+            />
+            <span>
+              <strong>Local-only cleanup</strong>
+              <small>
+                Skip AI and enforce the HTML whitelist in code. Best for already-clean pages.
+              </small>
+            </span>
+          </label>
+        </div>
+
+        <div className="conversion-action">
+          <p>
+            {skipLlm
+              ? "No API call · deterministic cleanup"
+              : `${providerConfig.shortName} · ${model}`}
           </p>
-        )}
-
-        {tab === "batch" ? (
+          {tab === "batch" ? (
           <button
+            type="button"
             className="primary"
             onClick={convertBatch}
             disabled={batchBusy || batch.length === 0}
@@ -498,14 +677,21 @@ export default function App() {
               : "Convert all & add to bundle"}
           </button>
         ) : (
-          <button className="primary" onClick={convert} disabled={busy}>
+          <button type="button" className="primary" onClick={convert} disabled={busy}>
             {busy ? "Converting…" : "Convert"}
           </button>
         )}
+        </div>
       </section>
 
       {(busy || steps.size > 0) && (
-        <section className="panel">
+        <section className="panel pipeline-panel" aria-live="polite">
+          <div className="panel-heading compact">
+            <div>
+              <p className="section-kicker">02 · Pipeline</p>
+              <h2>{busy ? "Conversion in progress" : "Conversion complete"}</h2>
+            </div>
+          </div>
           <ol className="steps">
             {visibleSteps.map((name) => {
               const s = steps.get(name);
@@ -521,11 +707,23 @@ export default function App() {
         </section>
       )}
 
-      {error && <section className="panel error-box">{error}</section>}
+      {error && (
+        <section className="panel error-box" role="alert">
+          <strong>Conversion stopped.</strong>
+          <span>{error}</span>
+        </section>
+      )}
 
       {result && (
-        <section className="panel">
-          <h2>Result</h2>
+        <section className="panel result-panel">
+          <div className="panel-heading">
+            <div>
+              <p className="section-kicker">03 · Review</p>
+              <h2>Gutenberg result</h2>
+              <p>Inspect the generated blocks and migration flags before bundling.</p>
+            </div>
+            <span className="result-badge">{result.images.length} assets audited</span>
+          </div>
           {result.warnings.map((w) => (
             <p key={w} className="warn-box">
               {w}
@@ -540,10 +738,12 @@ export default function App() {
             />
           </label>
           <div className="row">
-            <button className="primary" onClick={copyBlocks}>
+            <button type="button" className="primary" onClick={copyBlocks}>
               {copied ? "Copied ✓" : "Copy to clipboard"}
             </button>
-            <button onClick={addToBundle}>Add page to WXR bundle</button>
+            <button type="button" className="secondary" onClick={addToBundle}>
+              Add page to WXR bundle
+            </button>
           </div>
           <p className="hint">
             To paste directly: WordPress block editor → ⋮ menu → Code editor →
@@ -558,10 +758,16 @@ export default function App() {
             </div>
           )}
 
-          <button className="ghost small" onClick={() => setShowImages((v) => !v)}>
+          <button
+            type="button"
+            className="disclosure-button result-disclosure"
+            aria-expanded={showImages}
+            onClick={() => setShowImages((visible) => !visible)}
+          >
             {showImages ? "▾" : "▸"} Asset Manifest / Audit ({result.images.length})
           </button>
           {showImages && result.images.length > 0 && (
+            <div className="table-scroll">
             <table className="images-table">
               <thead>
                 <tr>
@@ -577,7 +783,7 @@ export default function App() {
                   <tr key={img.index}>
                     <td>{img.index}</td>
                     <td>
-                      <span className="badge" style={{ backgroundColor: img.type === "image" ? undefined : "#f5f5f5", color: img.type === "image" ? undefined : "#333" }}>
+                      <span className={img.type === "image" ? "badge image-badge" : "badge asset-badge"}>
                         {img.type}
                       </span>
                     </td>
@@ -587,11 +793,11 @@ export default function App() {
                         img.alt || <span className="muted">—</span>
                       ) : (
                         <details>
-                          <summary style={{ cursor: "pointer", fontSize: "0.75rem" }}>View details</summary>
-                          <div style={{ marginTop: "5px", fontSize: "0.75rem" }}>
+                          <summary className="detail-summary">View details</summary>
+                          <div className="asset-details">
                             <strong>Attributes:</strong> <code>{JSON.stringify(img.attributes)}</code>
                             <br />
-                            <strong>Excerpt:</strong> <pre style={{ whiteSpace: "pre-wrap", background: "#f9f9f9", padding: "4px", margin: "4px 0" }}>{img.excerpt}</pre>
+                            <strong>Excerpt:</strong> <pre>{img.excerpt}</pre>
                           </div>
                         </details>
                       )}
@@ -605,10 +811,13 @@ export default function App() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
 
           <button
-            className="ghost small"
+            type="button"
+            className="disclosure-button result-disclosure"
+            aria-expanded={showIntermediate}
             onClick={() => setShowIntermediate((v) => !v)}
           >
             {showIntermediate ? "▾" : "▸"} Intermediate HTML
@@ -624,8 +833,17 @@ export default function App() {
       )}
 
       {bundle.length > 0 && (
-        <section className="panel">
-          <h2>WXR bundle ({bundle.length} page{bundle.length === 1 ? "" : "s"})</h2>
+        <section className="panel bundle-panel">
+          <div className="panel-heading">
+            <div>
+              <p className="section-kicker">04 · Export</p>
+              <h2>WXR migration bundle</h2>
+              <p>Package reviewed pages for WordPress Tools → Import.</p>
+            </div>
+            <span className="bundle-count">
+              {bundle.length} page{bundle.length === 1 ? "" : "s"}
+            </span>
+          </div>
           <ul className="bundle-list">
             {bundle.map((p, i) => (
               <li key={`${p.link}-${i}`}>
@@ -637,7 +855,8 @@ export default function App() {
                   </span>
                 </span>
                 <button
-                  className="ghost small"
+                  type="button"
+                  className="text-button danger-text"
                   onClick={() =>
                     setBundle((prev) => prev.filter((_, j) => j !== i))
                   }
@@ -686,10 +905,10 @@ export default function App() {
             </label>
           </div>
           <div className="row">
-            <button className="primary" onClick={downloadWxr}>
+            <button type="button" className="primary" onClick={downloadWxr}>
               Download WXR
             </button>
-            <button className="ghost" onClick={() => setBundle([])}>
+            <button type="button" className="secondary" onClick={() => setBundle([])}>
               Clear bundle
             </button>
           </div>

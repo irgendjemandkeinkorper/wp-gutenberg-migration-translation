@@ -1,7 +1,7 @@
 import { serializeBlocks } from "./blocks";
 import { cleanCacheKey, readCleanCache, writeCleanCache } from "./cache";
 import { extractContent } from "./extract";
-import { cleanHtml, SYSTEM_PROMPT } from "./llm";
+import { cleanHtml, DEFAULT_PROVIDER, SYSTEM_PROMPT } from "./llm";
 import { TOKEN_PREFIX } from "./tokens";
 import { tokenizeImages } from "./tokenize";
 import {
@@ -10,6 +10,7 @@ import {
   validateFragment,
 } from "./validate";
 import type { PageResult, StepUpdate } from "./types";
+import type { LlmProvider } from "./llm";
 
 const MAX_RETRIES = 2;
 
@@ -19,7 +20,8 @@ export interface ConvertInput {
   selector?: string;
   apiKey: string;
   model: string;
-  /** Deterministic mode: enforce the whitelist in code only, no Gemini call. */
+  provider?: LlmProvider;
+  /** Deterministic mode: enforce the whitelist in code only, no AI call. */
   skipLlm?: boolean;
 }
 
@@ -79,7 +81,12 @@ export async function convertPage(
     });
   } else {
     // The prompt is part of the key so editing it invalidates old entries.
-    const cacheKey = cleanCacheKey(input.model, SYSTEM_PROMPT, tokenized.html);
+    const cacheKey = cleanCacheKey(
+      input.provider ?? DEFAULT_PROVIDER,
+      input.model,
+      SYSTEM_PROMPT,
+      tokenized.html,
+    );
     const cached = readCleanCache(cacheKey);
     if (cached) {
       onStep({ step: "Clean (LLM)", status: "done", note: "cached — no API call" });
@@ -151,6 +158,7 @@ async function cleanWithRetries(
   onStep({ step: "Clean (LLM)", status: "active" });
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     const cleaned = await cleanHtml({
+      provider: input.provider ?? DEFAULT_PROVIDER,
       apiKey: input.apiKey,
       model: input.model,
       title,
