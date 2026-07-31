@@ -1,5 +1,18 @@
 import { TOKEN_RE, hasToken, isLoneToken, token, tokenIndices } from "./tokens";
 
+export function isSafeUrl(url: string): boolean {
+  // Strip control characters and whitespace which browsers ignore when parsing protocols
+  const normalized = url.replace(/[\x00-\x20\x7F-\x9F]/g, "").toLowerCase();
+  if (
+    normalized.startsWith("javascript:") ||
+    normalized.startsWith("vbscript:") ||
+    normalized.startsWith("data:")
+  ) {
+    return false;
+  }
+  return true;
+}
+
 // The tag whitelist the LLM is prompted with, enforced here in code.
 const WHITELIST = new Set([
   "h2", "h3", "h4", "p", "ul", "ol", "li", "blockquote", "pre", "code",
