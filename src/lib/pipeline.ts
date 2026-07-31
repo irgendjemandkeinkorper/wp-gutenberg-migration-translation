@@ -1,6 +1,7 @@
 import { serializeBlocks } from "./blocks";
+import { cleanCacheKey, readCleanCache, writeCleanCache } from "./cache";
 import { extractContent } from "./extract";
-import { cleanHtml } from "./llm";
+import { cleanHtml, SYSTEM_PROMPT } from "./llm";
 import { TOKEN_PREFIX } from "./tokens";
 import { tokenizeImages } from "./tokenize";
 import {
@@ -18,6 +19,8 @@ export interface ConvertInput {
   selector?: string;
   apiKey: string;
   model: string;
+  /** Deterministic mode: enforce the whitelist in code only, no Gemini call. */
+  skipLlm?: boolean;
 }
 
 export async function convertPage(
@@ -35,7 +38,7 @@ export async function convertPage(
   onStep({
     step: "Extract",
     status: "done",
-    note: extracted.usedSelector ? "via CSS selector" : "via Readability",
+    note: extracted.note,
   });
 
   onStep({ step: "Images", status: "active" });
@@ -47,53 +50,47 @@ export async function convertPage(
   });
 
   const expected = tokenized.images.map((i) => i.index);
-  let violationNote: string | undefined;
-  let validatedHtml = "";
-  let clean = true;
+  let validatedHtml: string;
+  let lostPositions: number[];
 
-  onStep({ step: "Clean (LLM)", status: "active" });
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    const cleaned = await cleanHtml({
-      apiKey: input.apiKey,
-      model: input.model,
-      title: extracted.title,
-      html: tokenized.html,
-      violationNote,
-    });
-    if (!cleaned.trim()) throw new Error("The model returned an empty result.");
-
+  if (input.skipLlm) {
+    onStep({ step: "Clean (LLM)", status: "done", note: "skipped — no API call" });
     onStep({ step: "Validate", status: "active" });
-    const { html, report } = validateFragment(cleaned, expected);
-    validatedHtml = html;
-    clean = report.missing.length === 0 && report.extra.length === 0;
-    if (clean) break;
-
-    if (attempt < MAX_RETRIES) {
-      violationNote = describeViolation(report);
-      onStep({
-        step: "Validate",
-        status: "warn",
-        note: `model broke the token contract, retrying ${attempt + 1}/${MAX_RETRIES}`,
-      });
-      onStep({ step: "Clean (LLM)", status: "active" });
+    ({ html: validatedHtml, lostPositions } = enforceTokens(
+      tokenized.html,
+      expected,
+    ));
+    onStep({
+      step: "Validate",
+      status: lostPositions.length ? "warn" : "done",
+      note: lostPositions.length ? "repaired" : "deterministic cleanup",
+    });
+  } else {
+    // The prompt is part of the key so editing it invalidates old entries.
+    const cacheKey = cleanCacheKey(input.model, SYSTEM_PROMPT, tokenized.html);
+    const cached = readCleanCache(cacheKey);
+    if (cached) {
+      onStep({ step: "Clean (LLM)", status: "done", note: "cached — no API call" });
+      onStep({ step: "Validate", status: "done", note: "cached" });
+      validatedHtml = cached.html;
+      lostPositions = cached.lostPositions;
+    } else {
+      ({ html: validatedHtml, lostPositions } = await cleanWithRetries(
+        input,
+        extracted.title,
+        tokenized.html,
+        expected,
+        onStep,
+      ));
+      writeCleanCache(cacheKey, { html: validatedHtml, lostPositions });
     }
   }
-  onStep({ step: "Clean (LLM)", status: "done" });
 
-  let lostPositions: number[] = [];
-  if (!clean) {
-    const repaired = repairTokens(validatedHtml, expected);
-    validatedHtml = repaired.html;
-    lostPositions = repaired.lostPositions;
-    if (lostPositions.length) {
-      warnings.push(
-        `Position lost for image${lostPositions.length === 1 ? "" : "s"} ` +
-          `${lostPositions.join(", ")} — appended at the end of the page.`,
-      );
-    }
-    onStep({ step: "Validate", status: "warn", note: "repaired after retries" });
-  } else {
-    onStep({ step: "Validate", status: "done" });
+  if (lostPositions.length) {
+    warnings.push(
+      `Position lost for image${lostPositions.length === 1 ? "" : "s"} ` +
+        `${lostPositions.join(", ")} — appended at the end of the page.`,
+    );
   }
 
   onStep({ step: "Blocks", status: "active" });
@@ -118,4 +115,65 @@ export async function convertPage(
     lostPositions,
     warnings,
   };
+}
+
+async function cleanWithRetries(
+  input: ConvertInput,
+  title: string,
+  tokenizedHtml: string,
+  expected: number[],
+  onStep: (u: StepUpdate) => void,
+): Promise<{ html: string; lostPositions: number[] }> {
+  let violationNote: string | undefined;
+  let validatedHtml = "";
+  let clean = true;
+
+  onStep({ step: "Clean (LLM)", status: "active" });
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const cleaned = await cleanHtml({
+      apiKey: input.apiKey,
+      model: input.model,
+      title,
+      html: tokenizedHtml,
+      violationNote,
+    });
+    if (!cleaned.trim()) throw new Error("The model returned an empty result.");
+
+    onStep({ step: "Validate", status: "active" });
+    const { html, report } = validateFragment(cleaned, expected);
+    validatedHtml = html;
+    clean = report.missing.length === 0 && report.extra.length === 0;
+    if (clean) break;
+
+    if (attempt < MAX_RETRIES) {
+      violationNote = describeViolation(report);
+      onStep({
+        step: "Validate",
+        status: "warn",
+        note: `model broke the token contract, retrying ${attempt + 1}/${MAX_RETRIES}`,
+      });
+      onStep({ step: "Clean (LLM)", status: "active" });
+    }
+  }
+  onStep({ step: "Clean (LLM)", status: "done" });
+
+  if (clean) {
+    onStep({ step: "Validate", status: "done" });
+    return { html: validatedHtml, lostPositions: [] };
+  }
+  const repaired = repairTokens(validatedHtml, expected);
+  onStep({ step: "Validate", status: "warn", note: "repaired after retries" });
+  return repaired;
+}
+
+/** Validate + (if tokens drifted) repair, without any model involvement. */
+function enforceTokens(
+  html: string,
+  expected: number[],
+): { html: string; lostPositions: number[] } {
+  const { html: validated, report } = validateFragment(html, expected);
+  if (!report.missing.length && !report.extra.length) {
+    return { html: validated, lostPositions: [] };
+  }
+  return repairTokens(validated, expected);
 }

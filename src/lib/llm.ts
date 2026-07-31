@@ -1,7 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 
-export const DEFAULT_MODEL = "gemini-2.5-pro";
-export const FAST_MODEL = "gemini-2.5-flash";
+// gemini-2.5-* IDs 404 ("no longer available to new users") on API accounts
+// created after mid-2026 — keep these on current-generation GA models.
+export const DEFAULT_MODEL = "gemini-3.6-flash";
+export const FAST_MODEL = "gemini-3.5-flash-lite";
 
 export const WHITELIST =
   "h2, h3, h4, p, ul, ol, li, blockquote, pre, code, table, thead, " +

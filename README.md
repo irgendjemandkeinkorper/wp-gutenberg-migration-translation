@@ -44,6 +44,35 @@ The pipeline keeps the LLM on judgment and off mechanics (the design proven in
 4. Download the WXR and import it: WP admin → Tools → Import → WordPress,
    check "Download and import file attachments".
 
+### Whole-site migration (crawl + batch)
+
+CORS proxies are unreliable, so crawling runs locally in Node instead of the
+browser:
+
+```bash
+npm run crawl -- https://example.com          # → crawl/pages.json
+npm run crawl -- https://example.com --max 100 --delay 1000 --out crawl
+```
+
+Same-origin BFS, HTML pages only; skips WP plumbing (wp-admin, feeds,
+uploads), asset and query-string URLs; respects robots.txt `Disallow` for
+`User-agent: *`. Then in the app open the **Batch (crawl)** tab, load
+`crawl/pages.json`, and Convert all — every page runs through the normal
+pipeline (with the current CSS selector / skip-LLM / model settings) and
+lands in the WXR bundle. Re-running a batch replaces bundle entries by URL
+instead of duplicating them.
+
+### Minimizing API calls
+
+- **Skip LLM cleanup** (checkbox above Convert): pure deterministic mode —
+  the whitelist is enforced in code, scripts/nav/forms are dropped outright,
+  headings preserved. Zero API calls, no key needed. Best for already-clean
+  pages (e.g. classic WordPress content) combined with a content CSS
+  selector; nothing judges boilerplate in this mode.
+- **Conversion cache**: successful LLM cleanups are cached in localStorage,
+  keyed on model + prompt + extracted content, so re-converting an unchanged
+  page never repeats the Gemini call (last 40 pages kept).
+
 ## Development
 
 ```bash

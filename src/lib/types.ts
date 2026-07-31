@@ -8,7 +8,8 @@ export interface ImageRef {
 export interface ExtractResult {
   title: string;
   html: string;
-  usedSelector: boolean;
+  /** How the content was isolated, for the step display. */
+  note: string;
 }
 
 export interface TokenizeResult {

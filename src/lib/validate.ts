@@ -10,6 +10,25 @@ const WHITELIST = new Set([
 // Elements the model sometimes wraps the whole answer in; unwrap silently.
 const WRAPPERS = new Set(["div", "article", "section", "main"]);
 
+// Elements whose entire subtree is noise (code, page chrome, embeds) — remove
+// outright rather than unwrap, so script text or nav link lists never leak
+// into content. This matters most in skip-LLM mode, where raw extracted HTML
+// reaches the validator without a model pass to judge boilerplate.
+const DROP = new Set([
+  "script", "style", "noscript", "template", "iframe", "object", "embed",
+  "svg", "canvas", "video", "audio", "form", "button", "input", "select",
+  "textarea", "nav", "aside", "footer",
+]);
+
+// Off-whitelist tags that should keep their role, not just their text.
+const RENAME: Record<string, string> = {
+  b: "strong",
+  i: "em",
+  h1: "h2",
+  h5: "h4",
+  h6: "h4",
+};
+
 export interface TokenReport {
   missing: number[]; // expected but absent
   extra: number[]; // present but never issued (hallucinated or duplicated)
@@ -127,8 +146,10 @@ function enforceWhitelist(body: HTMLElement): void {
   // are already in the snapshot, so one pass suffices.
   for (const el of Array.from(body.querySelectorAll("*"))) {
     const tag = el.tagName.toLowerCase();
-    if (tag === "b" || tag === "i") {
-      rename(el, tag === "b" ? "strong" : "em");
+    if (DROP.has(tag)) {
+      el.remove();
+    } else if (RENAME[tag]) {
+      if (el.isConnected) rename(el, RENAME[tag]);
     } else if (!WHITELIST.has(tag)) {
       el.replaceWith(...Array.from(el.childNodes));
     }

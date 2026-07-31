@@ -62,6 +62,24 @@ describe("validateFragment", () => {
     expect(html).toContain("<strong>bold </strong>");
   });
 
+  it("drops noise elements entirely instead of unwrapping their text", () => {
+    const { html } = validateFragment(
+      "<p>Keep</p><script>var leak = 1;</script><style>.x{}</style>" +
+        "<nav><ul><li><a href=\"/\">Home</a></li></ul></nav>" +
+        "<form><input value=\"q\"><button>Go</button></form>",
+      [],
+    );
+    expect(html).toBe("<p>Keep</p>");
+  });
+
+  it("keeps h1/h5/h6 as headings instead of unwrapping to bare text", () => {
+    const { html } = validateFragment(
+      "<h1>Title</h1><h5>Minor</h5><h6>Micro</h6>",
+      [],
+    );
+    expect(html).toBe("<h2>Title</h2><h4>Minor</h4><h4>Micro</h4>");
+  });
+
   it("preserves whitelist structure untouched", () => {
     const input =
       "<h2>H</h2><ul><li>a</li><li>b</li></ul><blockquote><p>q</p></blockquote>";
