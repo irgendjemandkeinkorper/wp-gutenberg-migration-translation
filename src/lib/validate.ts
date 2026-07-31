@@ -106,6 +106,15 @@ function diffTokens(expected: number[], found: number[]): TokenReport {
   return { missing, extra: extra.sort((a, b) => a - b) };
 }
 
+function unwrap(el: Element): void {
+  const doc = el.ownerDocument;
+  const frag = doc.createDocumentFragment();
+  while (el.firstChild) {
+    frag.appendChild(el.firstChild);
+  }
+  el.replaceWith(frag);
+}
+
 function unwrapWrappers(body: HTMLElement): void {
   // Repeatedly unwrap while the body has a single element child (ignoring
   // whitespace) that is a known wrapper.
@@ -127,7 +136,7 @@ function unwrapWrappers(body: HTMLElement): void {
     const el = only as HTMLElement;
     if (!WRAPPERS.has(el.tagName.toLowerCase())) return;
 
-    el.replaceWith(...Array.from(el.childNodes));
+    unwrap(el);
   }
 }
 
@@ -139,7 +148,7 @@ function enforceWhitelist(body: HTMLElement): void {
     if (tag === "b" || tag === "i") {
       rename(el, tag === "b" ? "strong" : "em");
     } else if (!WHITELIST.has(tag)) {
-      el.replaceWith(...Array.from(el.childNodes));
+      unwrap(el);
     }
   }
   for (const el of Array.from(body.querySelectorAll("*"))) {
@@ -151,7 +160,7 @@ function enforceWhitelist(body: HTMLElement): void {
       if (href) {
         el.setAttribute("href", href);
       } else {
-        el.replaceWith(...Array.from(el.childNodes));
+        unwrap(el);
       }
     } else {
       while (el.attributes.length > 0) {
@@ -164,7 +173,9 @@ function enforceWhitelist(body: HTMLElement): void {
 function rename(el: Element, newTag: string): void {
   const doc = el.ownerDocument;
   const repl = doc.createElement(newTag);
-  repl.append(...Array.from(el.childNodes));
+  while (el.firstChild) {
+    repl.appendChild(el.firstChild);
+  }
   el.replaceWith(repl);
 }
 
