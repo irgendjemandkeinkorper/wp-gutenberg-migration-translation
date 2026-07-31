@@ -1,0 +1,28 @@
+@use "sass:color";
+
+$theme-prefix: theme-appearance--;
+
+$primary: #4c0121;
+$secondary: #525C7B;
+
+@use "modules/typography" with (
+    $prefix:    $theme-prefix,
+    $primary:   $primary,
+    $secondary: $secondary,
+);
+
+@use "modules/header" with (
+    $prefix:    $theme-prefix,
+);
+
+@use "modules/body" with (
+    $prefix:    $theme-prefix,
+);
+
+@use "modules/plugins" with (
+    $prefix: $theme-prefix,
+);
+
+@use "modules/footer" with (
+    $prefix: $theme-prefix,
+);

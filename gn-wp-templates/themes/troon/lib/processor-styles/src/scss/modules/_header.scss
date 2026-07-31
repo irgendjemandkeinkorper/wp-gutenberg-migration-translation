@@ -1,0 +1,641 @@
+@import "bootstrap/scss/functions";
+
+// 1. Add variable adjustments here
+@import "bootstrap/scss/variables";
+
+// 2. Include remainder of required parts
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+
+// 3. Include additional parts
+@import "bootstrap/scss/close";
+@import "bootstrap/scss/offcanvas";
+@import "bootstrap/scss/accordion";
+
+/* Site Header
+---------------------------------------------------------------------------- */
+
+/* Top Bar
+--------------------------------------------- */
+
+.top-bar {
+    .widget-wrap {
+        .wp-social-link {
+            font-size: 1rem;
+        }
+
+        .wp-block-social-links {
+            color: var( --#{$prefix}--#{$prefix}primary-contrast );
+
+            .wp-block-social-link-anchor {
+                padding: 6px;
+                border-radius: 250em;
+                @extend %wp-block-social-link-background;
+            }
+
+            .wp-social-link {
+                &:hover {
+                    transform: none;
+                }
+
+                &:last-child {
+                    & > .wp-block-social-link-anchor {
+                        @extend %wp-block-social-link-background;
+                    }
+                }
+            }
+
+            %wp-block-social-link-background {
+                background-color: var( --#{$prefix}primary );
+            }
+        }
+    }
+
+    .simple-social-icons {
+        li {
+            margin-right: 0.8rem !important;
+        }
+    }
+
+    .site-header & {
+        width: 100%;
+        margin-bottom: var( --#{$prefix}navbar-padding-y );
+        padding: 0.6rem 0;
+        font-size: 0.875rem;
+
+        &-widgets {
+            * {
+                margin-bottom: 0;
+            }
+
+            justify-content: end;
+
+            .widget {
+                .wp-social-link {
+                    font-size: 1rem;
+                }
+
+                &:not(:first-child) {
+                    &::before {
+                        @extend %add-bootstrap-icon;
+                        display: inline-block;
+                        padding: 0 calc( var( --#{$prefix}gutter-x ) * 0.5);
+                        content: "\F309";
+                    }
+                }
+            }
+
+            @include media-breakpoint-down( md ) {
+                justify-content: center;
+                gap: 0.25rem;
+
+                .widget {
+                    padding: 0 calc( var( --#{$prefix}gutter-x ) * 0.5);
+
+                    &:not(:first-child) {
+                        &::before {
+                            display: none;
+                        }
+                    }
+                }
+            }
+        }
+
+        nav[class^="menu-"] {
+            .menu {
+                padding-left: 0;
+            }
+
+            .menu-item {
+                @extend %top-bar-links;
+            }
+        }
+
+        .textwidget {
+            @extend %top-bar-links;
+        }
+
+        %top-bar-links {
+            --#{$prefix}text-opacity: 0.7;
+
+            &:not(:first-child) {
+                margin-left: calc( var( --#{$prefix}gutter-x ) * 0.5);
+            }
+
+            &:last-child {
+                a {
+                    background-color: transparent;
+                    color: rgba( var( --#{$prefix}text-color-rgb ), var( --#{$prefix}text-opacity ) );
+
+                    &:hover,
+                    &:focus {
+                        background-color: transparent;
+                        color: rgba( var( --#{$prefix}text-color-rgb ), 1 );
+                    }    
+                }
+            }
+
+            a {
+                background-color: transparent;
+                padding: 0;
+                color: rgba( var( --#{$prefix}text-color-rgb ), var( --#{$prefix}text-opacity ) );
+                font-size: 0.8rem;
+                font-weight: 800;
+                text-decoration: none;
+                text-transform: uppercase;
+
+                &:hover,
+                &:focus {
+                    background-color: transparent;
+                    color: rgba( var( --#{$prefix}text-color-rgb ), 1 );
+                }
+            }
+        }
+
+        @include media-breakpoint-up( lg ) {
+            & + .header-row {
+                .title-area {
+                    margin-top: calc( var( --top-bar-height ) * -1 );
+                }
+            }
+        }
+    }
+}
+
+/* Header Nav
+--------------------------------------------- */
+
+.site-header {
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 2049 !important;
+    filter: drop-shadow(0 0 0 rgba(0, 0, 0, 0.15));
+
+    .navbar-toggler {
+        --#{$prefix}border-width: 0;
+        --#{$prefix}navbar-toggler-border-radius: 0;
+        --#{$prefix}navbar-toggler-padding-y: 2rem;
+    }
+
+    .header-widget-area {
+        text-align: right;
+    }
+
+    .navbar {
+        flex-wrap: wrap;
+        transition-property: background-color;
+        transition-duration: 0.3s;
+        transition-timing-function: ease;
+        padding-top: 0;
+    }
+
+    .site-container & {
+        transition-property: filter, transform, height;
+    }
+
+    &.sticky {
+        position: fixed;
+        top: 0;
+        filter: drop-shadow(0 1px 15px rgba(0, 0, 0, 0.15));
+
+        .admin-bar & .navbar {
+            top: 0;
+        }
+
+        .top-bar {
+            @include media-breakpoint-down( md ) {
+                display: none;
+            }
+        }
+
+        @include media-breakpoint-up( md ) {
+            .admin-bar & {
+                top: 32px;
+            }
+        }
+    }
+
+    @include media-breakpoint-down( lg ) {
+        .header-row {
+            justify-content: space-between;
+            grid-template-columns: auto auto;
+        }
+
+        .header-widget-area {
+            display: none;
+        }
+    }
+}
+
+/* Menu Icon
+--------------------------------------------- */
+
+.menu-icon {
+    position: relative;
+    display: inline-block;
+    height: 4px;
+    width: 3.125rem;
+    margin-top: 14px;
+    margin-bottom: 14px;
+    background-color: #000;
+    transition-property: background-color;
+    transition-duration: 0.4s;
+    transition-timing-function: cubic-bezier(0.300, 0.100, 0.580, 1.000);
+
+    &::before,
+    &::after {
+        position: absolute;
+        left: 0;
+        bottom: 14px;
+        display: inline-block;
+        height: 100%;
+        width: 100%;
+        background-color: #000;
+        transition: inherit;
+        transition-property: transform, bottom, top;
+        transform: none;
+        content: "";
+    }
+
+    &::after {
+        bottom: auto;
+        top: 14px;
+    }
+
+    [aria-expanded="true"] & {
+        background-color: rgba( 0, 0, 0, 0 );
+
+        &::before {
+            bottom: 0;
+            transform: rotate( 45deg );
+        }
+
+        &::after {
+            top: 0;
+            transform: rotate( -45deg );
+        }
+    }
+
+    @media ( prefers-reduced-motion: reduce ) {
+        transition: none;
+    }
+}
+
+/* Nav Primary
+--------------------------------------------- */
+
+.nav-primary {
+    z-index: 100 !important;
+    transition: transform 0.4s !important;
+    box-shadow: inset -5px 0 -15px rgba( 0, 0, 0, 0.15 );
+
+    .offcanvas-body {
+        .genesis-nav-menu {
+            margin-bottom: 2rem;
+        }
+
+        .dropdown-item {
+            white-space: wrap;
+            line-height: 1.05;
+            --#{$prefix}nav-link-padding-x: 2.25rem;
+            --#{$prefix}nav-link-padding-y: 0.5rem;
+        }
+
+        .wp-block-social-links {
+            justify-content: center;
+        }
+    }
+
+    &.nav-primary {
+        --#{$prefix}offcanvas-border-width: 0;
+    }
+
+    .admin-bar & {
+        top: 32px !important;
+    }
+
+    &.offcanvas-start {
+        transform: translateX( -30% );
+    }
+
+    &.offcanvas-end {
+        transform: translateX( 30% );
+    }
+
+    &.showing,
+    &.show:not(.hiding) {
+      transform: none;
+    }
+
+    .nav-link,
+    .dropdown-item {
+        font-family: var( --#{$prefix}header-font );
+        font-size: 1.375rem;
+        line-height: 1.72;
+        --#{$prefix}nav-link-padding-y: 0;
+        --#{$prefix}nav-link-padding-x: 1.25rem;
+    }
+
+    .dropdown-item {
+        font-size: 1.125rem;
+    }
+
+    .dropdown-toggle {
+        &::after {
+            position: absolute;
+            top: 100%;
+            bottom: 0;
+            left: 50%;
+            height: 3px;
+            width: 1em;
+            margin-left: 0;
+            border-top: 0.5em solid rgba( var( --#{$prefix}text-color-rgb ), 0.4 );
+            border-right: 0.5em solid transparent;
+            border-left: 0.5em solid transparent;
+            background: transparent;
+            transform: scaleX(0);
+            transition: transform .3s ease;
+            content: "";
+        }
+
+        &:hover,
+        &:focus {
+            &::after {
+                transform: translate(-50%, -50%) scaleX(1);
+            }
+        }
+    }
+
+    .dropdown {
+        &-menu {
+            border-top-width: 0.3rem;
+            --#{$prefix}dropdown-border-radius: 0;
+            --#{$prefix}dropdown-border-width: 0;
+            --#{$prefix}dropdown-min-width: 11.5rem;
+            --#{$prefix}dropdown-spacer: 0.525rem;
+            --#{$prefix}dropdown-item-padding-x: 1.75rem;
+
+            .dropdown-toggle {
+                display: flex;
+                align-items: center;
+
+                span {
+                    margin-right: 0.45em;
+                }
+
+                &::after {
+                    margin-left: auto;
+                    margin-right: 0.255em;
+                }
+            }
+        }
+    }
+
+    .accordion-button {
+        border-left: 0 solid transparent;
+        box-shadow: none;
+        background-color: transparent;
+        padding: var( --#{$prefix}nav-link-padding-y ) var( --#{$prefix}nav-link-padding-x );
+        color: var( --#{$prefix}nav-link-color );
+        --#{$prefix}accordion-btn-icon-transform: rotate( 90deg );
+
+        &:focus,
+        &:hover {
+            color: var( --#{$prefix}nav-link-hover-color );
+        }
+
+        &::after {
+            @extend %add-bootstrap-icon;
+            height: auto;
+            width: auto;
+            background: none !important;
+            content: "\F285";
+        }
+
+        &:not(.collapsed) {
+            border-left: 1px solid transparent;
+            color: var( --#{$prefix}nav-link-hover-color );
+        }
+    }
+
+    .sub-menu {
+        &:not(.dropdown-menu) {
+            border-top: 1px solid transparent;
+
+            .dropdown-item {
+                color: var( --#{$prefix}nav-link-color );
+                padding: var(--#{$prefix}nav-link-padding-y ) var( --#{$prefix}nav-link-padding-x );
+    
+                &:hover,
+                &:focus {
+                    position: relative;
+                    z-index: 10;
+                    color: var( --#{$prefix}nav-link-hover-color );
+                }
+
+                &.active {
+                    color: var( --#{$prefix}nav-link-active-color );
+                }
+            }
+        }
+    }
+
+    @media ( prefers-reduced-motion: reduce ) {
+        transition: none;
+    }
+}
+
+.navbar-expand-lg {
+    .navbar-nav {
+        .menu-item {
+            display: block;
+
+            &.show {
+                display: block;
+            }
+        }
+    }
+
+    .dropdown-menu {
+        border-top: 3px solid #b7ab92;
+
+        .dropdown-item {
+            &.hover,
+            &:focus,
+            &.active {
+                background-color: var( --#{$prefix}primary );
+                color: var( --#{$prefix}primary-contrast );	
+            }
+        }
+    }
+}
+
+@include media-breakpoint-down( lg ) {
+    .site-header .navbar-collapse {
+        width: 70%;
+    }
+    .navbar-expand-lg .navbar-nav {
+        display: block;
+        text-align: right;
+    }
+    .navbar-expand-lg .navbar-nav .menu-item {
+        display: inline-block;
+    }
+    
+}
+
+@include media-breakpoint-up( xs ) {	
+    .wp-custom-logo .title-area img {
+        padding-top: 0px;
+    }
+}
+
+.home .content-sidebar-wrap .content {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.top-bar .widget-wrap .wp-social-link {
+    font-size: 1rem;
+}
+
+
+@include media-breakpoint-down( md ) {
+    .nav-primary .sub-menu:not(.dropdown-menu){
+        border-top: 0px solid #ccc;
+    }
+    .home .accordion-button:focus{
+        outline: solid var( --#{$prefix}primary ) !important;
+    }
+}
+
+/* Sidebar
+--------------------------------------------- */
+
+.sidebar {
+    .sidebar-button {
+        display: none;
+    }
+}
+
+/* Title Area
+--------------------------------------------- */
+
+.wp-custom-logo.home .site-header:not(.sticky) .title-area, 
+.wp-custom-logo.home .site-header:not(.sticky) .title-area img,
+.wp-custom-logo .title-area img {
+    max-height: 8vh;
+}
+
+@include media-breakpoint-down( md ) {
+    .wp-custom-logo .title-area img {
+        padding-top: 2.75rem;
+    }
+}
+
+.wp-custom-logo {
+    .title-area {
+        justify-content: start;
+        margin-right: 0;
+        max-height: 100px;
+        min-width: auto;
+        max-width: 250px;
+        transition-property: max-height, max-width;
+        transition-duration: 150ms;
+        transition-timing-function: ease-in-out;
+
+        .custom-logo-link {
+            display: flex;
+            justify-content: start;
+        }
+
+        img {
+            max-height: 100px;
+            min-width: auto !important;
+            margin-right: 0;
+            padding-top: 2.75rem;
+        }
+    }
+
+    .site-header {
+        &:not(.sticky) {
+            .title-area {
+                max-height: 100px;
+
+                img {
+                    max-height: 100px;
+                }
+            }
+        }
+    }
+
+    &.home {
+        .site-header {
+            &:not(.sticky) {
+                .title-area {
+                    max-height: 140px;
+
+                    img {
+                        max-height: 140px;
+                    }
+                }
+            }
+        }
+    }
+
+    @media ( prefers-reduced-motion: reduce ) {
+        // Minus well not even have the logo resize if they don't want the motion
+        .site-header {
+            &:not(.sticky) {
+                .title-area {
+                    max-height: 100px !important;
+
+                    img {
+                        max-height: 100px !important;
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* Header Right Menu
+--------------------------------------------- */
+
+.header-widget-area {
+    ul {
+        padding-left: 0;
+        margin-bottom: 0;
+        list-style-type: none;
+
+        li {
+            list-style-type: none;
+        }
+    }
+
+    a {
+        font-family: var( --#{$prefix}header-font );
+        font-size: 1.375rem;
+        letter-spacing: 1px;
+        text-decoration: none;
+        color: rgba( var( --#{$prefix}text-color-rgb ), 0.8 );
+        line-height: 1.2;
+
+        &:hover,
+        &:focus {
+            color: rgba( var( --#{$prefix}text-color-rgb ), 1 );
+        }
+    }
+}
+
+/* Header Right Menu
+--------------------------------------------- */
+
+%add-bootstrap-icon {
+    padding: 0 calc( var(--#{$prefix}gutter-x) * 0.5);
+    font-family: bootstrap-icons !important;
+    font-weight: normal;
+    font-variant: normal;
+}

@@ -1,0 +1,44 @@
+/* Footer Widgets
+---------------------------------------------------------------------------- */
+
+.footer-widgets {
+	border-top: 1px solid #eee;
+	background-color: #fff;
+	clear: both;
+	padding: 60px 0;
+}
+
+.footer-widgets .wrap,
+.site-footer .wrap {
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.footer-widget-area {
+	margin-bottom: 40px;
+	padding-left: 30px;
+	padding-right: 30px;
+}
+
+.footer-widget-area:last-child,
+.footer-widgets .widget:last-child {
+	margin-bottom: 0;
+}
+
+
+/* CCPA Banner Widget
+--------------------------------------------- */
+
+.widget_eu_cookie_law_widget #eu-cookie-law {
+	text-align: center;
+
+	@media (max-width: 600px) {
+		input.accept {
+			right: auto;
+			margin: 0;
+			left: 50%;
+			transform: translateX(-50%);
+			width: calc(100% - 12px);
+		}
+	}
+}

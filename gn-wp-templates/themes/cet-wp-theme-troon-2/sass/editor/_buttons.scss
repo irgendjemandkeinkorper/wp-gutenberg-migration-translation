@@ -1,0 +1,77 @@
+@use "../abstracts/mixins/buttons";
+
+.editor-styles-wrapper {
+    .is-style-primary,
+    .is-style-fill {
+        .wp-element-button {
+          @include buttons.button;
+          @include buttons.large_button;
+          @include buttons.primary_button_no_state;
+        }
+    }
+
+    .is-style-secondary {
+        .wp-element-button {
+            @include buttons.button;
+            @include buttons.large_button;
+            @include buttons.secondary_button_no_state;
+
+            // Hardcoded BG color for editor screen only,
+            // since it's transparent for frontend and doesn't show up in editor.
+            background-color: #454545;
+            border-color: #454545
+        }
+    }
+
+    .is-style-outline {
+        .wp-element-button {
+            @include buttons.button;
+            @include buttons.large_button;
+            @include buttons.outline_button_no_state;
+        }
+    }
+
+    .is-style-link-arrow-1 {
+        .wp-element-button {
+            @include buttons.button;
+            @include buttons.link_arrow_1_button_no_state;
+        }
+    }
+
+    .is-style-link-arrow-2 {
+        .wp-element-button {
+            @include buttons.button;
+            @include buttons.link_arrow_2_button_no_state;
+        }
+    }
+
+    .is-size-large {
+        .wp-element-button {
+            @include buttons.large_button;
+        }
+    }
+
+    .is-size-medium {
+        .wp-element-button {
+            @include buttons.medium_button;
+        }
+    }
+
+    .is-size-small {
+        .wp-element-button {
+            @include buttons.small_button;
+        }
+    }
+
+    .wp-block-file__button {
+        @include buttons.button;
+        @include buttons.primary_button;
+        @include buttons.medium_button;
+    }
+
+    .ghostkit-button {
+        @include buttons.button;
+        @include buttons.primary_button_no_state;
+        @include buttons.medium_button;
+    }
+}

@@ -1,0 +1,198 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/theme.json",
+  "version": 3,
+  "settings": {
+    "layout": {
+      "contentSize": "var(--cet-theme-container-max-width)",
+      "wideSize": "var(--cet-theme-container-max-width)"
+    },
+    "typography": {
+      "fontSizes": [
+        {
+          "name": "S",
+          "slug": "small",
+          "size": "var(--cet-theme-font-size-s)"
+        },
+        {
+          "name": "M",
+          "slug": "medium",
+          "size": "var(--cet-theme-font-size-m)"
+        },
+        {
+          "name": "L",
+          "slug": "large",
+          "size": "var(--cet-theme-font-size-l)"
+        },
+        {
+          "name": "H6",
+          "slug": "h6",
+          "size": "var(--cet-theme-font-size-l)"
+        },
+        {
+          "name": "H5",
+          "slug": "h5",
+          "size": "var(--cet-theme-heading-font-size-h5-tablet)"
+        },
+        {
+          "name": "H4",
+          "slug": "h4",
+          "size": "var(--cet-theme-heading-font-size-h4-tablet)"
+        },
+        {
+          "name": "H3",
+          "slug": "h3",
+          "size": "var(--cet-theme-heading-font-size-h3-tablet)"
+        },
+        {
+          "name": "H2",
+          "slug": "h2",
+          "size": "var(--cet-theme-heading-font-size-h2-tablet)"
+        },
+        {
+          "name": "H1",
+          "slug": "h1",
+          "size": "var(--cet-theme-heading-font-size-h1-tablet)"
+        }
+      ],
+      "fontFamilies": [
+        {
+          "name": "Primary",
+          "slug": "primary",
+          "fontFamily": "\"Urbanist\", sans-serif"
+        },
+        {
+          "name": "Secondary",
+          "slug": "secondary",
+          "fontFamily": "\"Libre Baskerville\", serif"
+        }
+      ],
+      "defaultFontSizes": false,
+      "customFontSize": true
+    },
+    "color": {
+      "palette": [
+        {
+          "name": "Primary Main",
+          "slug": "gold-main",
+          "color": "var(--cet-theme-gold-main)"
+        },
+        {
+          "name": "Primary 400",
+          "slug": "gold-400",
+          "color": "var(--cet-theme-gold-400)"
+        },
+        {
+          "name": "Primary 300",
+          "slug": "gold-300",
+          "color": "var(--cet-theme-gold-300)"
+        },
+        {
+          "name": "Primary 200",
+          "slug": "gold-200",
+          "color": "var(--cet-theme-gold-200)"
+        },
+        {
+          "name": "Primary 100",
+          "slug": "gold-100",
+          "color": "var(--cet-theme-gold-100)"
+        },
+        {
+          "name": "Secondary",
+          "slug": "primary-teal",
+          "color": "var(--cet-theme-primary-teal)"
+        },
+        {
+          "name": "Secondary 400",
+          "slug": "teal-400",
+          "color": "var(--cet-theme-teal-400)"
+        },
+        {
+          "name": "Secondary 300",
+          "slug": "teal-300",
+          "color": "var(--cet-theme-teal-300)"
+        },
+        {
+          "name": "Neutral 800",
+          "slug": "neutral-800",
+          "color": "var(--cet-theme-neutral-800)"
+        },
+        {
+          "name": "Neutral 700",
+          "slug": "neutral-700",
+          "color": "var(--cet-theme-neutral-700)"
+        },
+        {
+          "name": "Neutral 500",
+          "slug": "neutral-500",
+          "color": "var(--cet-theme-neutral-500)"
+        },
+        {
+          "name": "Neutral 400",
+          "slug": "neutral-400",
+          "color": "var(--cet-theme-neutral-400)"
+        },
+        {
+          "name": "Neutral 300",
+          "slug": "neutral-300",
+          "color": "var(--cet-theme-neutral-300)"
+        },
+        {
+          "name": "Neutral 100",
+          "slug": "neutral-100",
+          "color": "var(--cet-theme-neutral-100)"
+        },
+        {
+          "name": "Neutral 50",
+          "slug": "neutral-50",
+          "color": "var(--cet-theme-neutral-50)"
+        },
+        {
+          "name": "Black",
+          "slug": "black",
+          "color": "var(--cet-theme-black)"
+        },
+        {
+          "name": "White",
+          "slug": "white",
+          "color": "var(--cet-theme-white)"
+        },
+        {
+          "name": "Error",
+          "slug": "error",
+          "color": "var(--cet-theme-error)"
+        },
+        {
+          "name": "Success",
+          "slug": "success",
+          "color": "var(--cet-theme-success)"
+        },
+        {
+          "name": "Warning",
+          "slug": "warning",
+          "color": "var(--cet-theme-warning)"
+        },
+        {
+          "name": "Info",
+          "slug": "info",
+          "color": "var(--cet-theme-info)"
+        },
+        {
+          "name": "Transparent",
+          "slug": "transparent",
+          "color": "transparent"
+        }
+      ],
+      "defaultPalette": false,
+      "custom": false
+    }
+  },
+  "styles": {
+    "elements": {
+      "link": {
+        "typography": {
+          "textDecoration": "var(--cet-theme-link-text-decoration, underline)"
+        }
+      }
+    }
+  }
+}

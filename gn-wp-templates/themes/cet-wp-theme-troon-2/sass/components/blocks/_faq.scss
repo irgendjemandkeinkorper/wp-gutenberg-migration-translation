@@ -1,0 +1,156 @@
+@use "../../abstracts/variables/breakpoints";
+
+// Dual selectors during v2 migration window.
+// v2 active:  cet-entity-faq matches.
+// v1 rollback: cet-block-type-faq matches.
+// Remove v1 half of each :is() after staging + prod verification.
+:is(.cet-entity-faq, .cet-block-type-faq).is-style-faq {
+    --cet-faq-background: var(--cet-theme-gold-100);
+    --cet-faq-border: var(--cet-theme-gold-300);
+    --cet-faq-text: var(--cet-theme-black);
+    --cet-faq-muted: var(--cet-theme-neutral-700);
+    --cet-theme-block-section-vertical-spacing: 0;
+
+    display: flex;
+    justify-content: center;
+    background-color: var(--cet-faq-background);
+    counter-reset: details-counter;
+
+    > :is(.cet-part-column, .cet-block-part-type-column) {
+        width: 100%;
+        max-width: var(--cet-theme-container-narrow-width);
+        padding: 2.5rem 1rem;
+
+        @include breakpoints.tablet {
+            padding: 3rem;
+        }
+
+        @include breakpoints.desktop {
+            padding: 5rem;
+        }
+    }
+
+    :is(.cet-part-heading, .cet-block-part-type-heading) {
+        margin: 0 0 var(--cet-theme-spacing-xs);
+
+        @include breakpoints.tablet {
+            margin: 0 0 var(--cet-theme-spacing-unit);
+        }
+    }
+
+    :is(.cet-part-body, .cet-block-part-type-body):not(.is-style-caption) {
+        margin: 0 0 var(--cet-theme-spacing-xs);
+
+        @include breakpoints.tablet {
+            margin: 0 0 var(--cet-theme-spacing-unit);
+        }
+    }
+
+    :is(.cet-part-accordion, .cet-block-part-type-accordion) {
+        margin: 0;
+        min-height: 25px;
+        padding-block: calc(var(--cet-theme-spacing-unit) / 4);
+        padding-inline: var(--cet-theme-spacing-unit);
+        color: var(--cet-faq-text);
+        counter-increment: details-counter;
+        cursor: pointer;
+
+        &:first-of-type {
+            margin-top: var(--cet-theme-spacing-lg);
+
+            @include breakpoints.tablet {
+                margin-top: calc(var(--cet-theme-spacing-unit) * 2.5);
+            }
+        }
+
+        &:not(:last-of-type) {
+            margin-bottom: 12px;
+        }
+
+        &[open] {
+            padding-block-start: 0;
+            padding-block-end: var(--cet-theme-spacing-xs);
+
+            @include breakpoints.tablet {
+                padding-block-end: var(--cet-theme-spacing-unit);
+            }
+
+            :is(.cet-part-body, .cet-block-part-type-body) {
+                --cet-theme-font-weight-regular: 500;
+
+                margin-block: var(--cet-theme-spacing-xs) 0;
+                padding-inline-start: var(--cet-theme-spacing-md);
+                padding-block-end: 4px;
+                color: var(--cet-theme-neutral-800);
+                font-size: var(--cet-theme-font-size-m);
+
+                @include breakpoints.mobile {
+                    font-size: var(--cet-theme-font-size-s);
+                    letter-spacing: var(--cet-theme-paragraph-secondary-letter-spacing);
+                    line-height: 1.4;
+                }
+            }
+
+            :is(.cet-part-list, .cet-block-part-type-list) {
+                list-style-position: inside;
+                padding-inline-start: var(--cet-theme-spacing-md);
+                margin-block: var(--cet-theme-spacing-xs) 0;
+                color: var(--cet-theme-neutral-800);
+                font-size: var(--cet-theme-font-size-m);
+
+                @include breakpoints.mobile {
+                    font-size: var(--cet-theme-font-size-s);
+                    line-height: 1.4;
+                }
+            }
+        }
+
+        summary {
+            display: flex;
+            gap: var(--cet-theme-spacing-unit);
+            align-items: center;
+            cursor: pointer;
+            list-style: none;
+            font-size: var(--cet-theme-paragraph2-font-size-mobile);
+            letter-spacing: var(--cet-theme-heading-h6-letter-spacing);
+            line-height: var(--cet-theme-heading-line-height);
+            color: var(--cet-theme-gold-main);
+            font-weight: var(--cet-theme-font-weight-bold);
+            font-family: var(--cet-theme-font-heading), sans-serif;
+            padding-block: 4px;
+
+            @include breakpoints.mobile {
+                line-height: var(--cet-theme-paragraph-line-height);
+            }
+
+            &::before {
+                content: counter(details-counter);
+            }
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary::after {
+            content: "";
+            flex: 0 0 auto;
+            width: 8px;
+            height: 8px;
+            border-right: 1px solid currentcolor;
+            border-bottom: 1px solid currentcolor;
+            margin-left: auto;
+            transform: rotate(45deg);
+            transition: transform 0.2s ease;
+        }
+
+        &[open] summary::after {
+            transform: rotate(225deg);
+        }
+    }
+}
+
+// Special case
+:is(.wp-block.columns.is-style-faq) {
+    margin-bottom: 0; // To reset WP Core offset for .wp-block.columns
+}

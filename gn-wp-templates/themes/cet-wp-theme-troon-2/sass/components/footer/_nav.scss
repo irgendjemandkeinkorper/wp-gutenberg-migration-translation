@@ -1,0 +1,20 @@
+/*
+ * Site Footer — Navigation
+ *
+ * Generic footer nav list (e.g. legal links).
+ */
+
+@layer components {
+	.footer-navigation {
+		--cet-theme-link-text-decoration: none;
+
+		ul {
+			list-style: none;
+			margin: 0;
+			padding: 0;
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--cet-theme-spacing-md);
+		}
+	}
+}

@@ -1,0 +1,219 @@
+@use "../../abstracts/variables/breakpoints";
+
+:is(.cet-block.is-style-testimonials, .cet-entity-testimonials) {
+  padding: var(--cet-theme-vertical-section-spacing-mobile-xxl) 0;
+  margin-block: 0;
+
+  @include breakpoints.tablet {
+    padding-block: var(--cet-theme-vertical-section-spacing-xxl);
+  }
+
+  & > :is(.cet-block-part-type-column, .cet-part-column) {
+    max-width: var(--cet-theme-container-width);
+    padding-inline: var(--cet-theme-container-inline-padding);
+    margin-inline: auto;
+    width: 100%;
+  }
+
+  :is(.cet-block-part-type-body, .cet-part-body).is-style-caption {
+    margin-block: 0;
+  }
+
+  h2:is(.cet-block-part-type-heading, .cet-part-heading) {
+    margin-block-start: var(--cet-theme-spacing-xs);
+    margin-block-end: var(--cet-theme-spacing-md);
+
+    @include breakpoints.tablet {
+      margin-block-start: var(--cet-theme-spacing-sm);
+      margin-block-end: var(--cet-theme-spacing-xl);
+    }
+  }
+
+  .splide__track {
+    margin-block-end: 0;
+
+    .splide__slide {
+      :is(.cet-block-part-type-columns, .cet-part-columns) {
+        margin-block-end: 0;
+        height: 100%;
+        gap: 0 var(--cet-theme-spacing-xl);
+
+        :is(.cet-block-part-type-image, .cet-part-image) {
+          position: relative;
+          display: flex;
+          align-items: center;
+          width: 100%;
+          height: 100%;
+          margin-block-end: 0;
+
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+
+          &:before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0.20) 0%, rgba(0, 0, 0, 0.20) 100%);
+            z-index: 1;
+          }
+        }
+
+        :is(.cet-block-part-type-quote, .cet-part-quote) {
+          margin: 0;
+          padding: var(--cet-theme-spacing-md) var(--cet-theme-spacing-sm);
+          color: var(--cet-theme-gold-200-contrast);
+          background-color: var(--cet-theme-gold-200);
+
+          &:before {
+            content: "\201C";
+            display: block;
+            color: var(--cet-theme-gold-main);
+            font-family: var(--cet-theme-font-heading);
+            font-size: var(--cet-theme-heading-font-size-h1-tablet);
+            font-weight: var(--cet-theme-font-weight-bold);
+            line-height: 1;
+          }
+
+          p:is(.cet-block-part-type-body, .cet-part-body) {
+            margin-block: 0 var(--cet-theme-spacing-sm);
+
+            &.has-small-font-size {
+              margin-block: 0;
+              color: var(--cet-theme-neutral-500);
+            }
+
+            @include breakpoints.tablet {
+              margin-block: 0 var(--cet-theme-spacing-md);
+            }
+          }
+
+          :is(.cet-block-part-type-heading, .cet-part-heading) {
+            font-size: var(--cet-theme-heading-font-size-h7-mobile);
+            font-weight: var(--cet-theme-font-weight-bold);
+            letter-spacing: var(--cet-theme-heading-h6-letter-spacing);
+            margin-block: 0;
+            color: var(--cet-theme-teal-400);
+
+            @include breakpoints.tablet {
+              font-size: var(--cet-theme-heading-font-size-h7-tablet);
+            }
+          }
+
+          @include breakpoints.tablet {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+            padding: var(--cet-theme-spacing-md);
+          }
+        }
+      }
+    }
+  }
+
+  //Pagination
+  .cet-slider-pagination {
+    position: static;
+    display: block;
+    padding: 0;
+    margin-block-start: var(--cet-theme-spacing-sm);
+    font-size: 6px;
+
+    @include breakpoints.tablet {
+      margin-block-start: var(--cet-theme-spacing-md);
+    }
+
+    button {
+      width: 16px;
+      height: 6px;
+      margin: 0 4px;
+      border-radius: 2px;
+      background: var(--cet-theme-neutral-300);
+      opacity: 1;
+
+      &.is-active {
+        transform: none;
+        width: 48px;
+        background: var(--cet-theme-gold-main);
+        transition: width 0.5s;
+      }
+    }
+  }
+
+  //Ghostkit specific
+  &.ghostkit-carousel {
+    padding: 0;
+
+    .ghostkit-testimonial {
+      margin: 0;
+      background-color: var(--cet-theme-gold-200);
+    }
+
+    .ghostkit-testimonial-content {
+      margin-block-start: var(--cet-theme-spacing-sm);
+      color: var(--cet-theme-color-text);
+      font-size: var(--cet-theme-paragraph2-font-size-mobile);
+      font-family: var(--cet-theme-font-body);
+      font-weight: var(--cet-theme-font-weight-regular);
+      line-height: var(--cet-theme-paragraph-secondary-line-height);
+      letter-spacing: var(--cet-theme-paragraph-secondary-letter-spacing);
+      background-color: transparent;
+    }
+
+    .ghostkit-testimonial-name {
+      padding-inline-start: 1.25rem;
+      color: var(--cet-theme-color-text);
+      font-family: var(--cet-theme-font-heading);
+      line-height: var(--cet-theme-heading-line-height);
+      font-size: var(--cet-theme-heading-font-size-h6-mobile);
+      font-weight: var(--cet-theme-font-weight-bold);
+      letter-spacing: var(--cet-theme-heading-h6-letter-spacing);
+    }
+
+    .ghostkit-testimonial-icon {
+      opacity: 1;
+      left: 2.25rem;
+
+      .ghostkit-svg-icon {
+        path {
+          fill: var(--cet-theme-gold-main);
+        }
+      }
+    }
+
+    .ghostkit-carousel-bullets {
+      width: auto !important;
+
+      .swiper-pagination-bullet {
+        position: static;
+        width: 16px;
+        height: 6px;
+        margin: 0 4px;
+        border-radius: 2px;
+        background: var(--cet-theme-neutral-300);
+        transform: none;
+        opacity: 1;
+        cursor: pointer;
+
+        &.swiper-pagination-bullet-active {
+          width: 48px;
+          background: var(--cet-theme-gold-main);
+          transition: width 0.5s;
+        }
+      }
+    }
+
+    @include breakpoints.tablet {
+      .ghostkit-testimonial-content {
+        font-size: var(--cet-theme-paragraph2-font-size-tablet);
+      }
+
+      .ghostkit-testimonial-name {
+        font-size: var(--cet-theme-heading-font-size-h6-tablet);
+      }
+    }
+  }
+}

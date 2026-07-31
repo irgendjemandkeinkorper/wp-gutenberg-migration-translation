@@ -1,0 +1,195 @@
+/*
+ * Site Footer — Structure
+ *
+ * Layout shell: container, content area, and the three column slots.
+ */
+
+@use "../../abstracts/variables/breakpoints";
+
+@layer components {
+	.site-footer {
+		--cet-theme-color-text: var(--cet-theme-white);
+		padding-block: 24px;
+		background-color: var(--cet-theme-footer-bg);
+
+		@include breakpoints.laptop {
+			padding-block: 40px;
+		}
+
+		@include breakpoints.cinema {
+			padding-block: 48px;
+		}
+
+		&__container {
+			max-width: var(--cet-theme-content-width);
+			padding-inline: 16px;
+			margin: 0 auto;
+
+			@include breakpoints.tablet {
+				padding-inline: 24px;
+			}
+
+			@include breakpoints.laptop {
+				padding-inline: 40px;
+			}
+
+			@include breakpoints.cinema {
+				padding-inline: 48px;
+			}
+		}
+
+		&__content {
+			position: relative;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			gap: 20px;
+			padding-block: 18px;
+			color: var(--cet-theme-color-text);
+
+			&::before {
+				content: '';
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 0.5px;
+				background-color: var(--cet-theme-divider-color);
+			}
+
+			@include breakpoints.tablet {
+				padding-block: 20px;
+			}
+
+			@include breakpoints.laptop {
+				flex-direction: row;
+				justify-content: space-between;
+				padding-block: 20px 0;
+			}
+
+			@include breakpoints.desktop {
+				padding-block: 24px 0;
+			}
+		}
+
+		a:focus-visible {
+			outline: 2px solid var(--cet-theme-white);
+			outline-offset: 4px;
+		}
+
+		&__column {
+			&--left {
+				display: flex;
+				flex-direction: column;
+				gap: 8px;
+				padding-inline: 9.5px;
+
+				a {
+					display: flex;
+
+                  &.custom-logo-link {
+                    width: auto;
+                  }
+
+                  img {
+                    filter: grayscale(1) brightness(0) invert(1);
+                  }
+				}
+			}
+
+			&--center {
+				max-width: 578px;
+				width: 100%;
+				text-align: center;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 12px;
+
+				@include breakpoints.tablet {
+					gap: 16px;
+				}
+
+				.site-footer__primary-info {
+					.site-footer__primary-text {
+						.site-footer__primary-item--name {
+							display: block;
+							margin-bottom: 12px;
+
+							@include breakpoints.tablet {
+								display: inline;
+								margin-bottom: 0;
+							}
+						}
+
+						.site-footer__primary-item--name+.site-footer__primary-separator {
+							display: none;
+
+							@include breakpoints.tablet {
+								display: inline;
+							}
+						}
+					}
+				}
+
+				.site-footer__powered-by {
+					display: flex;
+					align-items: center;
+					gap: 8px;
+				}
+
+				.site-footer__primary-text,
+				.site-footer__copyright-text,
+				.site-footer__powered-by-label {
+					margin: 0;
+
+					@include breakpoints.tablet {
+						--cet-theme-font-weight-medium: var(--cet-theme-font-weight-regular);
+
+						font-size: var(--cet-theme-paragraph-font-size-tablet);
+						font-family: var(--cet-theme-font-body);
+						font-weight: var(--cet-theme-font-weight-medium);
+						line-height: var(--cet-theme-paragraph-line-height);
+						letter-spacing: var(--cet-theme-paragraph-letter-spacing);
+					}
+				}
+			}
+
+			&--right {
+				display: flex;
+				align-items: center;
+
+				.site-footer__partner-logo {
+					width: 102px;
+					height: 24px;
+
+					@include breakpoints.tablet {
+						width: 139px;
+						height: auto;
+					}
+				}
+			}
+		}
+
+        &__logo-container {
+          display: flex;
+          align-items: center;
+          gap: 30px;
+
+          > * {
+            flex-shrink: 0;
+          }
+
+          img {
+            width: 120px;
+            height: auto;
+          }
+        }
+	}
+
+	.site-info {
+		font-size: 0.875rem;
+		color: var(--cet-theme-color-text-light);
+	}
+}

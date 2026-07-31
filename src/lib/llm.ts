@@ -21,7 +21,8 @@ Rules:
 3. Remove boilerplate: navigation, share/social buttons, "related posts", author bios, newsletter or subscribe prompts, cookie/consent notices, comment sections, ad labels, breadcrumb trails.
 4. Image placeholder tokens look like ⟦IMG_0⟧, ⟦IMG_1⟧, etc. Preserve every token EXACTLY as written, each alone in its own <p>, in its original order. Never add, remove, renumber, or reword a token.
 5. Do not add commentary, titles, or a wrapping document element. Do not wrap the output in Markdown code fences. Return the cleaned HTML fragment only.
-6. Preserve the reading order and all substantive text. Do not summarize or rewrite prose — only restructure and strip.`;
+6. Preserve the reading order and all substantive text. Do not summarize or rewrite prose — only restructure and strip.
+7. Text in square brackets beginning with [MIGRATION PLACEHOLDER is an audit marker. Preserve it exactly, alone in its own <p>.`;
 
 const FENCE_OPEN_RE = /^```[a-zA-Z]*\n/;
 const FENCE_CLOSE_RE = /\n```\s*$/;

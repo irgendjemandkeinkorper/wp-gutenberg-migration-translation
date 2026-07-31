@@ -1,0 +1,63 @@
+/**
+ * 
+ */
+
+$brand-link: var(--wp--preset--color--link); // #085F68
+$brand-link-hover: var(--wp--preset--color--link-hover); // #1053b7
+$brand-pre-header: var(--wp--preset--color--pre-header); // #085F68
+$brand-pre-header-border: var(--wp--preset--color--pre-header-border); // #e3e3e3
+$brand-pre-header-color: var(--wp--preset--color--pre-header-color); // #f1f1f1
+$brand-header: var(--wp--preset--color--header); // #ffffff
+$brand-header-color: var(--wp--preset--color--header-color); // #333333
+$brand-headings-color: var(--wp--preset--color--headings-color); // #343434
+$brand-text-color: var(--wp--preset--color--text-color); // #666666
+$brand-button: var(--wp--preset--color--button); // #085F68
+$brand-button-border: var(--wp--preset--color--button-border); // #085F68
+$brand-button-color: var(--wp--preset--color--button-color); // #ffffff
+$brand-button-hover: var(--wp--preset--color--button-hover); // #1053B7
+$brand-button-hover-border: var(--wp--preset--color--button-hover-border); // #1053B7
+$brand-button-hover-color: var(--wp--preset--color--button-hover-color); // #ffffff
+$brand-footer: var(--wp--preset--color--footer); // #000000
+$brand-footer-widget: var(--wp--preset--color--footer-widget); // #262626
+$brand-footer-color: var(--wp--preset--color--footer-color); // #999999
+$brand-footer-headings: var(--wp--preset--color--footer-headings); // #ababab
+$brand-footer-links: var(--wp--preset--color--footer-links); // #11a7b9
+$brand-footer-links-hover: var(--wp--preset--color--footer-links-hover); // #91BDF2
+
+$color-palette: (
+    'black': #000000,
+    'white': #ffffff,
+    'gray': #f1f1f1,
+    'brand-primary': $brand-pre-header,
+    'brand-secondary': $brand-button-hover,
+    'brand-accent': $brand-footer-links,
+    'brand-tertiary': $brand-footer-widget,
+    'brand-link': $brand-footer-links-hover,
+);
+
+/**
+ * Colors used in the theme.
+ */
+
+// Header Variables
+$header-bg-color: $brand-header;
+$header-link: $brand-header-color;
+$header-link-hover: $brand-headings-color;
+$header-dropdown-arrow: #333;
+$header-color-text: #f2f2f2;
+$header-submenu-item: $brand-headings-color;
+$header-white: #fff;
+
+// Footer Variables
+$footer-white: #fff;
+$footer-top-bg-color: $brand-footer-widget;
+$footer-bottom-bg-color: $brand-footer;
+$footer-link-color: $brand-footer-links;
+$footer-text-color: $brand-footer-color;
+$footer-widget-title-color: $brand-footer-headings;
+$footer-widget-underline-color: $brand-footer-links;
+
+// Button Variables
+$button-background: $brand-button;
+$button-border: $brand-button-border;
+$button-color: $brand-button-color;

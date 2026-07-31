@@ -33,15 +33,23 @@ The pipeline keeps the LLM on judgment and off mechanics (the design proven in
    a WXR 1.2 file. With "Sideload images" on, each image gets an attachment
    item so the WordPress importer (with *Download and import file
    attachments* checked) copies it into the media library and remaps URLs.
+   Duplicate URLs are emitted once and attachment filename/MIME metadata is
+   included for more reliable WordPress imports.
+7. **Migration QA** — unsupported interactive content (embeds, media players,
+   and forms) becomes a visible `MIGRATION PLACEHOLDER` instead of disappearing.
+   The exact original HTML, source URL, selected GolfNow template, and
+   placeholder manifest are retained as `_blockify_*` post metadata in WXR.
 
 ## Usage
 
 1. Open the app, add your [Gemini API key](https://aistudio.google.com/apikey)
    in Settings (stored in `localStorage` only).
 2. Paste a page's HTML (View Page Source), or try Fetch URL.
-3. Convert, review the blocks, then either copy-paste into the block editor's
+3. Select the target design from the current
+   [GolfNow template library](https://golfnowbusiness.com/template-library/).
+4. Convert, review the blocks and any manual-migration placeholders, then either copy-paste into the block editor's
    Code editor view or add the page to the WXR bundle.
-4. Download the WXR and import it: WP admin → Tools → Import → WordPress,
+5. Download the WXR and import it: WP admin → Tools → Import → WordPress,
    check "Download and import file attachments".
 
 ### Whole-site migration (crawl + batch)

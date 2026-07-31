@@ -1,0 +1,75 @@
+@use "sass:color";
+
+$theme-prefix: theme-appearance--;
+
+$grid-gutter-width: 3.75rem;
+
+$primary: #4caf50;
+
+$gray: #a6a6a6;
+
+$gray-050: color.scale($gray, $lightness: 87%);
+$gray-100: color.scale($gray, $lightness: 80%);
+$gray-200: color.scale($gray, $lightness: 60%);
+$gray-300: color.scale($gray, $lightness: 40%);
+$gray-400: color.scale($gray, $lightness: 20%);
+$gray-500: $gray;
+$gray-600: color.scale($gray, $lightness: -20%);
+$gray-700: color.scale($gray, $lightness: -40%);
+$gray-800: color.scale($gray, $lightness: -60%);
+$gray-900: color.scale($gray, $lightness: -80%);
+$gray-950: color.scale($gray, $lightness: -87%);
+
+$grays: (
+	"050": $gray-050,
+	"100": $gray-100,
+	"200": $gray-200,
+	"300": $gray-300,
+	"400": $gray-400,
+	"500": $gray-500,
+	"600": $gray-600,
+	"700": $gray-700,
+	"800": $gray-800,
+	"900": $gray-900,
+	"950": $gray-950,
+);
+
+
+@use "modules/typography" with (
+    $prefix:    $theme-prefix,
+    $primary:   $primary,
+    $grid-gutter-width: $grid-gutter-width,
+    $gray-100:  $gray-100,
+    $gray-200:  $gray-200,
+    $gray-300:  $gray-300,
+    $gray-400:  $gray-400,
+    $gray-500:  $gray-500,
+    $gray-600:  $gray-600,
+    $gray-700:  $gray-700,
+    $gray-800:  $gray-800,
+    $gray-900:  $gray-900,
+    $grays:     $grays,
+    $gray:      $gray-300,
+    $gray-dark: $gray-700,
+    $dark-dark: $gray-950,
+);
+
+@use "modules/header" with (
+    $prefix:    $theme-prefix,
+    $gray-900:  $gray-900,
+);
+
+@use "modules/preload_screen" with (
+    $prefix:    $theme-prefix,
+);
+
+@use "modules/layout" with (
+    $prefix:    $theme-prefix,
+    $gray:      $gray-300,
+    $gray-dark: $gray-700,
+    $dark-dark: $gray-950,
+);
+
+@use "modules/footer" with (
+    $prefix: $theme-prefix,
+);

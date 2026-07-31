@@ -1,0 +1,6 @@
+@use "../../abstracts/variables/colors";
+@use "./shared/carousel.shared" as carousel;
+
+:where(.wp-block-group.is-style-carousel) {
+   @include carousel.carousel_shared();
+}

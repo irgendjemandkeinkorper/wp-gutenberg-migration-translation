@@ -7,6 +7,8 @@ const page: BundlePage = {
   link: "https://old-site.com/about",
   contentBlocks: "<!-- wp:paragraph -->\n<p>Hello</p>\n<!-- /wp:paragraph -->",
   images: [{ src: "https://old-site.com/img/team photo.jpg", alt: "The team" }],
+  sourceHtml: "<main><p>Hello</p></main>",
+  targetTemplate: "Albatross",
 };
 
 describe("buildWxr", () => {
@@ -42,6 +44,25 @@ describe("buildWxr", () => {
     expect(xml).toContain("<wp:meta_key>_wp_attachment_image_alt</wp:meta_key>");
     expect(xml).toContain("<wp:meta_value><![CDATA[The team]]></wp:meta_value>");
     expect(xml).toContain("<wp:status>inherit</wp:status>");
+    expect(xml).toContain("<wp:post_mime_type>image/jpeg</wp:post_mime_type>");
+    expect(xml).toContain("<wp:meta_key><![CDATA[_wp_attached_file]]></wp:meta_key>");
+  });
+
+  it("stores source HTML, source URL, and target template as importable post metadata", () => {
+    const xml = buildWxr([page], { author: "admin", postType: "page", status: "draft" });
+    expect(xml).toContain("<![CDATA[_blockify_source_html]]>");
+    expect(xml).toContain("<![CDATA[<main><p>Hello</p></main>]]>");
+    expect(xml).toContain("<![CDATA[_blockify_source_url]]>");
+    expect(xml).toContain("<![CDATA[_blockify_target_template]]>");
+    expect(xml).toContain("<![CDATA[Albatross]]>");
+  });
+
+  it("deduplicates fetchable attachments and skips relative image URLs", () => {
+    const xml = buildWxr([{ ...page, images: [page.images[0], page.images[0], { src: "/relative.jpg", alt: "relative" }] }], {
+      author: "admin", postType: "page", status: "draft", emitAttachments: true,
+    });
+    expect(xml.match(/<wp:post_type>attachment<\/wp:post_type>/g)).toHaveLength(1);
+    expect(xml).not.toContain("<wp:attachment_url>/relative.jpg");
   });
 
   it("keeps post ids sequential across pages and attachments", () => {

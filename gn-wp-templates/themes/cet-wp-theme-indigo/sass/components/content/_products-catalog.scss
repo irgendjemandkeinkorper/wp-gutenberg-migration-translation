@@ -1,0 +1,99 @@
+@use "../../abstracts/variables/breakpoints";
+@use "../../abstracts/mixins/buttons";
+
+.woocommerce-shop {
+  .site-main {
+    padding: 20px 0;
+
+    form.woocommerce-ordering {
+      @include breakpoints.mobile {
+        width: 100%;
+      }
+
+      select.orderby {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        padding: 6px 30px 6px 12px;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='black' stroke-width='2' fill='none' stroke-linecap='round'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right 20px center;
+      }
+    }
+
+    ul.products {
+      padding-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+
+      &::after {
+        display: none;
+      }
+
+      &::before {
+        display: none;
+      }
+
+      li.product {
+        display: flex;
+        align-items: flex-start;
+        flex-direction: column;
+        justify-content: space-between;
+
+        a {
+          display: block;
+
+          img {
+            aspect-ratio: 1;
+            object-fit: cover;
+            width: 100%;
+            height: auto;
+          }
+
+          .onsale {
+            max-width: 50px;
+            width: 100%;
+            height: auto;
+            border-radius: 50%;
+          }
+        }
+
+        .button,
+        .add_to_cart_button,
+        .product_type_simple,
+        .product_type_variable,
+        .product_type_external,
+        .product_type_grouped {
+          @include buttons.button;
+          @include buttons.button-primary;
+          margin: 10px 0 0;
+        }
+      }
+    }
+
+    nav.woocommerce-pagination {
+      ul.page-numbers {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        border: none;
+
+        li {
+          border: none;
+
+          span.page-numbers.current {
+            @include buttons.button;
+            @include buttons.button-primary;
+          }
+
+          a {
+            @include buttons.button;
+            @include buttons.button-secondary;
+          }
+        }
+      }
+    }
+  }
+}

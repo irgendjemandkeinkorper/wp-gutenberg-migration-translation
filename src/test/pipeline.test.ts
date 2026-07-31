@@ -56,4 +56,16 @@ describe("convertPage (skipLlm)", () => {
     expect(notes).toContain("Clean (LLM):done:skipped — no API call");
     expect(notes.some((n) => n.startsWith("Blocks:done"))).toBe(true);
   });
+
+  it("retains original HTML and preserves unsupported content for QA", async () => {
+    const rawHtml = '<html><head><title>Tee Times</title></head><body><main><p>Book:</p><iframe src="https://booking.example/tee"></iframe></main></body></html>';
+    const result = await convertPage(
+      { rawHtml, url: "https://example.com/tee-times", selector: "main", apiKey: "", model: "irrelevant", skipLlm: true },
+      () => {},
+    );
+    expect(result.sourceHtml).toBe(rawHtml);
+    expect(result.placeholders).toHaveLength(1);
+    expect(result.blocks).toContain("MIGRATION PLACEHOLDER 1: iframe");
+    expect(result.warnings[0]).toContain("retained as visible migration placeholders");
+  });
 });

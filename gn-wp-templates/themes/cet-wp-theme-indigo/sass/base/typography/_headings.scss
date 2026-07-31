@@ -1,0 +1,60 @@
+@use "../../abstracts/variables/breakpoints";
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-family: var(--header-font), sans-serif;
+	line-height: 1.4;
+	font-weight: 700;
+}
+
+h1 {
+	font-size: 20px;
+
+	@include breakpoints.tablet {
+		font-size: 24px;
+	}
+
+	@include breakpoints.laptop {
+		font-size: 40px;
+	}
+
+	@include breakpoints.desktop {
+		font-size: 48px;
+	}
+}
+
+h2 {
+	font-size: 18px;
+
+	@include breakpoints.tablet {
+		font-size: 20px;
+	}
+
+	@include breakpoints.laptop {
+		font-size: 32px;
+	}
+
+	@include breakpoints.desktop {
+		font-size: 40px;
+	}
+}
+
+h3 {
+	font-size: 16px;
+
+	@include breakpoints.tablet {
+		font-size: 16px;
+	}
+
+	@include breakpoints.laptop {
+		font-size: 24px;
+	}
+
+	@include breakpoints.desktop {
+		font-size: 32px;
+	}
+}

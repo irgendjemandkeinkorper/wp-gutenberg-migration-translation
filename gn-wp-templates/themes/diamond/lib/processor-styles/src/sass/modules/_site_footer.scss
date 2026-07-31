@@ -1,0 +1,116 @@
+
+@use "vars";
+
+/* Site Footer
+---------------------------------------------------------------------------- */
+
+.site-footer {
+	font-size: map-get(vars.$font-sizes, "p3");
+	line-height: 1.5;
+	margin-top: auto;
+	background-color: var( --footer-background, #262626 );
+	color: var( --footer-text, #999 );
+
+	p {
+		margin-bottom: 0;
+	}
+
+	.footer-widgets {
+		padding: 45px 15px;
+		margin-top: auto;
+
+		.row {
+			display: flex;
+			flex-wrap: wrap;
+			margin: 0 -15px;
+		}
+
+		.widget-title {
+			margin-bottom: 30px;
+			color: var( --footer-text, #999 );
+			font-size: 1.5rem;
+			font-weight: 400;
+		}
+
+		.widget-area {
+			padding: 0 15px;
+			width: 100%;
+			text-align: center;
+
+			&:not(:first-child) {
+				margin-top: 70px;
+			}
+
+			img {
+				margin-bottom: 10px;
+			}
+		}
+
+		a {
+			color: var( --footer-color, var( --theme-primary ) );
+			text-decoration: none;
+
+			&:hover,
+			&:focus {
+				color: var( --footer-color-contrast, var( --theme-primary-contrast ) );
+			}
+		}
+
+		@media only screen and (min-width: 960px) {
+			padding: 45px 30px;
+
+			.widget-area {
+				flex: 1;
+				text-align: left;
+
+				&:not(:first-child) {
+					margin-top: 0;
+				}
+
+				&:last-child {
+					flex: 2;
+				}
+			}
+		}
+	}
+
+	.golfnow-footer {
+		background-color: var( --footer-darkest, #000 );
+		padding: 25px 0;
+		text-align: center;
+		color: var( --footer-text, #999 );
+	}
+}
+
+/* Return to Top Button
+--------------------------------------------- */
+
+.return-to-top-button {
+	position: fixed;
+	right: 5px;
+	bottom: 5px;
+	z-index: 1005;
+	opacity: 0;
+	border-radius: 0;
+	background-color: #000;
+	padding: 15px;
+	transition: opacity 0.15s linear;
+
+	&:hover,
+	&:focus {
+		background-color: #000;
+	}
+
+	.scrolled & {
+		opacity: 0.7;
+
+		&:hover,
+		&:focus {
+			opacity: 1;
+		}
+	
+		&:focus {
+			outline-width: 3px;
+		}
+	}
+}

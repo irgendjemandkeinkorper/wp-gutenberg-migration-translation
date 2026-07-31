@@ -1,0 +1,261 @@
+@import "bootstrap/scss/functions";
+
+// 1. Add variable adjustments here
+
+@import "bootstrap/scss/variables";
+
+// 2. Include remainder of required parts
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+
+// 3. Include additional parts
+
+/* The Events Calendar
+---------------------------------------------------------------------------- */
+
+.tribe-theme-genesis {
+    .tribe-events-widget-events-list__events {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        width: 100%;	
+    }
+
+    .tribe-events-widget-events-list__header {
+        .tribe-events-widget-events-list__header-title {
+            color: var( --#{$prefix}primary ) !important;
+            font-size: 3.4375rem !important;
+            margin-top: 0 !important;
+            margin-bottom: 1.25rem !important;
+            font-weight: 700 !important;
+            line-height: 1.5 !important;
+            text-transform: capitalize !important;
+            font-family: var( --#{$prefix}header-font ) !important;
+        }    
+    }
+
+    .tribe-events-widget-events-list__events {
+        .tribe-common-g-row {
+            flex-direction: column;
+            flex: 33.3%;
+            padding-right: 10px;
+
+            &:last-child {
+                padding-right:0px;
+            }
+        }
+
+        .tribe-events-widget-events-list__event-row {
+            .tribe-events-widget-events-list__event-date-tag {
+                padding: 10px;
+                border: solid 1px #d5d5d5;
+    
+                .tribe-events-widget-events-list__event-date-tag-datetime {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+    
+                    .tribe-events-widget-events-list__event-date-tag-month,
+                    .tribe-events-widget-events-list__event-date-tag-daynum {
+                        color: var( --#{$prefix}primary ) !important;
+                    }
+    
+                    .tribe-events-widget-events-list__event-date-tag-daynum {
+                        font-size: 26px;
+                    }
+                }
+                
+            }
+    
+            .tribe-events-widget-events-list__event-wrapper{
+                margin-top: 15px;
+    
+                .tribe-events-widget-events-list__event-title{
+                    text-transform: uppercase;
+                }
+            }
+        }
+    }
+
+    .tribe-events-widget-events-list__view-more-link {
+        color: #1c1f23 !important;
+
+        &:hover {
+            border-bottom-color: var( --#{$prefix}primary ) !important;
+        }
+    }
+
+    .entry-header-custom {
+        margin-bottom: 0px;
+
+        .site-inner {
+            padding-top: 10em;
+            padding-bottom: 10em;
+        }
+    }
+}
+
+.tribe-events-c-search__button {
+    background-color: var(--#{$prefix}secondary) !important;
+    color: var(--#{$prefix}secondary-contrast) !important;
+    border-radius: 0px !important;
+    line-height: 1 !important;
+}
+
+/* Pullquote
+--------------------------------------------- */
+
+.wp-block-pullquote {
+    padding-top: 0px;
+    padding-bottom: 0px;
+
+    p {
+        font-size: 30px !important;
+    }
+
+    cite {
+        font-size: 20px !important; 
+        color: #fff !important;
+    }
+
+    @include media-breakpoint-down( md ) {
+		p {
+            font-size: 20px !important;
+        }
+    
+        cite {
+            font-size: 15px !important; 
+        }
+	}
+}
+
+/* WPForms
+---------------------------------------------------------------------------- */
+
+.wpforms-container {
+
+    .wpforms-title {
+        font-size: 1.375rem !important;
+        font-family: var( --#{$prefix}header-font ) !important;
+        font-weight: 700 !important;
+        line-height: 1.5 !important;
+        margin-bottom: 1.25rem !important;
+    }
+
+    .wpforms-submit {
+        background-color: var(--#{$prefix}secondary) !important;
+        color: var(--#{$prefix}secondary-contrast) !important;
+        font-family: var( --#{$prefix}header-font ) !important;
+        border-radius: 0px !important;
+        line-height: 1 !important;
+        font-size: 16px;
+        font-weight: 600 !important;
+        padding: 15px 30px !important;
+        text-align: center;
+        text-decoration: none;
+        text-transform: uppercase !important;
+        white-space: normal;
+        width: auto; 
+    
+        &:hover {
+            background-color: var( --#{$prefix}secondary-darker ) !important;
+        }
+    }
+}
+
+
+/* WooCommerce
+---------------------------------------------------------------------------- */
+
+.woocommerce {
+
+    .button,
+    .wc-forward {
+        background-color: var(--#{$prefix}secondary) !important;
+        color: var(--#{$prefix}secondary-contrast) !important;
+        font-family: var( --#{$prefix}header-font ) !important;
+        border-radius: 0px !important;
+        line-height: 1 !important;
+        font-size: 16px;
+        font-weight: 600 !important;
+        padding: 15px 30px !important;
+        text-align: center;
+        text-decoration: none;
+        text-transform: uppercase !important;
+        white-space: normal;
+        width: auto; 
+    
+        &:hover {
+            background-color: var( --#{$prefix}secondary-darker ) !important;
+        }
+    }
+}
+
+.woocommerce.full-width-content .content,
+.woocommerce-page.full-width-content .content {
+    max-width: none !important;
+}
+
+/* Ghostkit
+---------------------------------------------------------------------------- */
+
+/* Styling Buttons
+--------------------------------------------- */
+
+.ghostkit-button {
+    background-color: var(--#{$prefix}secondary) !important;
+    color: var(--#{$prefix}secondary-contrast) !important;
+    font-family: var( --#{$prefix}header-font ) !important;
+    border-radius: 0px !important;
+    line-height: 1 !important;
+    font-size: 16px;
+    font-weight: 600 !important;
+    padding: 15px 30px !important;
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase !important;
+    white-space: normal;
+    width: auto;
+    transition: all 0.5s;
+    min-width: 200px;
+
+    span {
+        cursor: pointer;
+        display: inline-block;
+        position: relative;
+        transition: all 300ms ease-out;
+        
+        &::after{
+            content: '\2192';
+            font-size: 20px;
+            line-height: 12px;
+            color: var(--#{$prefix}secondary-contrast) !important;
+            position: absolute;
+            right: 0px;
+            opacity: 0;
+            transition: all 300ms ease-out;
+        }
+    }
+
+    &:hover { 
+        background-color: var( --#{$prefix}secondary-darker ) !important;
+
+        span {
+            transform: translate3d(-1rem, 0, 0);
+
+            &::after{
+                right: -1.5em;
+                opacity: 1;
+            }
+        } 
+    }
+}
+
+/* Simple Social Icons
+---------------------------------------------------------------------------- */
+#top-bar-widgets {
+    .simple-social-icons ul li a {
+        background-color: transparent !important;
+    }
+}

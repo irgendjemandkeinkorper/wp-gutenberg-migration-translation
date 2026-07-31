@@ -1,0 +1,140 @@
+@use "vars";
+
+/* Structure and Layout
+---------------------------------------------------------------------------- */
+
+/* Site Container
+--------------------------------------------- */
+
+.site-container {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+	animation: fadein 1s;
+	word-wrap: break-word;
+
+	.admin-bar & {
+		min-height: calc(100vh - 32px);
+	}
+}
+
+@keyframes fadein {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+/* Site Inner
+--------------------------------------------- */
+
+.site-inner {
+	margin: 0 auto;
+	padding: 0 map-get(vars.$page_padding, "default");
+	width: 100%;
+
+	.entry-header {
+		margin-top: 30px;
+	}
+
+	@media only screen and (min-width: 960px) {
+		max-width: vars.$desktop_width;
+		padding: 0 map-get(vars.$page_padding, "large");
+	}
+}
+
+/* Widget Area
+--------------------------------------------- */
+
+.widget-area {
+	background-size: cover !important;
+	background-position: center center !important;
+
+	.site-inner {
+		position: relative;
+		z-index: 5;
+		padding-top: 0;
+
+		.widget-title {
+			font-size: map-get( vars.$font-sizes , "h4" );
+			font-weight: map-get( vars.$font-weights , "h4" );
+			color: map-get( vars.$theme , "secondary" );
+			color: var(--theme-secondary);
+		}
+
+		.wrap {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex-wrap: wrap;
+			padding: 0 map-get( vars.$page_padding , "large" );
+			margin: 0 map-get( vars.$page_padding , "large" ) * -1;
+		}
+	}
+
+	.widget {
+		margin-bottom: 0;
+		width: 100%;
+
+		p:last-child,
+		img:last-child {
+			margin-bottom: 0;
+		}
+
+		&:last-child { 
+			margin-bottom: 0;
+		}
+	}
+
+	
+	// For the new Widget Blocks
+	.alignfull {
+		width: 100vw;
+		margin-left: calc(-100vw / 2 + 100% / 2);
+		margin-right: calc(-100vw / 2 + 100% / 2);
+
+		@media only screen and (min-width: 960px) {
+			width: calc(100vw - 17px);
+			margin-left: calc(calc(-100vw + 17px) / 2 + 100% / 2);
+			margin-right: calc(-100vw / 2 + 100% / 2);
+		}
+	}
+}
+
+/* Breadcrumbs
+--------------------------------------------- */
+
+.breadcrumb {
+	text-align: center;
+	margin: 10px 0;
+	font-size: 0.8125rem;
+	
+	& > span:only-child {
+		display: block;
+	}
+
+	a {
+		display: inline-block;
+		color: var( --theme-primary );
+		text-decoration: none;
+
+		.dashicons {
+			height: 1rem;
+			width: 1rem;
+			font-size: 1rem;
+			color: var( --theme-dark-gray );
+		}
+
+		&:hover,
+		&:focus {
+			text-decoration: underline;
+
+			span {
+				text-decoration: none;
+			}
+		}
+	}
+}

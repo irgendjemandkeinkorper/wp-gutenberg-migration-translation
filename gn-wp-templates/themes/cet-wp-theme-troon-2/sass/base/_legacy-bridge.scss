@@ -1,0 +1,173 @@
+/*
+ * Legacy Compatibility Bridge
+ *
+ * Maps --cet-legacy-* variables to CET design tokens, absorbing legacy content
+ * into the active design system. Variables not listed here have no token equivalent
+ * and resolve to their hardcoded fallback defaults in the legacy files.
+ *
+ * Delete this file (and the three legacy files it serves) when all migrated content
+ * has been re-saved through the block editor.
+ *
+ * Wrapped in the 'tokens' layer for consistency with _root.scss.
+ */
+
+@layer tokens {
+
+	:root {
+
+		// --- Ghostkit ---
+
+		// No CET token for button padding geometry; falls back to 0.875rem 2.5rem.
+		// --cet-legacy-ghostkit-button-padding
+
+		// No CET token for accordion heading padding; falls back to 0.75rem 1rem.
+		// --cet-legacy-ghostkit-accordion-heading-padding
+
+		// No CET token for accordion heading margin-top; falls back to 0.25rem.
+		// --cet-legacy-ghostkit-accordion-heading-margin-top
+
+		// No CET token for accordion heading border-radius; falls back to 3px.
+		// --cet-legacy-ghostkit-accordion-heading-border-radius
+
+		--cet-legacy-ghostkit-accordion-content-padding: var(--cet-theme-spacing-sm);
+
+		// No CET token for testimonial padding; falls back to 1.25rem 1.25rem 0.
+		// --cet-legacy-ghostkit-testimonial-content-padding
+
+
+		// --- RKV Members ---
+
+		--cet-legacy-rkv-sidebar-padding-top: var(--cet-theme-spacing-xl);
+		--cet-legacy-rkv-sidebar-wrap-padding: var(--cet-theme-spacing-lg);
+
+		// No CET token for nav header margin-top; falls back to 21px.
+		// --cet-legacy-rkv-nav-header-margin-top
+
+		// No CET token for nav header/link padding-left; falls back to 10px.
+		// --cet-legacy-rkv-nav-header-padding-left
+		// --cet-legacy-rkv-nav-link-padding-left
+		// --cet-legacy-rkv-nav-list-margin-left (negative counterpart, -10px)
+
+		// No CET token for top-level nav link font-size; falls back to 1.75rem.
+		// --cet-legacy-rkv-nav-top-link-font-size
+
+		// No CET token for nav list spacing; falls back to 19px / -19px.
+		// --cet-legacy-rkv-nav-list-gap
+		// --cet-legacy-rkv-nav-children-margin-top
+
+		// No CET token for nested nav indent; falls back to 5px.
+		// --cet-legacy-rkv-nav-nested-margin-left
+		// --cet-legacy-rkv-nav-children-padding-left
+		// --cet-legacy-rkv-nav-children-border-width
+
+		// --cet-legacy-rkv-nav-icon-width removed: chevron is now CSS-only, no slot width needed.
+		--cet-legacy-rkv-nav-icon-gap: var(--cet-theme-spacing-xs);
+
+		// No CET token for desktop sidebar-wrap padding; falls back to 2.5rem / 2.5rem.
+		// --cet-legacy-rkv-sidebar-wrap-desktop-padding-end
+		// --cet-legacy-rkv-sidebar-wrap-desktop-padding-start
+
+		// Nav link transition duration bridges to the theme link transition token.
+		// Note: changes rendered duration from 300ms (Bootstrap default) to 0.5s (CET default).
+		--cet-legacy-rkv-nav-link-transition-duration: var(--cet-theme-link-transition-time);
+
+		// No CET token for nav line-heights; falls back to 1.5 / 2.
+		// --cet-legacy-rkv-nav-top-link-line-height
+		// --cet-legacy-rkv-nav-link-line-height
+
+
+		// --- Tribe Events ---
+
+		// No CET token for widget heading font-size; falls back to 1.75rem.
+		// --cet-legacy-tribe-widget-heading-font-size
+
+		// No CET token for widget heading margin-bottom; nearest is spacing-md (1.5rem) but
+		// the old value was 1.25rem — not close enough to alias without visible layout shift.
+		// --cet-legacy-tribe-widget-heading-margin-bottom
+
+		// No CET token for widget heading line-height; falls back to 1.5.
+		// (heading-line-height is 1.1; paragraph-secondary-line-height is 1.64 — neither matches.)
+		// --cet-legacy-tribe-widget-heading-line-height
+
+		// No CET token for event row margin-bottom; nearest is spacing-xs (0.5rem ≈ 8px) but
+		// the old value was 10px — kept verbatim to preserve row density.
+		// --cet-legacy-tribe-event-row-margin-bottom
+
+		// Date tag badge background.
+		// Old theme: --troon-secondary (#028088 teal). Mapped to new theme's secondary (gold).
+		--cet-legacy-tribe-date-tag-bg: var(--cet-theme-color-primary);
+
+		// No CET token for date tag border-radius; falls back to 5px.
+		// --cet-legacy-tribe-date-tag-border-radius
+
+		// No CET token for date tag padding; falls back to 3px 0.
+		// --cet-legacy-tribe-date-tag-padding
+
+		// Date tag text (month label + day number).
+		// White text on the secondary-colored badge.
+		--cet-legacy-tribe-date-tag-text-color: var(--cet-theme-white);
+
+		// No CET token for day number font-size; falls back to 26px.
+		// --cet-legacy-tribe-date-tag-daynum-font-size
+
+		// No CET token for event wrapper left margin; falls back to 15px.
+		// --cet-legacy-tribe-event-wrapper-margin-left
+
+		// View-more link hover underline color — matches the date tag badge accent.
+		--cet-legacy-tribe-view-more-hover-border-color: var(--cet-theme-color-primary);
+
+		// Search bar submit button.
+		// Old theme: --troon-primary (#9c5816 orange). Mapped to new theme's primary (dark teal).
+		--cet-legacy-tribe-search-btn-bg: var(--cet-theme-color-secondary);
+		--cet-legacy-tribe-search-btn-bg-hover: var(--cet-theme-primary-teal-dark);
+		--cet-legacy-tribe-search-btn-text-color: var(--cet-theme-white);
+
+		// Subscribe / iCal dropdown button — same primary brand color as the search button.
+		--cet-legacy-tribe-subscribe-btn-bg: var(--cet-theme-color-secondary);
+		--cet-legacy-tribe-subscribe-btn-border-color: var(--cet-theme-color-secondary);
+		--cet-legacy-tribe-subscribe-btn-text-color: var(--cet-theme-white);
+		--cet-legacy-tribe-subscribe-btn-icon-color: var(--cet-theme-color-secondary);
+
+
+		// --- Colors ---
+
+		// Ghostkit accordion heading border.
+		// Old theme: #adadad. neutral-400 (#9ca3af) is the closest token by luminance.
+		// Fallback neutral-300 was the original (incorrect) migration choice.
+		--cet-legacy-ghostkit-accordion-heading-border-color: var(--cet-theme-neutral-400);
+
+		// Ghostkit accordion heading hover background.
+		// Old theme: #e6e6e6. neutral-300 (#d1d5db) is the closest token; neutral-100 was too light.
+		--cet-legacy-ghostkit-accordion-heading-hover-bg: var(--cet-theme-neutral-300);
+
+		// Ghostkit accordion content border.
+		// Old theme: var(--primary) — brand teal. Deliberately mapped to neutral-300 in the new
+		// theme to align with its aesthetic. Change to var(--cet-theme-color-primary) to restore
+		// the original brand-colored border.
+		--cet-legacy-ghostkit-accordion-content-border-color: var(--cet-theme-neutral-300);
+
+		// RKV nav link opacity (color-mix percentage). No CET token; falls back to 70%.
+		// --cet-legacy-rkv-nav-link-opacity
+
+		// RKV nav children border opacity (color-mix percentage). No CET token; falls back to 10%.
+		// --cet-legacy-rkv-nav-children-border-opacity
+
+
+		// --- Old-theme stored-block CSS (themes/troon Customizer output) ---
+		// Per-block inline <style> tags generated by the old theme reference these
+		// variables. Keep defined until all affected blocks are re-saved through the
+		// block editor (re-save causes Ghostkit to regenerate CSS using CET tokens
+		// directly, removing the dependency). Scoped to :root so legacy inline styles
+		// on any page can resolve them.
+
+		// Card/column link font family (used in ghostkit-custom-* inline CSS).
+		--theme-appearance--body-font-family: var(--cet-theme-font-body);
+
+		// Card link underline and accent colour.
+		// Old theme Customizer primary varied per site; mapped to new theme primary.
+		--theme-appearance--primary: var(--cet-theme-color-secondary);
+
+		// Mark/highlight background — was transparent white in old theme context.
+		--theme-appearance--white: var(--cet-theme-white);
+	}
+}

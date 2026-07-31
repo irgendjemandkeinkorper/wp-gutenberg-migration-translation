@@ -1,0 +1,10 @@
+
+.wp-block-separator {
+    margin: 40px 0;
+    background-color: #B1B1B1;
+    border-top: 1px solid;
+    height: 1px;
+    @media screen and (min-width: 1024px) {
+	    margin: 48px 0;
+    }
+}

@@ -1,0 +1,28 @@
+:is(.cet-block-type-separator, .cet-entity-separator, .cet-block-part-type-separator) {
+  border: none;
+  border-bottom: 1px solid var(--cet-theme-color-border);
+  color: var(--cet-theme-color-border);
+  margin: var(--cet-theme-spacing-md) auto;
+
+  &:not(.is-style-wide):not(.is-style-dots) {
+    max-width: 100px;
+  }
+}
+
+//Ghostkit specific
+.cet-entity-separator.ghostkit-divider {
+  border-bottom: 0;
+
+  &:before, &:after {
+    border-color: var(--cet-theme-color-border);
+  }
+
+  .ghostkit-divider-icon {
+    color: var(--cet-theme-color-border);
+  }
+
+  &.alignwide, &.alignfull {
+    max-width: unset;
+  }
+}
+

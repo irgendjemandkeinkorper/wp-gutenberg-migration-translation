@@ -12,6 +12,10 @@ import type {
 } from "./lib/types";
 
 const STEP_ORDER = ["Fetch", "Extract", "Images", "Clean (LLM)", "Validate", "Blocks"];
+const GOLFNOW_TEMPLATES = [
+  "Albatross", "Aspen", "Austin", "Dogwood", "Eagleton", "Indigo", "Mulberry",
+  "Pine", "Quantum", "Redmond", "Sequoia", "Sunrise", "Sunstone", "Willow",
+];
 
 interface StepState {
   status: StepStatus;
@@ -72,6 +76,9 @@ export default function App() {
   const [postType, setPostType] = useState<"page" | "post">("page");
   const [status, setStatus] = useState<"draft" | "publish">("draft");
   const [sideload, setSideload] = useState(true);
+  const [targetTemplate, setTargetTemplate] = useState(
+    () => localStorage.getItem("blockify.targetTemplate") ?? "",
+  );
 
   useEffect(() => saveBundle(bundle), [bundle]);
   useEffect(() => localStorage.setItem("blockify.apiKey", apiKey), [apiKey]);
@@ -80,6 +87,7 @@ export default function App() {
     () => localStorage.setItem("blockify.skipLlm", skipLlm ? "1" : "0"),
     [skipLlm],
   );
+  useEffect(() => localStorage.setItem("blockify.targetTemplate", targetTemplate), [targetTemplate]);
 
   const lostSet = useMemo(
     () => new Set(result?.lostPositions ?? []),
@@ -211,6 +219,9 @@ export default function App() {
           link: page.url,
           contentBlocks: res.blocks,
           images: res.images.map(({ src, alt }) => ({ src, alt })),
+          sourceHtml: res.sourceHtml,
+          targetTemplate,
+          placeholders: res.placeholders,
         };
         // Replace an existing bundle entry for the same URL so re-running a
         // batch stays idempotent.
@@ -256,6 +267,9 @@ export default function App() {
         link,
         contentBlocks: result.blocks,
         images: result.images.map(({ src, alt }) => ({ src, alt })),
+        sourceHtml: result.sourceHtml,
+        targetTemplate,
+        placeholders: result.placeholders,
       },
     ]);
   }
@@ -335,6 +349,18 @@ export default function App() {
             Batch (crawl)
           </button>
         </div>
+
+        <label>
+          Target GolfNow template
+          <select value={targetTemplate} onChange={(e) => setTargetTemplate(e.target.value)}>
+            <option value="">Not selected</option>
+            {GOLFNOW_TEMPLATES.map((name) => <option key={name} value={name}>{name}</option>)}
+          </select>
+        </label>
+        <p className="hint">
+          Saved with every imported page for implementation and QA. Review the{" "}
+          <a href="https://golfnowbusiness.com/template-library/" target="_blank" rel="noreferrer">template library</a>.
+        </p>
 
         {tab === "batch" ? (
           <>
@@ -519,6 +545,13 @@ export default function App() {
           </p>
           <pre className="code-view">{result.blocks}</pre>
 
+          {result.placeholders.length > 0 && (
+            <div className="warn-box">
+              <strong>Manual migration needed</strong>
+              <ul>{result.placeholders.map((p) => <li key={p.index}>{p.label}</li>)}</ul>
+            </div>
+          )}
+
           <button className="ghost small" onClick={() => setShowImages((v) => !v)}>
             {showImages ? "▾" : "▸"} Images ({result.images.length})
           </button>
@@ -558,6 +591,10 @@ export default function App() {
           {showIntermediate && (
             <pre className="code-view">{result.intermediateHtml}</pre>
           )}
+          <details>
+            <summary>Original source HTML (retained in WXR metadata)</summary>
+            <pre className="code-view">{result.sourceHtml}</pre>
+          </details>
         </section>
       )}
 
@@ -570,7 +607,8 @@ export default function App() {
                 <span>
                   {p.title}{" "}
                   <span className="muted">
-                    ({p.images.length} image{p.images.length === 1 ? "" : "s"})
+                    ({p.images.length} image{p.images.length === 1 ? "" : "s"}
+                    {p.targetTemplate ? ` · ${p.targetTemplate}` : ""})
                   </span>
                 </span>
                 <button

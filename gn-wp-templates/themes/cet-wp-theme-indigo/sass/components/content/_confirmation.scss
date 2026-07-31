@@ -1,0 +1,77 @@
+
+@mixin h2 {
+    font-size: 40px;
+    font-family: var(--header-font),sans-serif;
+    line-height: 1.4;
+    font-weight: 700;
+}
+
+@mixin background {
+    $confirmation-background-color: #f9f9f9;
+    background-color: $confirmation-background-color;
+}
+
+.woocommerce-order {
+
+    .woocommerce-thankyou-order-received {
+        @include h2;
+        margin-bottom: 0;
+    }
+
+    .woocommerce-order-overview {
+        @include background;
+        padding: 24px;
+        border-radius: 12px;
+        border: 1px solid #efefef;
+    }
+
+    // Ticket details
+    .woocommerce-table--order-details.shop_table {
+        border-collapse: collapse;
+
+        .woocommerce-table__product-name {
+            padding-right: 0;
+            padding-bottom: 0;
+            // Color from woo commerce table
+            border-bottom: 1px solid rgba(0,0,0,.1);
+            
+        }
+
+
+        .tribe-event-details {
+            margin-bottom: 24px;
+        }
+
+        .tribe-attendee-meta {
+            // WooCommerce has a padding in product-name and a text node so overwrite done here
+            margin: -9px -12px;
+            padding: 24px;
+            border-collapse: initial;
+        }
+
+        .woocommerce-table__product-total {
+
+        }
+
+        tfoot {
+            @include background;
+        }
+    }
+
+    // Ticket
+    .tec-tickets__attendees-list-wrapper--woo {
+        > .tribe-common-h4 {
+            //Make H2
+            @include h2;
+        }
+        
+        > .tec-tickets__attendees-list {
+            .tec-tickets__attendees-list-item {
+                .tec-tickets__wallet-plus-component-pdf-button-link {
+                    border-radius: 24px;
+                }
+            }
+        }
+    }
+
+}

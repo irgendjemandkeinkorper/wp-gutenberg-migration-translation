@@ -1,0 +1,21 @@
+@use "../../abstracts/variables/colors";
+@use "./shared/multi-column.shared" as multi_column;
+@use "../../abstracts/variables/breakpoints";
+
+.wp-block-group.is-style-multi-column {
+     @include multi_column.multi_column_shared();
+        .ghostkit-col {
+            padding-top: 24px;
+            padding-right: 24px;
+            padding-bottom: 24px;
+            padding-left: 24px;
+
+            @media screen and (min-width: breakpoints.$desktop) and (max-width: 1399px) {
+               padding-top: 20px;
+                padding-right: 20px;
+                padding-bottom: 20px;
+                padding-left:20px; 
+            }
+
+        }
+}

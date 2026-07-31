@@ -2,6 +2,7 @@ import { serializeBlocks } from "./blocks";
 import { cleanCacheKey, readCleanCache, writeCleanCache } from "./cache";
 import { extractContent } from "./extract";
 import { cleanHtml, SYSTEM_PROMPT } from "./llm";
+import { preserveUnsupported } from "./placeholders";
 import { TOKEN_PREFIX } from "./tokens";
 import { tokenizeImages } from "./tokenize";
 import {
@@ -42,11 +43,12 @@ export async function convertPage(
   });
 
   onStep({ step: "Images", status: "active" });
-  const tokenized = tokenizeImages(extracted.html, input.url);
+  const preserved = preserveUnsupported(extracted.html);
+  const tokenized = tokenizeImages(preserved.html, input.url);
   onStep({
     step: "Images",
     status: "done",
-    note: `${tokenized.images.length} image${tokenized.images.length === 1 ? "" : "s"} tokenized`,
+    note: `${tokenized.images.length} image${tokenized.images.length === 1 ? "" : "s"} tokenized; ${preserved.placeholders.length} placeholder${preserved.placeholders.length === 1 ? "" : "s"}`,
   });
 
   const expected = tokenized.images.map((i) => i.index);
@@ -92,6 +94,9 @@ export async function convertPage(
         `${lostPositions.join(", ")} — appended at the end of the page.`,
     );
   }
+  if (preserved.placeholders.length) {
+    warnings.push(`${preserved.placeholders.length} unsupported feature${preserved.placeholders.length === 1 ? " was" : "s were"} retained as visible migration placeholders.`);
+  }
 
   onStep({ step: "Blocks", status: "active" });
   const imageMap = new Map(tokenized.images.map((i) => [i.index, i]));
@@ -111,6 +116,8 @@ export async function convertPage(
     sourceUrl: input.url ?? "",
     blocks,
     intermediateHtml: validatedHtml,
+    sourceHtml: input.rawHtml,
+    placeholders: preserved.placeholders,
     images: tokenized.images,
     lostPositions,
     warnings,

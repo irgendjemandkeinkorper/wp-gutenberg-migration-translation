@@ -22,10 +22,20 @@ export interface PageResult {
   sourceUrl: string;
   blocks: string;
   intermediateHtml: string;
+  /** Exact input HTML retained for migration QA. */
+  sourceHtml: string;
+  placeholders: MigrationPlaceholder[];
   images: ImageRef[];
   /** indices whose position was lost and were re-appended at the end */
   lostPositions: number[];
   warnings: string[];
+}
+
+export interface MigrationPlaceholder {
+  index: number;
+  kind: string;
+  source: string;
+  label: string;
 }
 
 export interface BundlePage {
@@ -33,6 +43,9 @@ export interface BundlePage {
   link: string;
   contentBlocks: string;
   images: { src: string; alt: string }[];
+  sourceHtml?: string;
+  targetTemplate?: string;
+  placeholders?: MigrationPlaceholder[];
 }
 
 export type StepStatus = "pending" | "active" | "done" | "warn" | "error";

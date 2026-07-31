@@ -1,0 +1,32 @@
+@use "../abstracts/mixins";
+
+/*
+ * Site Layout Structure
+ *
+ * Minimal structural layout - no decorative styling.
+ * Wrapped in the 'layout' layer.
+ */
+
+@layer layout {
+
+	.site {
+		display: flex;
+		flex-direction: column;
+		min-height: 100vh;
+	}
+
+	.site-main {
+		flex: 1;
+		width: 100%;
+	}
+
+	.has-sticky-header-offset {
+		.site-main {
+			padding-block-start: var(--cet-theme-sticky-header-height);
+		}
+	}
+
+	.site-content {
+		@include mixins.clearfix;
+	}
+}
