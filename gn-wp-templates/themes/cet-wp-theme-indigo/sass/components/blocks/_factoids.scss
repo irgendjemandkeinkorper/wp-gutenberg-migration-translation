@@ -1,0 +1,14 @@
+@use "../../abstracts/variables/colors";
+@use "./shared/factoids.shared" as factoids;
+
+.wp-block-group.is-style-factoids {
+    @include factoids.factoids_shared();
+
+      .ghostkit-icon-inner {
+      width: 100%;
+    }
+
+    .ghostkit-col {
+      min-height: 250px;
+    }
+}

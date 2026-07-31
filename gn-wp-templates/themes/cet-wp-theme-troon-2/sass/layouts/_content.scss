@@ -1,0 +1,92 @@
+/*
+ * Content Layout Structure
+ *
+ * Minimal content flow patterns.
+ * Wrapped in the 'layout' layer.
+ */
+
+@use "../abstracts/variables/breakpoints";
+@use "../abstracts/mixins";
+
+@layer layout {
+
+	/* Page layout context */
+	.cet-page-layout {
+		display: flex;
+		flex-direction: column;
+		gap: var(--cet-theme-spacing-lg);
+	}
+
+
+	.cet-container {
+		--cet-theme-container-width: var(--cet-theme-container-max-width);
+		--cet-theme-container-inline-padding: var(--cet-theme-container-padding-inline);
+
+		&.entry-content {
+			--cet-theme-content-width: calc(var(--cet-theme-container-width) - 2 * var(--cet-theme-container-inline-padding));
+		}
+
+		@include mixins.container;
+
+		@include breakpoints.tablet {
+			--cet-theme-container-inline-padding: calc(var(--cet-theme-container-padding-inline) * 3);
+		}
+
+		@include breakpoints.desktop {
+			--cet-theme-container-inline-padding: calc(var(--cet-theme-container-padding-inline) * 5);
+		}
+	}
+
+	.cet-container-narrow {
+		--cet-theme-container-width: var(--cet-theme-container-narrow-width);
+	}
+
+	.entry-header {
+		margin-bottom: var(--cet-theme-spacing-lg);
+	}
+
+	.entry-title {
+		margin-bottom: var(--cet-theme-spacing-xs);
+	}
+
+	.entry-content,
+	.entry-summary {
+
+		>*+* {
+			margin-top: var(--cet-entry-block-spacing, var(--cet-theme-spacing-md));
+		}
+
+		// Entity hosts (and wrappers that contain one) manage their own vertical rhythm
+		// via --cet-theme-block-section-vertical-spacing. Zero out the owl spacing so
+		// the two systems don't stack. Covers both direct host (cover, group) and the
+		// host-inside-wrapper case (core/column inside core/columns, ghostkit/grid-column
+		// inside ghostkit/grid).
+		> .cet-entity-host,
+		> *:has(.cet-entity-host) {
+			--cet-entry-block-spacing: 0;
+		}
+	}
+
+	.page-header {
+		margin-bottom: var(--cet-theme-spacing-lg);
+	}
+
+	.page-title {
+		margin-bottom: var(--cet-theme-spacing-xs);
+	}
+
+	.posts-navigation,
+	.post-navigation {
+		margin: var(--cet-theme-spacing-xl) 0;
+	}
+}
+
+// Special layout overrides for the legacy content spacings
+@layer layout {
+	.entry-content {
+		.wpforms-container:last-child,
+		.wp-block-buttons:last-child {
+			margin-block-end: 1rem;
+		}
+	}
+}

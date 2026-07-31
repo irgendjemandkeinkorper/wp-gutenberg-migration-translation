@@ -1,0 +1,148 @@
+@import "bootstrap/scss/functions";
+
+// 1. Add variable adjustments here
+
+@import "bootstrap/scss/variables";
+
+// 2. Include remainder of required parts
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+
+// 3. Include additional parts
+
+/* Info Card
+--------------------------------------------- */
+
+.info-card {
+    display: flex;
+    align-items: center;
+    padding: 40px;
+    background: #fff;
+
+    .info-card-number {
+        font-size: 30px;
+        font-weight: bold;
+    }
+}
+
+/* Quote Block
+--------------------------------------------- */
+
+.wp-block-pullquote {
+    .site-container & {
+        p {
+            font-size: 30px;
+        }
+    
+        cite {
+            font-size: 20px; 
+            color: #fff;
+        }
+    
+        @include media-breakpoint-down( md ) {
+            p {
+                font-size: 20px;
+            }
+        
+            cite {
+                font-size: 15px; 
+            }
+        }
+    }
+}
+
+/* Page Headers
+--------------------------------------------- */
+
+.home {
+    .entry-header-custom {
+        display: none !important;
+    }
+}
+
+.entry-header {
+    margin-bottom: 3.125rem;
+
+    .entry-title,
+    .archive-title {
+        padding-top: 40px;
+        font-size: 2.5rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        line-height: 1.2;
+        text-align: center;
+        text-transform: uppercase;
+    }
+
+    a {
+        color: rgba( var( --#{$prefix}white ), 0.8 );
+
+        &:hover,
+        &:focus {
+            color: rgba( var( --#{$prefix}white ), 1 );
+        }
+    }
+
+    img {
+        filter: none !important;
+    }
+
+    .breadcrumb {
+        text-align: center;
+    }
+
+    .site-inner {
+        padding-top: 8em;
+    }
+}
+
+/* Card
+--------------------------------------------- */
+
+.blog {
+    .archive-description {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    .card {
+        --#{$prefix}border-radius: 0;
+        --#{$prefix}card-border-color: transparent;
+
+        .entry-image {
+            border-radius: 2px;
+        }
+    
+        .card-header {
+            .entry-meta {
+                margin-bottom: 0;
+                border-bottom: 2px solid var( --#{$prefix}secondary );
+                padding-bottom: 0.9375rem;
+            }
+
+            .entry-title-link {
+                color: rgba( var( --#{$prefix}text-color-rgb ), 1 );
+                text-transform: uppercase;
+            }
+        }
+
+        .card-footer {
+            .entry-meta {
+                border-bottom: 1px solid rgba( var( --#{$prefix}text-color-rgb ), 0.1 );
+                padding-bottom: 0.5rem;
+            }
+        }
+    }
+}
+
+/* Sidebar
+--------------------------------------------- */
+
+.sidebar {
+    &-wrap {
+        @include media-breakpoint-up( lg ) {
+            padding-top: 1rem;
+        }
+    }
+}

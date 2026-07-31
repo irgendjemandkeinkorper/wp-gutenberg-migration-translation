@@ -1,0 +1,260 @@
+@import "bootstrap/scss/functions";
+
+// 1. Add variable adjustments here
+
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/variables-dark";
+
+// 2. Include remainder of required parts
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+
+// 3. Include additional parts
+
+@import "bootstrap/scss/utilities/api";
+
+$gray: 			#cacaca 	!default;
+$charcoal: 	    #121212	!default;
+
+$new-bg: (
+    "gray": 		to-rgb($gray),
+    "charcoal":     to-rgb($charcoal),
+);
+
+$utilities: (
+    "color-rgb": (
+        css-var: true,
+        css-variable-name: text-color-rgb,
+        class: text,
+        values: $utilities-text
+    ),
+    "color": map-merge(
+        map-get($utilities, "color"),
+        (
+            local-vars: map-merge(
+                map-get( map-get( $utilities, "color" ), "local-vars" ),
+                (
+                    text-color: var( --#{$prefix}text-color-rgb, var(--#{$prefix}text-opacity) ),
+                )
+            ),
+            values: map-loop( $new-bg, rgba-css-var, "$key", "bg" )
+        ),
+    ),
+    "background-color":	 map-merge(
+        map-get( $utilities, "background-color" ),
+        (
+            values: map-loop($new-bg, rgba-css-var, "$key", "bg")
+        )
+    ),
+);
+
+@import "bootstrap/scss/utilities/api";
+
+/* Dogwood Template Styling
+---------------------------------------------------------------------------- */
+
+/* Dogwood Home Hero
+--------------------------------------------- */
+
+.dogwood-home-hero {
+
+    hr.wp-block-separator {
+        color: var( --#{$prefix}primary );
+        margin: 1.65em auto 1em;
+    }
+
+    .wp-block-cover__inner-container {
+        margin-bottom: 50px;
+    }
+
+    .ghostkit-icon-box {
+        border: none;
+    }
+
+}
+
+/* Dogwood CTA
+--------------------------------------------- */
+
+.dogwood-cta {
+    min-height: 300px;
+    .ghostkit-col-content {
+        transition: opacity 0.2s, visibility 0.2s;
+    }
+
+    .dogwood-cta-title {
+        color: #fff;
+        font-size: 30px !important;
+        transition: .2s;
+    }
+
+    .dogwood-cta-arrow {
+        padding: 0;
+        border: none;
+        top: 100px !important;
+        transition: .2s;
+
+        &:hover {
+                
+            path {
+                fill: var(--#{$prefix}primary) !important; 
+            }
+        }  
+    }
+
+    .dogwood-cta-title,
+    .dogwood-cta-arrow {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    img {
+        transition: all 1s ease;
+    }
+    
+    &:hover {
+        .dogwood-cta-title,
+        .dogwood-cta-arrow {
+            transition: .2s;
+            transform: translateY(-1.6em);
+        }
+
+        img {
+            filter: brightness(50%);
+            transition: all 1s ease;
+        }
+    }
+
+}
+
+/* Dogwood Billboard
+--------------------------------------------- */
+
+.dogwood-billboard {
+    padding: 30px;
+    border: solid 1px #d5d5d5;
+
+    h2 {
+        line-height: 1.2;
+    }
+}
+
+/* Page Elements Styling
+---------------------------------------------------------------------------- */
+
+/* Page Headers
+--------------------------------------------- */
+
+.home {
+    .entry-header-custom {
+        display: none !important;
+    }
+}
+
+.entry-header {
+    margin-bottom: 30px;
+
+    .entry-title {
+        text-align: center;
+        font-size: 2.75rem !important;
+        letter-spacing: 2px;
+    }
+
+    img {
+        filter: none !important;
+    }
+
+    .breadcrumb {
+        text-align: center;
+    }
+
+}
+
+/* Styling Template Buttons
+--------------------------------------------- */
+
+.wp-block-button__link {
+    background-color: var(--#{$prefix}secondary) !important;
+    color: var(--#{$prefix}secondary-contrast) !important;
+    line-height: 1;
+    text-transform: uppercase; 
+    border-radius: 0px !important;
+    position:relative;
+    overflow:hidden;
+    transition: all 0.5s;
+    min-width: 200px;
+
+    span {
+        cursor: pointer;
+        display: inline-block;
+        position: relative;
+        transition: all 300ms ease-out;
+        
+        &::after{
+            font-family: 'Font Awesome\ 5 Free';
+            content: '\f30b';
+            font-size: 20px;
+            line-height: 12px;
+            color: var(--#{$prefix}secondary-contrast) !important;
+            position: absolute;
+            right: 0px;
+            opacity: 0;
+            transition: all 300ms ease-out;
+            top: 2px;
+        }
+    }
+
+    &:hover { 
+        box-shadow: none !important;
+        background-color: var(--#{$prefix}secondary-darker) !important;
+            
+        span {
+            transform: translate3d(-1rem, 0, 0);
+
+            &::after{
+                right: -1.5em;
+                opacity: 1;
+            }
+        } 
+    }
+
+    .is-style-outline & {
+        background-color: transparent !important;
+        border: solid 2px var(--#{$prefix}secondary) !important;
+        color: var(--#{$prefix}secondary) !important;
+
+        &:hover {
+            background-color: var(--#{$prefix}secondary-darker) !important;
+            color: var(--#{$prefix}secondary-contrast) !important;
+            border: solid 2px var(--#{$prefix}secondary-darker) !important;
+        }
+    }
+}
+
+/* Blocks
+---------------------------------------------------------------------------- */
+
+/* Media & Text
+--------------------------------------------- */
+
+.wp-block-media-text {
+    @include media-breakpoint-down(lg) {
+        grid-template-columns: 100% !important;  
+
+        .wp-block-media-text__content {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .wp-block-media-text__media {
+            margin-bottom: 20px;  
+        }
+    }
+}

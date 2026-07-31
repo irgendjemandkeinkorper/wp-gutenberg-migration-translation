@@ -1,0 +1,18 @@
+{{#shapes}}
+.{{base}} {
+    --s: var(--cet-icon-scale, 1);
+
+    display: inline-block;
+    background-color: var(--cet-icon-color, currentColor);
+    mask-repeat: no-repeat;
+    -webkit-mask-repeat: no-repeat;
+    mask-image: url("{{{sprite}}}");
+    -webkit-mask-image: url("{{{sprite}}}");
+    width: calc( {{width.outer}}px * var(--s) );
+    height: calc( {{height.outer}}px * var(--s) );
+    mask-position: calc( {{position.absolute.x}}px * var(--s) )  calc( {{position.absolute.y}}px * var(--s) );
+    -webkit-mask-position: calc( {{position.absolute.x}}px * var(--s) )  calc( {{position.absolute.y}}px * var(--s) );
+    mask-size: calc( {{spriteWidth}}px * var(--s) ) calc( {{spriteHeight}}px * var(--s) );
+    -webkit-mask-size: calc( {{spriteWidth}}px * var(--s) ) calc( {{spriteHeight}}px * var(--s) );
+}
+{{/shapes}}

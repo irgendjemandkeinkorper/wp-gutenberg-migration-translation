@@ -1,0 +1,274 @@
+/*
+Editor Styles for Troon 2.0
+
+Minimal editor foundation - CET contract tokens and basic typography only.
+*/
+@use "abstracts/variables/root";
+
+/*--------------------------------------------------------------
+# Abstract Styles
+--------------------------------------------------------------*/
+@use "abstracts/abstracts";
+
+/*--------------------------------------------------------------
+# Editor Button Styles
+--------------------------------------------------------------*/
+@use "editor/buttons";
+
+/*--------------------------------------------------------------
+# Editor Slider
+--------------------------------------------------------------*/
+@use "editor/banners" as editor-banners;
+@use "editor/instructors-tabs" as editor-instructors-tabs;
+@use "editor/slider";
+
+/*--------------------------------------------------------------
+# Block Styles
+--------------------------------------------------------------*/
+@use "components/blocks/text-w-media";
+@use "components/blocks/text-only";
+@use "components/blocks/accordion";
+@use "components/blocks/faq";
+@use "components/blocks/banners";
+@use "components/blocks/contact-form";
+@use "components/blocks/instructors-tabs";
+/*--------------------------------------------------------------
+# Editor Tokens (CET Contract)
+--------------------------------------------------------------*/
+
+:root,
+.editor-styles-wrapper {
+	--cet-theme-color-primary: var(--cet-theme-gold-main);
+	--cet-theme-color-text: var(--cet-theme-black);
+	--cet-theme-color-text-light: var(--cet-theme-neutral-500);
+	--cet-theme-color-background: var(--cet-theme-white);
+	--cet-theme-color-border: var(--cet-theme-neutral-300);
+
+	--cet-theme-font-heading: "Libre Baskerville",
+		sans-serif;
+	--cet-theme-font-body: "Urbanist",
+		sans-serif;
+
+	--cet-theme-spacing-unit: 1rem;
+	--cet-theme-content-width: 1400px;
+}
+
+/*--------------------------------------------------------------
+# Editor Base Styles
+--------------------------------------------------------------*/
+.editor-styles-wrapper {
+	font-family: var(--cet-theme-font-body);
+	color: var(--cet-theme-color-text);
+
+	a:not(.wp-block-button__link) {
+		color: var(--cet-theme-color-secondary);
+	}
+
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		font-family: var(--cet-theme-font-heading);
+		line-height: var(--cet-theme-heading-line-height);
+		font-weight: var(--cet-theme-font-weight-bold);
+	}
+
+	/*--------------------------------------------------------------
+	# Editor Text-only Contrast Fallbacks
+	--------------------------------------------------------------*/
+	.wp-block-columns.is-style-text-only.has-primary-teal-background-color {
+		.wp-block-heading,
+		p:not(.is-style-caption) {
+			color: var(--cet-theme-white);
+		}
+
+		p.is-style-caption {
+			color: var(--cet-theme-gold-300);
+		}
+
+		color: var(--cet-theme-color-white, #fff);
+	}
+
+	/*--------------------------------------------------------------
+	# Editor Form Fallbacks
+	--------------------------------------------------------------*/
+	.wp-block form {
+		input,
+		textarea,
+		select,
+		button,
+		label {
+			font: inherit;
+		}
+
+		input,
+		textarea,
+		select {
+			display: block;
+			width: 100%;
+			padding: var(--cet-theme-spacing-sm);
+			border: 1px solid var(--cet-theme-neutral-300);
+			background: var(--cet-theme-white);
+			color: var(--cet-theme-color-text);
+			font-size: var(--cet-theme-paragraph2-font-size-mobile);
+			line-height: var(--cet-theme-paragraph-secondary-line-height);
+			letter-spacing: var(--cet-theme-paragraph-secondary-letter-spacing);
+		}
+
+		input::placeholder,
+		textarea::placeholder {
+			color: var(--cet-theme-neutral-500);
+		}
+
+		input:focus,
+		input:focus-visible,
+		textarea:focus,
+		textarea:focus-visible,
+		select:focus,
+		select:focus-visible {
+			outline: none;
+			border-color: var(--cet-theme-gold-400);
+		}
+
+		label {
+			color: var(--cet-theme-color-text);
+			font-size: var(--cet-theme-paragraph3-font-size-mobile);
+			line-height: var(--cet-theme-caption-line-height);
+			letter-spacing: var(--cet-theme-form-label-letter-spacing);
+		}
+
+		button[type="submit"],
+		input[type="submit"] {
+			display: inline-block;
+			width: auto;
+			padding: 0.7695rem 1.25rem;
+			border: 1px solid var(--cet-theme-button-primary-border-color);
+			background: var(--cet-theme-button-primary-bg-color);
+			color: var(--cet-theme-button-primary-text-color);
+			font-size: var(--cet-theme-button-font-size);
+			font-weight: var(--cet-theme-button-font-weight);
+			line-height: var(--cet-theme-button-line-height);
+			letter-spacing: var(--cet-theme-button-letter-spacing);
+			cursor: pointer;
+		}
+	}
+
+	/*--------------------------------------------------------------
+	# Editor Details Fallbacks
+	--------------------------------------------------------------*/
+	.wp-block details {
+		width: 100%;
+		margin: 0 0 var(--cet-theme-spacing-md);
+		padding: calc(var(--cet-theme-spacing-unit) / 4) var(--cet-theme-spacing-unit);
+		color: var(--cet-theme-color-text);
+		background: var(--cet-theme-color-background);
+
+		&[open] {
+			padding-block: var(--cet-theme-spacing-xs);
+			border-left: 1.4px solid var(--cet-theme-gold-main);
+
+			> p {
+				margin: var(--cet-theme-spacing-xs) 0 0;
+				padding-inline-start: var(--cet-theme-spacing-md);
+				padding-block-end: 4px;
+				color: var(--cet-theme-neutral-800);
+				font-size: var(--cet-theme-font-size-m);
+				line-height: 1.4;
+				letter-spacing: var(--cet-theme-paragraph-secondary-letter-spacing);
+			}
+		}
+
+		summary {
+			display: flex;
+			align-items: center;
+			gap: var(--cet-theme-spacing-unit);
+			cursor: pointer;
+			list-style: none;
+			padding-block: 4px;
+			color: var(--cet-theme-gold-main);
+			font-family: var(--cet-theme-font-heading);
+			font-size: var(--cet-theme-paragraph2-font-size-mobile);
+			font-weight: var(--cet-theme-font-weight-bold);
+			line-height: var(--cet-theme-heading-line-height);
+			letter-spacing: var(--cet-theme-heading-h6-letter-spacing);
+			max-width: max-content;
+
+			&::-webkit-details-marker {
+				display: none;
+			}
+
+			&::after {
+				content: "";
+				flex: 0 0 auto;
+				width: 8px;
+				height: 8px;
+				margin-left: auto;
+				border-right: 1px solid currentcolor;
+				border-bottom: 1px solid currentcolor;
+				transform: rotate(45deg);
+				transition: transform 0.2s ease;
+			}
+		}
+
+		&[open] summary::after {
+			transform: rotate(225deg);
+		}
+
+		> p {
+			max-width: 640px;
+			margin: var(--cet-theme-spacing-xs) 0 0;
+			color: var(--cet-theme-neutral-700);
+			font-size: var(--cet-theme-paragraph2-font-size-mobile);
+			line-height: var(--cet-theme-paragraph-secondary-line-height);
+		}
+	}
+
+	/*--------------------------------------------------------------
+	# Editor Scrollbars
+	--------------------------------------------------------------*/
+	.wp-block * {
+		scrollbar-width: auto;
+		scrollbar-color: var(--cet-theme-primary-teal) transparent;
+
+		&::-webkit-scrollbar {
+			display: block;
+			width: 12px;
+			height: 12px;
+		}
+
+		&::-webkit-scrollbar-thumb {
+			background-color: var(--cet-theme-primary-teal);
+			border: 2px solid transparent;
+			border-radius: 999px;
+			background-clip: content-box;
+		}
+
+		&::-webkit-scrollbar-track {
+			background: transparent;
+		}
+	}
+
+	/*--------------------------------------------------------------
+	# Editor Cover Resets
+	--------------------------------------------------------------*/
+	.cet-entity-host:is(.wp-block-cover, .wp-block-cover-image):not(:is(
+		.is-style-hero-tall-image,
+		.is-style-hero-tall-video,
+		.is-style-hero-short-image,
+		.is-style-contact,
+		.is-style-feature
+	)) {
+		color: var(--cet-theme-color-text);
+
+		.wp-block-cover__inner-container,
+		.block-editor-block-list__layout {
+			color: var(--cet-theme-color-text);
+		}
+
+		:where(h1, h2, h3, h4, h5, h6, p, li, a):not(.has-text-color) {
+			color: var(--cet-theme-color-text);
+		}
+	}
+}

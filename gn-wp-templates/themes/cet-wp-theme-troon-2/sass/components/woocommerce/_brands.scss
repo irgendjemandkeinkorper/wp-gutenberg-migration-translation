@@ -1,0 +1,49 @@
+@use "../../abstracts/variables/breakpoints";
+
+.cet-woocommerce {
+	.cet-wc-brands {
+		padding-block: calc(var(--cet-theme-spacing-unit) * 2.5);
+		border-bottom: 1px solid rgba(42, 42, 42, 0.24);
+
+		@include breakpoints.tablet {
+			padding-block: var(--cet-theme-spacing-xxl);
+		}
+
+		.cet-wc-carousel--brands {
+			align-items: center;
+			justify-content: flex-start;
+			gap: 4px;
+
+			@include breakpoints.tablet {
+				justify-content: center;
+			}
+
+			.cet-wc-brand-tile {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				padding: var(--cet-theme-spacing-xs);
+				border: 0.5px solid var(--cet-theme-neutral-300);
+				scroll-snap-align: start;
+				aspect-ratio: 1 / 1;
+				max-width: 160px;
+				flex: 0 0 47%;
+
+				@include breakpoints.tablet {
+					aspect-ratio: auto;
+					border: none;
+					flex: 0 0 100%;
+					max-width: 245px;
+					min-height: 298px;
+				}
+
+				&__logo {
+					display: block;
+					width: 100%;
+					height: 100%;
+					object-fit: contain;
+				}
+			}
+		}
+	}
+}

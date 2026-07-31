@@ -23,6 +23,25 @@ const WHITELIST = new Set([
 // Elements the model sometimes wraps the whole answer in; unwrap silently.
 const WRAPPERS = new Set(["div", "article", "section", "main"]);
 
+// Elements whose entire subtree is noise (code, page chrome, embeds) — remove
+// outright rather than unwrap, so script text or nav link lists never leak
+// into content. This matters most in skip-LLM mode, where raw extracted HTML
+// reaches the validator without a model pass to judge boilerplate.
+const DROP = new Set([
+  "script", "style", "noscript", "template", "iframe", "object", "embed",
+  "svg", "canvas", "video", "audio", "form", "button", "input", "select",
+  "textarea", "nav", "aside", "footer",
+]);
+
+// Off-whitelist tags that should keep their role, not just their text.
+const RENAME: Record<string, string> = {
+  b: "strong",
+  i: "em",
+  h1: "h2",
+  h5: "h4",
+  h6: "h4",
+};
+
 export interface TokenReport {
   missing: number[]; // expected but absent
   extra: number[]; // present but never issued (hallucinated or duplicated)
@@ -119,19 +138,37 @@ function diffTokens(expected: number[], found: number[]): TokenReport {
   return { missing, extra: extra.sort((a, b) => a - b) };
 }
 
+function unwrap(el: Element): void {
+  const doc = el.ownerDocument;
+  const frag = doc.createDocumentFragment();
+  while (el.firstChild) {
+    frag.appendChild(el.firstChild);
+  }
+  el.replaceWith(frag);
+}
+
 function unwrapWrappers(body: HTMLElement): void {
   // Repeatedly unwrap while the body has a single element child (ignoring
   // whitespace) that is a known wrapper.
   for (;;) {
-    const meaningful = Array.from(body.childNodes).filter(
-      (n) => !(n.nodeType === Node.TEXT_NODE && !n.textContent?.trim()),
-    );
-    if (meaningful.length !== 1) return;
-    const only = meaningful[0];
-    if (only.nodeType !== Node.ELEMENT_NODE) return;
+    let only: Node | null = null;
+    let count = 0;
+
+    let n = body.firstChild;
+    while (n) {
+      if (n.nodeType !== Node.TEXT_NODE || (n.textContent && n.textContent.trim())) {
+        count++;
+        if (count > 1) return;
+        only = n;
+      }
+      n = n.nextSibling;
+    }
+
+    if (count !== 1 || !only || only.nodeType !== Node.ELEMENT_NODE) return;
     const el = only as HTMLElement;
     if (!WRAPPERS.has(el.tagName.toLowerCase())) return;
-    el.replaceWith(...Array.from(el.childNodes));
+
+    unwrap(el);
   }
 }
 
@@ -140,35 +177,49 @@ function enforceWhitelist(body: HTMLElement): void {
   // are already in the snapshot, so one pass suffices.
   for (const el of Array.from(body.querySelectorAll("*"))) {
     const tag = el.tagName.toLowerCase();
-    if (tag === "b" || tag === "i") {
-      rename(el, tag === "b" ? "strong" : "em");
+    if (DROP.has(tag)) {
+      el.remove();
+    } else if (RENAME[tag]) {
+      if (el.isConnected) rename(el, RENAME[tag]);
     } else if (!WHITELIST.has(tag)) {
-      el.replaceWith(...Array.from(el.childNodes));
+      unwrap(el);
     }
   }
   for (const el of Array.from(body.querySelectorAll("*"))) {
     if (el.tagName.toLowerCase() === "a") {
       const href = el.getAttribute("href");
-      for (const attr of Array.from(el.attributes)) {
-        el.removeAttribute(attr.name);
+      while (el.attributes.length > 0) {
+        el.removeAttribute(el.attributes[0].name);
       }
-      if (href && isSafeUrl(href)) {
+      if (href && isSafeHref(href)) {
         el.setAttribute("href", href);
       } else {
-        el.replaceWith(...Array.from(el.childNodes));
+        unwrap(el);
       }
     } else {
-      for (const attr of Array.from(el.attributes)) {
-        el.removeAttribute(attr.name);
+      while (el.attributes.length > 0) {
+        el.removeAttribute(el.attributes[0].name);
       }
     }
   }
 }
 
+function isSafeHref(href: string): boolean {
+  const trimmed = href.trim().toLowerCase();
+  // Strip control characters to prevent bypasses like java\nscript:
+  const noControlChars = trimmed.replace(/[\x00-\x1F\x7F]/g, "");
+  if (noControlChars.startsWith("javascript:")) return false;
+  if (noControlChars.startsWith("vbscript:")) return false;
+  if (noControlChars.startsWith("data:")) return false;
+  return true;
+}
+
 function rename(el: Element, newTag: string): void {
   const doc = el.ownerDocument;
   const repl = doc.createElement(newTag);
-  repl.append(...Array.from(el.childNodes));
+  while (el.firstChild) {
+    repl.appendChild(el.firstChild);
+  }
   el.replaceWith(repl);
 }
 
@@ -198,7 +249,7 @@ function isolateTokens(body: HTMLElement): void {
     };
     for (const node of Array.from(child.childNodes)) {
       if (node.nodeType === Node.TEXT_NODE) {
-        const parts = (node.textContent ?? "").split(/(⟦IMG_\d+⟧)/);
+        const parts = (node.textContent ?? "").split(/(⟦ASSET_\d+⟧)/);
         for (const part of parts) {
           if (!part) continue;
           if (isLoneToken(part)) {

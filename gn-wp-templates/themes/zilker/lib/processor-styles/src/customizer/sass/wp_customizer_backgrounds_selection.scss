@@ -1,0 +1,76 @@
+
+.color-palette {
+
+    .palette-selection {
+        display: flex;
+        flex-wrap: wrap;
+        padding-bottom: 20px;
+    }
+
+    .color-palette-item {
+        padding: 3pt;
+        padding-bottom: 1.2rem;
+    }
+
+    .palette-label {
+        position: relative;
+        display: block;
+        width: 2rem;
+        height: 1.5rem;
+        background: var(--palette-color);
+        box-shadow: 2px 2px 6px rgba( #111, 0.1875 );
+
+        &::after {
+            position: absolute;
+            top: calc( 100% + 0.5rem );
+            left: 0;
+            right: 0;
+            display: block;
+            margin: 0 auto;
+            border-width: 0rem;
+            border-style: solid;
+            border-color: var(--palette-contrast);
+            border-top: transparent;
+            border-left: transparent;
+            border-right: transparent;
+            box-shadow: 2px 2px 6px rgba( #111, 0.1875 );
+            content: "";
+            transition-property: border;
+            transition-duration: 0.2s;
+        }
+
+        &:hover,
+        &:focus {
+            &::after {
+                border-width: 0.5rem;
+            }
+        }
+
+        span {
+            @extend %sr-only;
+        }
+    }
+
+    input[type="radio"] {
+        @extend %sr-only;
+
+        &:checked + .palette-label {
+            outline: 2pt solid var(--palette-color);
+            outline-offset: 1px;
+
+            &::after {
+                border-width: 0.5rem;
+            }
+        }
+    }
+}
+
+%sr-only {
+    border: 0;
+    clip: rect(0, 0, 0, 0);
+    height: 1px;
+    overflow: hidden;
+    position: absolute !important;
+    width: 1px;
+    word-wrap: normal !important;
+}

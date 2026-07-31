@@ -1,0 +1,200 @@
+@use "vars";
+
+/* Plugins
+---------------------------------------------------------------------------- */
+
+/* Genesis eNews Extended
+--------------------------------------------- */
+
+.enews {
+	.after-entry & {
+		text-align: center;
+		padding: 10px;
+	}
+
+	.sidebar & {
+		background-color: map-get( vars.$theme, "gray" );
+		padding: 30px;
+	}
+
+	&-widget {
+		input {
+			font-size: 1rem;
+			margin-bottom: 10px;
+
+			&[type="submit"] {
+				margin: 0;
+				width: 100%;
+			}
+		}
+
+		.after-entry & {
+			input {
+				text-align: center;
+			}
+		}
+	}
+
+	form + p {
+		margin-top: 20px;
+	}
+}
+
+/* Genesis Simple FAQ
+--------------------------------------------- */
+
+.gs-faq__question {
+	background: transparent;
+	border-bottom: 1px solid map-get( vars.$theme, "lt-gray" );
+	color: map-get( vars.$theme, "primary" );
+	color: var(--theme-primary);
+	padding-left: 0;
+	padding-right: 0;
+
+	&:hover,
+	&:focus {
+		background: transparent;
+		color: map-get( vars.$theme, "secondary" );
+		color: var(--theme-secondary);
+	}
+}
+
+.gs-faq__question::after {
+	content: "\f132";
+	font-family: dashicons; /* stylelint-disable-line font-family-no-missing-generic-family-keyword */
+	float: right;
+}
+
+.gs-faq__question.gs-faq--expanded::after {
+	content: "\f460";
+}
+
+/* WP Forms
+--------------------------------------------- */
+
+.entry-content {
+	.wpforms-container {
+		margin-bottom: 40px;
+	}
+
+	.wpforms-form {
+		.wpforms-field {
+			clear: both;
+			margin: 20px 0;
+			overflow: hidden;
+		}
+
+		.wpforms-field-hp {
+			display: none !important;
+			left: -9000px !important;
+			position: absolute !important;
+		}
+	}
+}
+
+.site-container {
+	.wpforms-container {
+		.wpforms-form {
+			.wpforms-field {
+				input {
+					border-radius: 0;
+					height: auto;
+					padding: 15px;
+				}
+			}
+		}
+	}
+
+	.entry-content {
+		.wpforms-form {
+			.wpforms-field {
+				&-label {
+					font-weight: 600;
+				}
+
+				&-sublabel {
+					font-size: 0.875rem;
+					font-weight: 300;
+				}
+			}
+
+			textarea {
+				padding: 15px;
+
+				&.wpforms-field-small {
+					height: 120px;
+				}
+
+				&.wp-forms-field-medium {
+					height: 200px;
+				}
+
+				&.wp-forms-field-large {
+					height: 300px;
+				}
+			}
+		}
+	}
+}
+
+/* Nivo Slider
+--------------------------------------------- */
+
+.slider-container {
+	img {
+		height: calc(100vh - 124px) !important;
+		max-height: 535px;
+		object-fit: cover;
+		object-position: center center;
+		position: relative;
+	}
+
+	.slider-wrapper {
+		position: relative;
+
+		&::after {
+			position: absolute;
+			top: 0;
+			left: 0;
+			z-index: 5;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0, 0, 0, 0.3);
+			content: "";
+		}
+
+		.nivoSlider {
+			box-shadow: none;
+			margin-bottom: 0;
+		}
+
+		.ribbon {
+			position: relative;
+			z-index: 9;
+			opacity: 0.7;
+			height: 10px;
+			background-color: var( --theme-primary );
+		}
+	}
+	
+	.nivo-controlNav {
+		position: absolute;
+		bottom: 0;
+		width: 100%;
+		
+		.nivo-control {
+			position: relative;
+			z-index: 10;
+			width: 20px;
+			height: 20px;
+			margin: 0 5px;
+			border-radius: 100rem;
+			background-image: none;
+			background-color: rgba(0, 0, 0, 0.3);
+
+			&.active {
+				background-color: var( --theme-primary );
+			}
+		}
+	}
+}

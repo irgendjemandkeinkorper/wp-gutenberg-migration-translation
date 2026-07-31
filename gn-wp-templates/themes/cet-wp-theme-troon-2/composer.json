@@ -1,0 +1,52 @@
+{
+  "name": "cet/cet-wp-theme-troon-2",
+  "type": "wordpress-theme",
+  "description": "Troon 2.0 independent theme",
+  "version": "1.0.0",
+  "keywords": [
+    "WordPress",
+    "Theme",
+    "Troon"
+  ],
+  "license": "GPL-2.0-or-later",
+  "authors": [
+    {
+      "name": "Content Engineering Team"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Cet\\Theme\\Troon2\\": "classes/"
+    }
+  },
+  "require": {
+    "php": ">=8.2",
+    "spatie/color": "^2.1"
+  },
+  "require-dev": {
+    "dealerdirect/phpcodesniffer-composer-installer": "^0.7.0",
+    "wptrt/wpthemereview": "^0.2.1",
+    "php-parallel-lint/php-parallel-lint": "^1.2.0",
+    "phpunit/phpunit": "^11.0",
+    "brain/monkey": "^2.6"
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Cet\\Theme\\Troon2\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "lint:wpcs": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs",
+    "lint:php": "@php ./vendor/bin/parallel-lint --exclude .git --exclude vendor .",
+    "test": "@php ./vendor/bin/phpunit --display-warnings"
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    },
+    "autoloader-suffix": "CET_Theme_Troon2",
+    "platform": {
+      "php": "8.2"
+    }
+  }
+}

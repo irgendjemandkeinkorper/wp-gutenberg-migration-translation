@@ -1,0 +1,68 @@
+/* Genesis
+--------------------------------------------- */
+
+.after-entry,
+.archive-description,
+.author-box {
+	margin-bottom: 40px;
+}
+
+.after-entry {
+	box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+	padding: 20px 30px;
+}
+
+.after-entry .widget:last-of-type {
+	margin-bottom: 0;
+}
+
+nav.breadcrumb {
+	margin-left: calc(-100vw / 2 + 100% / 2);
+	margin-right: calc(-100vw / 2 + 100% / 2);
+	max-width: 100vw;
+	margin-bottom: 0;
+	box-shadow: 0 0 5px rgba(0, 0, 0, 0.37);
+	border-radius: 0;
+	display: flex;
+	flex-wrap: wrap;
+	padding: .75rem 1rem;
+	margin-bottom: 1rem;
+	list-style: none;
+	background-color: #e9ecef;
+
+	.breadcrumb__list {
+		@extend .site-inner;
+
+		width: 100%;
+		display: flex;
+		justify-content: flex-end;
+
+		li {
+			&:not(:last-child)::after {
+				content: '/';
+				margin: 0 0.5rem;
+			}
+
+			a {
+				color: $brand-link;
+				text-decoration: none;
+
+				&:hover,
+				&:focus {
+					color: $brand-link-hover;
+				}
+			}
+		}
+
+
+	}
+}
+
+.genesis-title-hidden .breadcrumb {
+	margin-top: 40px;
+}
+
+.archive-description p:last-child,
+.author-box p:last-child {
+	margin-bottom: 0;
+}

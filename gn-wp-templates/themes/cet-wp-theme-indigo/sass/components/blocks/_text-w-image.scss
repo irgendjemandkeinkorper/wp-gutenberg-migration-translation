@@ -1,0 +1,57 @@
+@use "../../abstracts/variables/colors";
+@use "../../abstracts/variables/breakpoints";
+@use "./shared/text-w-image.shared" as text_w_image;
+
+.wp-block-group.is-style-text-image, .wp-block-group.is-style-text-image-center {
+  @include text_w_image.text_w_image_shared();
+
+  .ghostkit-col {
+    .ghostkit-col-content {
+      p {
+        font-size: 20px;
+      }
+    }
+  }
+
+  //add padding when the column does NOT contain a Cover or Image block */
+    .ghostkit-col:not(:has(.wp-block-cover)):not(:has(.wp-block-image)) {
+      padding: 24px;
+
+    +.ghostkit-col:has(img) {
+      padding: 0;
+    } 
+      .ghostkit-col-content {
+        h2 {
+        margin-bottom: 20px;
+      }
+      @include breakpoints.mobile {
+        text-align: center;
+          p {
+            font-size:14px;
+          }
+      }
+      .wp-block-button {
+        margin-top:15px;
+          @include breakpoints.mobile {
+           width: 100%;
+          }
+        }
+      }
+    }
+
+    .ghostkit-col:has(.wp-block-cover),
+    .ghostkit-col:has(.wp-block-image) {
+      background-color: transparent;
+    }
+
+}
+
+.wp-block-group.is-style-text-image-center { 
+ .ghostkit-col:not(:has(.wp-block-cover)) {
+    text-align: center;
+     .wp-block-buttons {
+          justify-content: center;
+      }
+  }
+
+}

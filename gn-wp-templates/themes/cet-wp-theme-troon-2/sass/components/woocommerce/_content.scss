@@ -1,0 +1,7 @@
+.cet-woocommerce {
+	.cet-wc-dynamic {
+		&:empty {
+			display: none;
+		}
+	}
+}

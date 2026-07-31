@@ -1,0 +1,63 @@
+@import "bootstrap/scss/functions";
+
+// 1. Add variable adjustments here
+
+@import "bootstrap/scss/variables";
+
+$theme-colors: map-merge($theme-colors, (
+    "primary-brighter":     tint-color( $primary, 15% ),
+    "primary-contrast":     color-contrast( $primary ),
+    "primary-darker":       shade-color( $primary, 15% ),
+    "secondary-brighter":   tint-color( $secondary, 15% ),
+    "secondary-contrast":   color-contrast( $secondary ),
+    "secondary-darker":     shade-color( $secondary, 15% ),
+) );
+
+
+// 2. Include remainder of required parts
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+
+// 3. Include additional parts
+
+@import "bootstrap/scss/root";
+
+.nav-primary .menu-item > a {
+	font-family: var( --#{$prefix}header-font ) !important;
+	font-weight: initial;
+	letter-spacing: 2px;
+}
+
+h1,
+h2 {
+    .home & {
+        @include media-breakpoint-down( md ) {
+            font-size: 2.44rem !important;
+            line-height: 1;
+        }
+    }
+}
+
+/* Common CSS added to every new site. */
+
+
+.site-footer .ghostkit-icon-box-icon {
+	--gkt-icon-box--icon__color: var(--footer-color);
+}
+
+.site-footer {
+	--footer-color: var( --theme-appearance--text-color );
+	--footer-color-rgb: var(--theme-appearance--text-color-rgb);
+}
+
+.site-footer .footer-widgets a {
+			color: rgba( var( --footer-color-rgb, var( --theme-appearance--primary-rgb ) ), 0.8 );
+}
+
+
+.site-footer .footer-widgets a:hover,
+.site-footer .footer-widgets a:focus{
+			color: rgba( var( --footer-color-rgb, var( --theme-appearance--primary-rgb ) ), 1 );
+			text-decoration: underline;
+}

@@ -1,0 +1,76 @@
+@use "../../abstracts/variables/breakpoints";
+
+.cet-woocommerce {
+	.cet-wc-hero {
+		position: relative;
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
+		min-height: 342px;
+		padding-block: calc(var(--cet-theme-spacing-sm) * 2.5);
+
+		@include breakpoints.tablet {
+			min-height: 486px;
+			padding-block: var(--cet-theme-spacing-xxl);
+		}
+	}
+
+	.cet-wc-hero__media {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+
+		img {
+			display: block;
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			object-position: center center;
+		}
+	}
+
+	.cet-wc-hero__overlay {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.1) 30%),
+			linear-gradient(90deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.3) 100%);
+	}
+
+	.cet-wc-hero__content {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: calc(var(--cet-theme-spacing-sm) * 0.75);
+		text-align: center;
+
+		@include breakpoints.tablet {
+			gap: var(--cet-theme-spacing-sm);
+		}
+
+		.cet-wc-caption {
+			color: var(--cet-theme-gold-300);
+		}
+	}
+
+	.cet-wc-hero__title {
+		font-family: var(--cet-theme-font-heading);
+		font-size: var(--cet-theme-heading-font-size-h3-mobile);
+		font-weight: var(--cet-theme-font-weight-medium);
+		line-height: var(--cet-theme-heading-line-height);
+		letter-spacing: var(--cet-theme-heading-h1-letter-spacing);
+		color: var(--cet-theme-white);
+		margin: 0;
+		text-shadow: 0 8px 16px rgba(255, 255, 255, 0.24);
+
+		@include breakpoints.tablet {
+			font-size: var(--cet-theme-heading-font-size-h1-tablet);
+			font-weight: var(--cet-theme-font-weight-regular);
+		}
+
+		@include breakpoints.desktop {
+			font-size: var(--cet-theme-heading-font-size-h1-desktop);
+		}
+	}
+}

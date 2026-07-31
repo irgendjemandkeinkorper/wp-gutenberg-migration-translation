@@ -1,0 +1,42 @@
+@import "bootstrap/scss/functions";
+
+// 1. Add variable adjustments here
+
+@import "bootstrap/scss/variables";
+
+$theme-colors: map-merge($theme-colors, (
+    "primary-brighter":     tint-color( $primary, 15% ),
+    "primary-contrast":     color-contrast( $primary ),
+    "primary-darker":       shade-color( $primary, 15% ),
+    "secondary-brighter":   tint-color( $secondary, 15% ),
+    "secondary-contrast":   color-contrast( $secondary ),
+    "secondary-darker":     shade-color( $secondary, 15% ),
+) );
+
+// 2. Include remainder of required parts
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+
+// 3. Include additional parts
+
+@import "bootstrap/scss/root";
+
+.h1, .h2, .h3, .h4, .h5, .h6, 
+h1, h2, h3, h4, h5, h6 {
+    letter-spacing: 0.125rem;
+}
+
+.mulberry-hero-text,
+.home h1 {
+    font-size: 1.5rem;
+    padding: 0 0.625rem;
+    margin-top: 5em;
+
+    @include media-breakpoint-up( md ) {
+        font-size: 3.44rem;
+        padding: 0;
+        margin-top: 0;
+    }
+}
+

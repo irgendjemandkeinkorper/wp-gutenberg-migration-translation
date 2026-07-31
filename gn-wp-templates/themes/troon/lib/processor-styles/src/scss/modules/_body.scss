@@ -1,0 +1,305 @@
+@import "bootstrap/scss/functions";
+
+// 1. Add variable adjustments here
+
+@import "bootstrap/scss/variables";
+
+// 2. Include remainder of required parts
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+
+// 3. Include additional parts
+@import "bootstrap/scss/utilities/api";
+
+$gray: 			#cacaca 	!default;
+$charcoal: 	    #121212	!default;
+
+$new-bg: (
+    "gray": 		to-rgb($gray),
+    "charcoal":     to-rgb($charcoal),
+);
+
+$utilities: (
+    "color-rgb": (
+        css-var: true,
+        css-variable-name: text-color-rgb,
+        class: text,
+        values: $utilities-text
+    ),
+    "color": map-merge(
+        map-get($utilities, "color"),
+        (
+            local-vars: map-merge(
+                map-get( map-get( $utilities, "color" ), "local-vars" ),
+                (
+                    text-color: var( --#{$prefix}text-color-rgb, var(--#{$prefix}text-opacity) ),
+                )
+            ),
+            values: map-loop( $new-bg, rgba-css-var, "$key", "bg" )
+        ),
+    ),
+    "background-color":	 map-merge(
+        map-get( $utilities, "background-color" ),
+        (
+            values: map-loop($new-bg, rgba-css-var, "$key", "bg")
+        )
+    ),
+);
+
+// 3. Include additional parts
+// @import "bootstrap/scss/helpers";
+@import "bootstrap/scss/utilities/api";
+@import "bootstrap/scss/containers";
+@import "bootstrap/scss/grid";
+
+/* Body
+---------------------------------------------------------------------------- */
+
+html {
+    overflow-x: hidden; // fix alignment bugs
+}
+
+/* When View Menu
+--------------------------------------------- */
+
+.slide-container {
+    margin-top: var( --header-height, 116px );
+    position: relative;
+    flex: 1;
+}
+
+/* Content Area
+--------------------------------------------- */
+
+.content-sidebar-wrap {
+    .sidebar-content &,
+    .content-sidebar & {
+        .content {
+            padding-top: 3rem;
+            padding-bottom: 2.5rem;
+        }
+    }
+
+    .home & {
+        .content {
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+    }
+}
+
+/* Sidebar Primary
+--------------------------------------------- */
+
+.sidebar-primary {
+    padding-top: 3rem;
+
+    .accordion-button {
+        display: none;
+
+        @include media-breakpoint-down( lg ) {
+            .logged-in.first-block-rkv-members & {
+                display: block;
+            }
+        }
+
+        .opened-message,
+        .closed-message {
+            display: none;
+        }
+
+        &[aria-expanded='true'] {
+            .opened-message {
+                display: block;
+            }
+        }
+
+        &[aria-expanded='false'] {
+            .closed-message {
+                display: block;
+            }
+        }
+    }
+
+    .sidebar-wrap {
+        padding: 2rem;
+    }
+
+    .widget_nav_menu {
+        .menu-item-header {
+            margin: 21px 0 0;
+            padding-left: 10px;
+            font-family: var( --#{$prefix}body-font-family );
+            font-weight: 500;
+        }
+
+        .menu > .menu-item {
+            & > a {
+                font-family: var( --#{$prefix}body-font-family );
+                font-size: 1.75rem;
+                font-weight: 500;
+                line-height: 1.5;
+            }
+
+            & + .menu-item-has-children {
+                & > .menu-item-header {
+                    margin-top: 0;
+                }
+            }
+        }
+
+        ul {
+            margin-left: -10px;
+            margin-bottom: 19px;
+            padding-left: 0;
+            list-style-type: none;
+
+            a {
+                display: block;
+                width: 75%;
+                padding-left: 10px;
+                color: rgba( var( --#{$prefix}text-color-rgb ), 0.7 );
+                line-height: 2;
+                text-decoration: none;
+                transition-duration: 300ms;
+                transition-property: color transform;
+                transform: none;
+                transform-origin: center left;
+
+                &:hover,
+                &:focus {
+                    color: rgba( var( --#{$prefix}text-color-rgb ), 1 );
+                    transform: scale( 1.14 );
+                }
+            }
+
+            ul {
+                margin-left: 5px;
+
+                .menu-item {
+                    a {
+                        display: flex;
+                        padding-left: 0;
+
+                        &::before {
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            width: 2rem;
+                            margin-right: 0.5rem;
+                            font-family: bootstrap-icons !important;
+                            font-weight: normal;
+                            font-variant: normal;
+                            font-size: 0.725rem;
+                            content: "\F285";
+                        }
+                    }
+                }
+
+                .menu-item-has-children {
+                    padding-left: 5px;
+                    border-left: 5px solid rgba( var( --#{$prefix}text-color-rgb ), 0.1 );
+
+                    & + .menu-item {
+                        margin-top: -19px;
+                    }
+                }
+            }
+        }
+    }
+
+    @include media-breakpoint-up( lg ) {
+        .accordion-button {
+            display: none;
+        }
+
+        .sidebar-wrap {
+            display: block;
+            padding: 0 0 2.5rem 2.5rem;
+        }
+
+
+    }
+}
+
+/* Offcanvas Menu
+--------------------------------------------- */
+
+.slide-container,
+.site-header,
+.site-footer {
+    z-index: 1024;
+    transition: transform 0.4s ease;
+
+    .transitioning & {
+        transform: translateX( 0 );
+    }
+
+    .hello & {
+        transform: translateX( $offcanvas-horizontal-width * -1 );
+    }
+
+    @media ( prefers-reduced-motion: reduce ) {
+        transition: none;
+    }
+}
+
+/* Woocommerce
+--------------------------------------------- */
+
+.woocommerce {
+    .woocommerce-products-header {
+        .alignfull {
+            width: calc(100vw - var( --scrollbar-width, 17px ));
+            margin-left: calc(calc(-100vw + var( --scrollbar-width, 17px )) / 2 + 100% / 2);
+            margin-right: calc(-100vw / 2 + 100% / 2);
+        }
+    }
+
+    .pre-footer-widget-container {
+        clear: both;
+    }
+}
+
+
+/* show nav on mobile for test page */
+body.page-id-428 .btn-primary.sidebar-button {
+	background-color: #009cde;
+	border-color: #009cde;
+	position: relative;
+	top: auto;
+	right: auto;
+}
+
+body.page-id-428 .bi-caret-left-fill::before {
+	content: "Member Menu";
+}
+
+body.page-id-428 .show .bi-caret-left-fill::before {
+	content: "Close";
+}
+
+@media (max-width: 991.98px) {
+	body.page-id-428 .offcanvas-lg.offcanvas-end {
+		position: relative;
+		border: none;
+		right: auto;
+		top: auto;
+		transform: none;
+		margin-top: 3rem;
+	}
+
+	body.page-id-428 .btn-primary.sidebar-button {
+		display: block;
+	}
+
+	body.page-id-428 .sidebar-wrap {
+		display: none;
+		padding-top: 2rem;
+	}
+
+	body.page-id-428 .show .sidebar-wrap {
+		display: block;
+	}
+}

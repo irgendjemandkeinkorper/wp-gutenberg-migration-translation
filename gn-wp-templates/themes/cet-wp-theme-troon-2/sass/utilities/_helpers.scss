@@ -1,0 +1,67 @@
+/*
+ * WordPress Alignment Classes — intentionally outside @layer
+ *
+ * These use WordPress-defined class names whose purpose is to override WordPress's
+ * own base element styles. WP outputs those base rules unlayered via :where() selectors
+ * (e.g. :where(figure) { margin: 0 0 1em }) which have zero specificity (0,0,0) but
+ * sit above all @layer rules in the cascade. Keeping these classes unlayered gives them
+ * class-level specificity (0,1,0), which is enough to win without !important.
+ */
+
+.alignleft {
+	float: left;
+	margin-inline-end: var(--cet-theme-spacing-md);
+	margin-block-end: var(--cet-theme-spacing-sm);
+}
+
+.alignright {
+	float: right;
+	margin-inline-start: var(--cet-theme-spacing-md);
+	margin-block-end: var(--cet-theme-spacing-sm);
+}
+
+.aligncenter {
+	display: block;
+	margin-inline: auto;
+	text-align: center;
+}
+
+.alignwide {
+	max-width: var(--cet-theme-content-width);
+	margin-inline: auto;
+}
+
+.alignfull {
+	width: var(--cet-theme-full-bleed-width, 100vw);
+	margin-inline: var(--cet-theme-full-bleed-margin-inline);
+	max-width: none;
+}
+
+/*
+ * Generic Utilities
+ *
+ * No conflict with WordPress's unlayered base styles — safe inside @layer.
+ */
+
+@layer utilities {
+
+	/* Clearfix */
+	.clearfix::after {
+		content: "";
+		display: table;
+		clear: both;
+	}
+
+	/* Text alignment */
+	.has-text-align-left {
+		text-align: left;
+	}
+
+	.has-text-align-center {
+		text-align: center;
+	}
+
+	.has-text-align-right {
+		text-align: right;
+	}
+}

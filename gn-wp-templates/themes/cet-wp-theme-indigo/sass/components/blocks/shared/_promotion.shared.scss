@@ -1,0 +1,123 @@
+@use "../../../abstracts/variables/colors";
+@use "../../../abstracts/variables/breakpoints";
+
+
+@mixin promotion_shared() {
+    // Non-overideable styles
+    .is-style-promotion {
+        padding-top: 48px;
+        padding-bottom: 48px;
+        padding-left: 16px;
+        padding-right: 16px; 
+
+        // Need span for specificty
+
+         span.wp-block-cover__background {
+            &:not([class*=-background-color]) {
+                background-color: var(--secondary-color, #{colors.$secondary}); 
+            
+                &.has-background-dim-0 {
+                    opacity: 100;
+                }
+            }
+        }
+
+        // If there is image undo opacity has-background-dim-0 overwrite
+        img.wp-block-cover__image-background + span.wp-block-cover__background {
+            &:not([class*=-background-color]){
+                &.has-background-dim-0 {
+                    opacity: 0;
+                } 
+            }
+        }
+
+
+        // min 375
+        @include breakpoints.tablet {
+            padding-left: 24px;
+            padding-right: 24px;
+        }
+
+        @include breakpoints.laptop {
+            padding-left: 48px;
+            padding-right: 48px;
+        }
+
+        // Overwrite theme heading and paragraph in inner container
+        .wp-block-cover__inner-container {
+            display: flex;
+            flex-direction: column;
+            row-gap: 24px;
+
+            > * {
+                margin-bottom: 0;
+            }
+        } 
+
+        .wp-block-columns, .wp-block-group-is-layout-grid {
+            // use media 768 max width
+
+            @include breakpoints.tablet-max {
+                grid-template-columns: auto;
+            }
+
+            > .wp-block-group {
+                color: #000;
+                > * {
+                    background-color: #fff;
+                }
+
+                p {
+                    padding: 24px;
+                }
+            }
+
+            // Overwrite theme heading and paragraph in inner container
+                h1, h2, h3, h4, h5, h6 {
+
+                    // mobile 375px
+                    padding-left:24px;
+                    padding-top: 8px;
+                    padding-right: 24px;
+                    padding-bottom: 8px;
+
+                    //tablet 375 - 768px
+                    @media screen and (min-width: 376px) and (max-width: breakpoints.$tablet) {
+                        padding-top: 10px;
+                        padding-bottom: 10px;
+                        
+                    }
+
+                    // rest 768+                
+                    @media screen and (min-width: 769px) {
+                        padding-top: 16px;
+                        padding-bottom: 16px;
+                    } 
+                }
+        }
+    }
+
+
+    // Overrideable styles
+    :where(.is-style-promotion) {
+        border-radius: 24px;
+
+        :where(.wp-block-columns), :where(.wp-block-group-is-layout-grid) {
+            gap: 24px;
+
+            >:where(.wp-block-group) {
+                gap: 16px;
+
+                >:where(.wp-block-heading) {
+                    width: 100%;
+                    border-radius: 24px;
+                }
+
+                >:where(p) {
+                    border-radius: 24px;
+                    gap: 16px;
+                }
+            }
+        }
+    }
+}

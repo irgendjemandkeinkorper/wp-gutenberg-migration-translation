@@ -1,0 +1,152 @@
+@use "../variables/colors";
+@use "../variables/breakpoints";
+
+@mixin button {
+  display: inline-block;
+  padding: 9px 16px;
+  border-radius: 40px;
+  transition: 0.3s;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.6;
+  font-family:  var(--header-font), sans-serif;
+  cursor: pointer;
+  text-align: center;
+  width: auto;
+  margin: auto;
+  color: var(--button-color);
+  background: var(--button-background);
+  border: 1px solid var(--button-border-color);
+
+  &:focus {
+    outline: none;
+  }
+
+  @include breakpoints.tablet {
+    padding: 10px 16px;
+    font-size: 1rem;
+  }
+
+  @include breakpoints.laptop {
+    padding: 9px 16px;
+    font-size: 1.125rem;
+  }
+}
+
+@mixin button-primary {
+  & {
+    --button-color: #{colors.$white};
+    --button-background: var(--primary-color, #{colors.$primary});
+    --button-border-color: var(--primary-color, #{colors.$primary});
+  }
+
+  &:hover {
+    --button-background: #{color-mix(in srgb, var(--primary-color, #{colors.$primary}) 60%, #000000 40%)};
+    --button-border-color: #{color-mix(in srgb, var(--primary-color, #{colors.$primary}) 60%, #000000 40%)};
+  }
+
+  &:active, &:focus {
+    --button-background: #{color-mix(in srgb, var(--primary-color, #{colors.$primary}) 96%, #ffffff 4%)};
+    --button-border-color: #{color-mix(in srgb, var(--primary-color, #{colors.$primary}) 96%, #ffffff 4%)};
+  }
+
+  &:disabled {
+    --button-color: #{colors.$placeholder_gray};
+    --button-background: #{colors.$pale_ray};
+    --button-border-color: #{colors.$pale_ray};
+  }
+}
+
+@mixin button-secondary {
+  --button-color: #{colors.$charcoal};
+  --button-background: var(--secondary-color, #{colors.$secondary});
+  --button-border-color: var(--secondary-color, #{colors.$secondary});
+
+  &:hover  {
+    --button-background: #{color-mix(in srgb, var(--secondary-color) 96%, #000000 4%)};
+    --button-border-color: #{color-mix(in srgb, var(--secondary-color) 96%, #000000 4%)}
+  }
+
+  &:active, &:focus  {
+    --button-background: #{color-mix(in srgb, var(--secondary-color) 76%, #ffffff 24%)};
+    --button-border-color: #{color-mix(in srgb, var(--secondary-color) 76%, #ffffff 24%)}
+  }
+
+  &:disabled {
+    --button-color: #{colors.$placeholder_gray};
+    --button-background: #{rgba(colors.$pale_ray, 0.24)};
+    --button-border-color: #{rgba(colors.$pale_ray, 0.24)};
+  }
+}
+
+@mixin button-outline {
+  --button-color: var(--primary-color, #{colors.$primary});
+  --button-background: transparent;
+  --button-border-color: var(--primary-color, #{colors.$primary});
+
+  &:hover {
+    --button-color: #{color-mix(in srgb, var(--primary-color, #{colors.$primary}) 60%, #000000 40%)};
+    --button-border-color: #{color-mix(in srgb, var(--primary-color, #{colors.$primary}) 60%, #000000 40%)};
+  }
+
+  &:active, &:focus {
+    --button-color: #{color-mix(in srgb, var(--primary-color, #{colors.$primary}) 96%, #ffffff 4%)};
+    --button-border-color: #{color-mix(in srgb, var(--primary-color, #{colors.$primary}) 96%, #ffffff 4%)};
+  }
+
+  &:disabled {
+    --button-color: #{colors.$pale_ray};
+    --button-border-color: #{colors.$pale_ray};
+  }
+}
+
+@mixin button-ghost {
+  --button-color: #{colors.$white};
+  --button-background: #{rgba(colors.$white, 0.24)};
+  --button-border-color: #{rgba(colors.$white, 0.40)};
+
+  &:hover {
+    --button-background: #{color-mix(in srgb, #ffffff 24%, #000000 40%)};
+    --button-border-color: #{color-mix(in srgb, #ffffff 24%, #000000 40%)};
+  }
+
+  &:active, &:focus {
+    --button-background: #{color-mix(in srgb, #ffffff 24%, #ffffff 24%)};
+    --button-border-color: #{color-mix(in srgb, #ffffff 24%, #ffffff 24%)};
+  }
+
+  &:disabled {
+    --button-color: #{colors.$pale_ray};
+    --button-background: #{rgba(colors.$pale_ray, 0.24)};
+    --button-border-color: #{colors.$pale_ray};
+  }
+}
+
+@mixin button-text {
+  --button-color: var(--primary-color, #{colors.$primary});
+  --button-background: transparent;
+  --button-border-color: transparent;
+
+  &:hover {
+    --button-color: #{color-mix(in srgb, var(--primary-color, #{colors.$primary}) 60%, #000000 40%)};
+  }
+
+  &:active, &:focus {
+    --button-color: #{color-mix(in srgb, var(--primary-color, #{colors.$primary}) 96%, #ffffff 4%)};
+  }
+
+  &:disabled {
+    --button-color: #{colors.$pale_ray};
+  }
+}
+
+@mixin button-icon {
+  width: 42px;
+  height: 42px;
+  padding-inline: 0;
+
+  @include breakpoints.tablet {
+    width: 48px;
+    height: 48px;
+  }
+}

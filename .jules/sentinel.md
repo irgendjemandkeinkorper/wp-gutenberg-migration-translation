@@ -1,4 +1,4 @@
-## 2023-10-25 - XSS Vulnerability in HTML Validation
-**Vulnerability:** The application was vulnerable to Cross-Site Scripting (XSS) via unsafe protocols (e.g., `javascript:`, `vbscript:`, `data:`) in the `href` attributes of `<a>` tags.
-**Learning:** While the HTML validator `enforceWhitelist` stripped unauthorized tags and attributes, it did not validate the content of the `href` attribute. This allowed potentially malicious LLM outputs or Readability extractions to execute scripts.
-**Prevention:** Implement an `isSafeUrl` check that strips control characters and validates that URLs do not start with dangerous protocols before assigning them to `href` attributes.
+## 2024-05-15 - Unsanitized Href in HTML Extraction
+**Vulnerability:** Cross-Site Scripting (XSS) via `javascript:`, `vbscript:`, and `data:` URIs in extracted `<a>` tag `href` attributes.
+**Learning:** While the DOM parser and HTML sanitization process enforce a strict tag whitelist, attributes kept on whitelisted tags (like `href` on `<a>`) can still carry dangerous payloads. Attackers can bypass naive checks using control characters (e.g. `java\nscript:`).
+**Prevention:** Always validate and sanitize URLs before rendering them into attributes. Strip control characters from URLs before checking their scheme, and reject unsafe schemes (like `javascript:`, `vbscript:`, and `data:`).

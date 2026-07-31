@@ -1,0 +1,29 @@
+@use "../../../abstracts/variables/colors";
+
+@mixin multi_column_shared() {
+
+    .ghostkit-col {
+        background-color: var(--secondary-color, #{colors.$secondary});
+        border-radius: 24px;
+    }
+    .ghostkit-col-with-bg {
+        border-radius:24px;
+        .nk-awb *{
+            border-radius:24px;
+        }
+    }
+
+    .wp-block-image {
+        padding-bottom: 15px;
+        img {
+            border-radius: 24px;
+        }
+    }
+
+    .ghostkit-col-content {
+        h2.wp-block-heading {
+            font-weight: 700;
+            font-size: 18px;
+        }
+    }
+}
