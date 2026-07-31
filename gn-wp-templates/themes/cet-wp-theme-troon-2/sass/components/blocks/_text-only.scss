@@ -1,0 +1,81 @@
+@use "../../abstracts/variables/breakpoints";
+@use "../../abstracts/functions" as *;
+
+// Dual selectors during v2 migration window.
+// v2 active:  cet-entity-text-only matches.
+// v1 rollback: cet-block-type-text-only / cet-block-part-type-text-only match.
+// Remove v1 half of each :is() after staging + prod verification.
+:is(
+    .cet-entity-text-only,
+    .cet-block-type-text-only,
+    .cet-block-part-type-text-only
+).is-style-text-only {
+    --cet-text-only-background: var(--cet-theme-gold-200);
+
+    display: flex;
+    justify-content: center;
+    background-color: var(--cet-text-only-background);
+    text-align: center;
+    padding: 2.5rem 1rem;
+    margin-bottom: 0;
+
+    &.has-primary-teal-background-color {
+        --cet-text-only-background: var(--cet-theme-primary-teal);
+
+        :is(.cet-part-body, .cet-block-part-type-body).is-style-caption {
+            color: var(--cet-theme-gold-300);
+        }
+
+        :is(.cet-part-heading, .cet-block-part-type-heading) {
+            color: var(--cet-theme-gold-main);
+        }
+
+        :is(.cet-part-body, .cet-block-part-type-body):not(.is-style-caption) {
+            color: var(--cet-theme-white);
+        }
+    }
+
+    >:is(.cet-part-column, .cet-block-part-type-column) {
+        width: 100%;
+        max-width: 1088px;
+        margin-inline: auto;
+    }
+
+    :is(.cet-part-body, .cet-block-part-type-body).is-style-caption {
+        margin: 0 0 var(--cet-theme-spacing-unit);
+    }
+
+    :is(.cet-part-heading, .cet-block-part-type-heading) {
+        margin: 0 0 var(--cet-theme-spacing-md);
+        --cet-theme-heading-h2-letter-spacing: -0.3px;
+
+        @include breakpoints.mobile {
+            --cet-theme-heading-font-size-h2-mobile: #{rem(18)};
+            --cet-theme-heading-h2-letter-spacing: 0.4px;
+            --cet-theme-heading-line-height: 1.25;
+        }
+    }
+
+    :is(.cet-part-body, .cet-block-part-type-body):not(.is-style-caption) {
+        --cet-theme-font-weight-regular: var(--cet-theme-font-weight-medium);
+
+        margin: var(--cet-theme-spacing-md) 0 0;
+    }
+
+    :is(.cet-part-actions, .cet-block-part-type-actions) {
+        justify-content: center;
+        margin-top: var(--cet-theme-spacing-md);
+    }
+
+    @include breakpoints.tablet {
+        padding: 2.5rem 3rem;
+
+        :is(.cet-part-body, .cet-block-part-type-body).is-style-caption {
+            margin-bottom: var(--cet-theme-spacing-sm);
+        }
+    }
+
+    @include breakpoints.desktop {
+        padding: 5rem;
+    }
+}

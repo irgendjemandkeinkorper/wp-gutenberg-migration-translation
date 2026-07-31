@@ -1,0 +1,114 @@
+@use "../../abstracts/mixins/buttons";
+@use "../../abstracts/variables/breakpoints";
+
+@layer typography {
+    button,
+    input[type="button"],
+    input[type="reset"],
+    input[type="submit"] {
+        @include buttons.button;
+    }
+}
+
+//Buttons native Gutenberg blocks
+.wp-block-button,
+.wp-block-button.button,
+.wp-block-buttons,
+.wp-block-buttons.button {
+    a {
+        @include buttons.button;
+    }
+
+    &.is-style-primary, &.is-style-fill {
+        a {
+          @include buttons.primary_button;
+        }
+    }
+
+    &.is-style-secondary {
+        a {
+            @include buttons.secondary_button;
+        }
+    }
+
+    &.is-style-outline {
+        a {
+            @include buttons.outline_button;
+        }
+    }
+
+    &.is-style-link-arrow-1 {
+        a {
+            @include buttons.link_arrow_1_button;
+        }
+    }
+
+    &.is-style-link-arrow-2 {
+        a {
+            @include buttons.link_arrow_2_button;
+        }
+    }
+
+    &.is-size-large {
+        a {
+            @include buttons.large_button;
+        }
+    }
+
+    &.is-size-medium {
+        a {
+            @include buttons.medium_button;
+        }
+    }
+
+    &.is-size-small {
+        a {
+            @include buttons.small_button;
+        }
+    }
+
+    &.is-style-link-arrow-1.is-size-large,
+    &.is-style-link-arrow-2.is-size-large {
+        a {
+            --cet-theme-button-padding: 0 2.7rem 0 0;
+
+            &::after {
+                right: 26px;
+            }
+        }
+    }
+
+    &.is-style-link-arrow-1.is-size-medium,
+    &.is-style-link-arrow-2.is-size-medium {
+        a {
+            --cet-theme-button-padding: 0 2.1875rem 0 0;
+
+            &::after {
+                right: 18px;
+            }
+        }
+    }
+
+    &.is-style-link-arrow-1.is-size-small,
+    &.is-style-link-arrow-2.is-size-small {
+        a {
+            --cet-theme-button-padding: 0 1.9rem 0 0;
+
+            &::after {
+                right: 15px;
+            }
+        }
+    }
+}
+
+// Component-scoped primary-medium button appearances. Kept here as named
+// selectors while there are fewer than three. When a fourth appears, extract
+// a .cet-button, -primary, etc utility classes instead.
+:is(
+    :is(.cet-block-type-file, .cet-entity-file) a[download],
+    .cet-submit
+) {
+    @include buttons.button;
+    @include buttons.primary_button;
+    @include buttons.medium_button;
+}

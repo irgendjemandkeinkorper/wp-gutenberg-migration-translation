@@ -31,7 +31,10 @@ export function buildWxr(pages: BundlePage[], opts: WxrOptions): string {
     const pageId = nextId++;
     items.push(contentItem(page, pageId, opts, pub, dateGmt));
     if (opts.emitAttachments) {
+      const seen = new Set<string>();
       for (const img of page.images) {
+        if (!isRemoteUrl(img.src) || seen.has(img.src)) continue;
+        seen.add(img.src);
         items.push(
           attachmentItem(img.src, img.alt, nextId++, pageId, opts.author, pub, dateGmt),
         );
@@ -132,7 +135,18 @@ function contentItem(
         <wp:post_type>${opts.postType}</wp:post_type>
         <wp:post_password></wp:post_password>
         <wp:is_sticky>0</wp:is_sticky>
+${postMeta("_blockify_source_url", page.link)}
+${postMeta("_blockify_source_html", page.sourceHtml ?? "")}
+${postMeta("_blockify_target_template", page.targetTemplate ?? "")}
+${postMeta("_blockify_migration_placeholders", JSON.stringify(page.placeholders ?? []))}
     </item>`;
+}
+
+function postMeta(key: string, value: string): string {
+  return `        <wp:postmeta>
+            <wp:meta_key>${cdata(key)}</wp:meta_key>
+            <wp:meta_value>${cdata(value)}</wp:meta_value>
+        </wp:postmeta>`;
 }
 
 function attachmentItem(
@@ -145,6 +159,8 @@ function attachmentItem(
   dateGmt: string,
 ): string {
   const title = alt.trim() || imgTitle(src);
+  const filename = attachmentFilename(src);
+  const mime = imageMime(filename);
   return `    <item>
         <title>${escapeXml(title)}</title>
         <link>${escapeXml(src)}</link>
@@ -166,10 +182,38 @@ function attachmentItem(
         <wp:post_type>attachment</wp:post_type>
         <wp:post_password></wp:post_password>
         <wp:is_sticky>0</wp:is_sticky>
+        <wp:post_mime_type>${mime}</wp:post_mime_type>
         <wp:attachment_url>${escapeXml(src)}</wp:attachment_url>
+${postMeta("_wp_attached_file", filename)}
         <wp:postmeta>
             <wp:meta_key>_wp_attachment_image_alt</wp:meta_key>
             <wp:meta_value>${cdata(alt)}</wp:meta_value>
         </wp:postmeta>
     </item>`;
+}
+
+function isRemoteUrl(src: string): boolean {
+  try {
+    const protocol = new URL(src).protocol;
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function attachmentFilename(src: string): string {
+  try {
+    return decodeURIComponent(new URL(src).pathname.split("/").pop() || "image");
+  } catch {
+    return src.split("/").pop() || "image";
+  }
+}
+
+function imageMime(filename: string): string {
+  const ext = filename.split(".").pop()?.toLowerCase();
+  const types: Record<string, string> = {
+    jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif",
+    webp: "image/webp", avif: "image/avif", svg: "image/svg+xml",
+  };
+  return types[ext ?? ""] ?? "image/jpeg";
 }

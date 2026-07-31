@@ -15,9 +15,9 @@ The pipeline keeps the LLM on judgment and off mechanics (the design proven in
 
 1. **Extract** — main content isolation via a CSS selector override or
    Mozilla Readability.
-2. **Tokenize images** — every `<img>` becomes a block-level `⟦IMG_n⟧` token;
-   `{src, alt, figcaption}` are recorded outside the LLM's reach, so it can
-   never hallucinate an image.
+2. **Tokenize assets** — images, embeds, media, and forms become block-level
+   `⟦ASSET_n⟧` tokens. Their source attributes and excerpts are recorded
+   outside the LLM's reach, so it cannot hallucinate or silently discard them.
 3. **Clean (Gemini)** — messy HTML is normalized to a 22-tag whitelist
    fragment (`h2 h3 h4 p ul ol li blockquote pre code table thead tbody tr th
    td strong em a br hr sup sub`, `href` only). Boilerplate is dropped.
@@ -33,16 +33,53 @@ The pipeline keeps the LLM on judgment and off mechanics (the design proven in
    a WXR 1.2 file. With "Sideload images" on, each image gets an attachment
    item so the WordPress importer (with *Download and import file
    attachments* checked) copies it into the media library and remaps URLs.
+   Duplicate URLs are emitted once and attachment filename/MIME metadata is
+   included for more reliable WordPress imports.
+7. **Migration QA** — unsupported interactive content (embeds, media players,
+   and forms) becomes a visible `MIGRATION PLACEHOLDER` instead of disappearing.
+   The exact original HTML, source URL, selected GolfNow template, and
+   placeholder manifest are retained as `_blockify_*` post metadata in WXR.
 
 ## Usage
 
 1. Open the app, add your [Gemini API key](https://aistudio.google.com/apikey)
    in Settings (stored in `localStorage` only).
 2. Paste a page's HTML (View Page Source), or try Fetch URL.
-3. Convert, review the blocks, then either copy-paste into the block editor's
+3. Select the target design from the current
+   [GolfNow template library](https://golfnowbusiness.com/template-library/).
+4. Convert, review the blocks and any manual-migration placeholders, then either copy-paste into the block editor's
    Code editor view or add the page to the WXR bundle.
-4. Download the WXR and import it: WP admin → Tools → Import → WordPress,
+5. Download the WXR and import it: WP admin → Tools → Import → WordPress,
    check "Download and import file attachments".
+
+### Whole-site migration (crawl + batch)
+
+CORS proxies are unreliable, so crawling runs locally in Node instead of the
+browser:
+
+```bash
+npm run crawl -- https://example.com          # → crawl/pages.json
+npm run crawl -- https://example.com --max 100 --delay 1000 --out crawl
+```
+
+Same-origin BFS, HTML pages only; skips WP plumbing (wp-admin, feeds,
+uploads), asset and query-string URLs; respects robots.txt `Disallow` for
+`User-agent: *`. Then in the app open the **Batch (crawl)** tab, load
+`crawl/pages.json`, and Convert all — every page runs through the normal
+pipeline (with the current CSS selector / skip-LLM / model settings) and
+lands in the WXR bundle. Re-running a batch replaces bundle entries by URL
+instead of duplicating them.
+
+### Minimizing API calls
+
+- **Skip LLM cleanup** (checkbox above Convert): pure deterministic mode —
+  the whitelist is enforced in code, scripts/nav/forms are dropped outright,
+  headings preserved. Zero API calls, no key needed. Best for already-clean
+  pages (e.g. classic WordPress content) combined with a content CSS
+  selector; nothing judges boilerplate in this mode.
+- **Conversion cache**: successful LLM cleanups are cached in localStorage,
+  keyed on model + prompt + extracted content, so re-converting an unchanged
+  page never repeats the Gemini call (last 40 pages kept).
 
 ## Development
 
@@ -58,7 +95,8 @@ Deploys to GitHub Pages automatically on push to `main`
 
 ## Limitations
 
-- No embeds, columns, or galleries — iframes are intentionally stripped.
+- Embeds and forms require manual rebuilding; visible migration placeholders
+  retain their source details. Columns and galleries are not inferred.
 - Cross-origin URL fetch depends on public CORS proxies; paste HTML when it
   fails.
 - Heading levels are clamped to h2–h4.

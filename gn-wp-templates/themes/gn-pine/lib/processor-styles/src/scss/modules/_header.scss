@@ -1,0 +1,319 @@
+@import "bootstrap/scss/functions";
+
+// 1. Add variable adjustments here
+
+@import "bootstrap/scss/variables";
+
+// 2. Include remainder of required parts
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+
+// 3. Include additional parts
+
+@import "bootstrap/scss/close";
+@import "bootstrap/scss/offcanvas";
+@import "bootstrap/scss/accordion";
+
+/* Site Header
+---------------------------------------------------------------------------- */
+
+.site-header {
+    height: auto !important;
+    --#{$prefix}brand-height-rest: 250px;
+    --#{$prefix}brand-height: 250px;
+
+    @include media-breakpoint-up( lg ) {
+        width: 17.5vw;
+    }
+
+    @include media-breakpoint-down( lg ) {
+        height: auto !important;
+
+        &.sticky {
+            & > .wrap {
+                position: fixed;
+                top: 0;
+                right: 0;
+                left: 0;
+                --distance-to-top: var( --header-height );
+    
+                .admin-bar & {
+                    @include media-breakpoint-up( md ) {
+                        top: 32px;
+                    }
+                }
+            }
+    
+            .widget-area {
+                & > .widget.widget_search {
+                    display: none;
+                }
+            }
+        }
+    }
+
+    & > .wrap {
+        top: 0;
+        left: 0;
+        width: 100%;
+        padding: 7px 10px; 
+        z-index: 500;
+        overflow: auto;
+
+        .admin-bar & {
+            @include media-breakpoint-up( md ) {
+                top: 32px;
+            }
+        }
+
+        @include media-breakpoint-up( lg ) {
+            box-shadow: 0 0 16px rgba(0, 0, 0, 0.16);
+            position: fixed;
+            height: 100%;
+            width: 17.5vw !important;
+
+            & > .site-inner {
+                align-items: normal !important;
+                align-content: flex-start !important;
+            }
+        }
+    }
+
+    .navbar {
+        align-items: normal !important;
+    }
+}
+
+/* Title Area
+--------------------------------------------- */
+
+.wp-custom-logo {
+    .title-area {
+        align-self: start;
+        margin-right: 0px;
+        max-height: none;
+        max-width: 203px;
+        padding-bottom: 5px;
+        padding-top: 5px;
+        width: 100%;
+
+        img {
+            max-height: 100px;
+            height: auto;
+            width: auto;
+            margin-top: calc(var(--#{$prefix}navbar-brand-padding-y) * -1);
+            margin-bottom: calc(var(--#{$prefix}navbar-brand-padding-y) * -1);
+        }
+
+        @include media-breakpoint-up( lg ) {
+            max-height: 250px !important;
+            max-width: 100% !important;
+            margin-top: 25px;
+            margin-bottom: 40px;
+            width: 100%;
+
+            img {
+                max-height: 250px !important;
+            }
+        }
+    }
+}
+
+/* Nav Primary
+--------------------------------------------- */
+
+.nav-primary {
+
+    @include media-breakpoint-up( lg ) {
+        &.offcanvas-lg {
+            width: 100%;
+        }	
+    }
+
+    & > .wrap {
+        width: 100%;
+
+        @include media-breakpoint-up( lg ) {
+            &.offcanvas-body {
+                padding: 40px 0;
+            }
+        }	
+    }
+
+    [class*="offcanvas"] {
+        --#{$prefix}offcanvas-close-btn-icon: '\F659';
+
+        .btn-close {
+            display: flex;
+            align-items: center;
+            width: initial;
+            height: initial;
+            background: none;
+            color: var( --#{$prefix}navbar-color );
+            line-height: 1;
+            margin-left: auto;
+
+            &::after {
+                @extend %bootstrap-icon-button;
+
+                content: var( --#{$prefix}offcanvas-close-btn-icon );
+                font-size: 25px;
+            }
+        }
+    }
+
+    &.collapse:not(.show) {
+        display: block !important;
+    }
+
+    .accordion {
+        --#{$prefix}accordion-bg: transparent;
+        --#{$prefix}accordion-active-bg: transparent;
+        --#{$prefix}accordion-btn-icon: '\F282';
+
+        &-button {
+            &::after {
+                @extend %bootstrap-icon-button;
+                content: var( --#{$prefix}accordion-btn-icon );
+            }
+        }
+
+        :focus {
+            outline: #ccc solid 1px;
+            border: none;
+            box-shadow: none;
+        }
+    }
+
+    & .menu-item {
+        width: 100%;
+
+        &:last-child {
+            border-bottom: none;
+        }
+
+        & > a,
+        & > button {
+            display: flex;
+            border: 0 !important;
+            width: 100%;
+            font-size: 15px;
+            font-weight: bold !important;
+            padding: 17px 0px;
+            text-transform: uppercase !important;
+            letter-spacing: 2px;
+            box-shadow: none;
+
+            &:hover {
+                color: var( --#{$prefix}primary);
+            }
+        }
+
+        ul {
+
+            & > .menu-item {
+                border-bottom: none;
+
+                a {
+                    font-weight: 400;
+                }
+            }
+        }
+    }
+
+    ul {
+        padding: 30px;
+
+        @include media-breakpoint-up( lg ) {
+            padding: 0px;
+        }
+    }
+}
+
+%bootstrap-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-image: none;
+    font-family: bootstrap-icons !important;
+    font-style: normal;
+    font-weight: normal !important;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+}
+
+/* Top Bar
+--------------------------------------------- */
+
+.top-bar {
+    position: relative;
+    background-color: var( --#{$prefix}light );
+    padding: 4px var( --#{$prefix}gutter-x );
+    width: 100%;
+    z-index: 500;
+    right: 0;
+
+    + .site-header {
+        top: var( --top-bar-height );
+    }
+
+    > .wrap {
+        align-items: center;
+        background-color: rgba(0,0,0,.4)!important;
+        display: flex;
+        flex-wrap: wrap;
+        position: absolute;
+        width: 100%;
+        z-index: 10;
+    }
+
+    @include media-breakpoint-up( lg ) {
+        position: absolute;
+        width: calc( 100% - 17.5vw );
+        margin: 0 0 0 auto;
+    }
+
+    .top-bar-widgets {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+
+        @include media-breakpoint-up( lg ) {
+            justify-content: space-between;
+        }
+
+        .wp-block-button__link {
+            padding: 5px 30px !important;
+        }
+
+        .widget {
+            display: flex;
+            align-items: center;
+            width: auto;
+        }
+    }
+}
+
+/* Navbar Variations
+--------------------------------------------- */
+
+.bg-dark {
+    .nav-link,
+    &.active {
+        color: #ffffff !important;
+    }	
+
+    .navbar-toggler-icon {
+        -webkit-filter: invert(100%); /* Safari/Chrome */
+        filter: invert(100%);
+    }
+}
+
+.bg-white {
+    .nav-link,
+    &.active {
+        color: #000000 !important;
+    }	
+}

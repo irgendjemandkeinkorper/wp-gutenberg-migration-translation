@@ -1,0 +1,104 @@
+@import "bootstrap/scss/functions";
+
+// 1. Add variable adjustments here
+
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/variables-dark";
+
+// 2. Include remainder of required parts
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+
+// 3. Include additional parts
+
+
+/* Site Footer
+---------------------------------------------------------------------------- */
+
+/* Footer Columns
+--------------------------------------------- */
+.site-footer {
+    .footer-widgets {
+        margin-bottom: 4rem;
+        padding-top: 4rem;
+        padding-bottom: 0;
+        --#{$prefix}gutter-x: 3.75rem;
+
+        .row {
+            --#{$prefix}gutter-x: 3.75rem;
+        }
+        
+        .widget-title {
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(var(--#{$prefix}text-color-rgb), 0.2);
+            padding-bottom: 0.5rem;
+            font-size: 1.75rem;
+            text-align: center;
+        }
+
+        @include media-breakpoint-up( md ) {
+            .widget-area {
+                border-right: 1px solid rgba(var(--#{$prefix}text-color-rgb), 0.2);
+
+                &:last-child {
+                    border-right: none;
+                }
+
+                .ghostkit-icon-box {
+                    --gkt-icon-box--icon__color: var( --footer-color );
+                }
+            }
+        }
+    }
+
+    .golfnow-footer {
+        &-wrap {
+            margin-top: 4rem;
+            border-top: 1px solid rgba(var(--#{$prefix}text-color-rgb), 0.2);
+        }
+    }
+}
+
+/* Return to Top Button
+--------------------------------------------- */
+.return-to-top-button {
+    position: fixed;
+    bottom: 5px;
+    right: 5px;
+    z-index: 50;
+    transition: background-color 0.15s ease-in;
+    transition-property: background-color, border-color, opacity, color;
+    opacity: 1;
+    --#{$prefix}btn-bg: rgba(0, 0, 0, 0.75);
+    --#{$prefix}btn-hover-bg: rgba(0, 0, 0, 1);
+    --#{$prefix}btn-color: #fff;
+    --#{$prefix}btn-hover-color: #fff;
+    --#{$prefix}btn-border-color: var( --#{$prefix}primary );
+    --#{$prefix}btn-hover-border-color: var( --#{$prefix}primary );
+    --#{$prefix}btn-border-radius: 0;
+
+    @media (prefers-reduced-motion: reduce) {
+        transition: none !important;
+    }
+
+    body:not(.scrolled) & {
+        opacity: 0;
+    }
+
+    .footer-in-view & {
+        position: absolute;
+    }
+
+    &:hover,
+    &:focus {
+        background-color: rgba(0, 0, 0, 1);
+        border-color: var( --#{$prefix}primary );
+    }
+
+    &__container {
+        position: absolute;
+        bottom: 100%;
+        right: 0;
+    }
+}

@@ -1,0 +1,114 @@
+/*
+ * Site Header — Secondary Navigation
+ *
+ * Utility nav: social icons, cart, and CTA button.
+ */
+
+@use "../../abstracts/variables/breakpoints";
+@use "../../abstracts/mixins/buttons";
+@use "../../abstracts/functions" as *;
+
+@layer components {
+
+	.header-secondary-nav {
+		--cet-theme-secondary-nav-margin-inline-start: 1.5rem;
+		margin-inline-start: var(--cet-theme-secondary-nav-margin-inline-start);
+
+		&__list {
+			--cet-theme-secondary-nav-list-list-style: none;
+			--cet-theme-secondary-nav-list-margin: 0;
+			--cet-theme-secondary-nav-list-padding: 0;
+			--cet-theme-secondary-nav-list-display: flex;
+			--cet-theme-secondary-nav-list-align-items: center;
+			--cet-theme-secondary-nav-list-gap: 24px;
+
+			list-style: var(--cet-theme-secondary-nav-list-list-style);
+			margin: var(--cet-theme-secondary-nav-list-margin);
+			padding: var(--cet-theme-secondary-nav-list-padding);
+			display: var(--cet-theme-secondary-nav-list-display);
+			align-items: var(--cet-theme-secondary-nav-list-align-items);
+			gap: var(--cet-theme-secondary-nav-list-gap);
+		}
+
+		a {
+			--cet-theme-secondary-nav-a-display: inline-block;
+
+			display: var(--cet-theme-secondary-nav-a-display);
+		}
+
+		.menu-button {
+			a {
+				--cet-theme-secondary-nav-menu-button-text-decoration: none;
+
+				@include buttons.button;
+				@include buttons.primary_button;
+				@include buttons.small_button;
+
+				text-decoration: var(--cet-theme-secondary-nav-menu-button-text-decoration);
+			}
+		}
+
+		&__social-icon-wrapper {
+			--cet-theme-secondary-nav-social-icon-wrapper-display: inline-block;
+			--cet-theme-secondary-nav-social-icon-width: 24px;
+			--cet-theme-secondary-nav-social-icon-color: var(--cet-theme-white);
+
+			display: var(--cet-theme-secondary-nav-social-icon-wrapper-display);
+			
+			@media (hover: hover) {
+				&:hover,
+				&:focus {
+					--cet-theme-secondary-nav-social-icon-color: var(--cet-theme-button-primary-bg-color-hover);
+				}
+			}
+
+			&.cart {
+				--cet-theme-secondary-nav-cart-icon-position: relative;
+
+				position: var(--cet-theme-secondary-nav-cart-icon-position);
+			}
+
+			svg {
+				--cet-svg-icon-width: var(--cet-theme-secondary-nav-social-icon-width);
+				color: var(--cet-theme-secondary-nav-social-icon-color);
+			}
+		}
+
+		.cart-count {
+			--cet-theme-secondary-nav-cart-count-position: absolute;
+			--cet-theme-secondary-nav-cart-count-top: -4px;
+			--cet-theme-secondary-nav-cart-count-left: 7.5px;
+			--cet-theme-secondary-nav-cart-count-display: flex;
+			--cet-theme-secondary-nav-cart-count-width: 15px;
+			--cet-theme-secondary-nav-cart-count-height: 15px;
+			--cet-theme-secondary-nav-cart-count-justify-content: center;
+			--cet-theme-secondary-nav-cart-count-align-items: center;
+			--cet-theme-secondary-nav-cart-count-bg-color: var(--cet-theme-teal-400);
+			--cet-theme-secondary-nav-cart-count-border-radius: 50%;
+			--cet-theme-secondary-nav-cart-count-font-size: #{rem(10)};
+			--cet-theme-secondary-nav-cart-count-line-height: 1;
+			--cet-theme-secondary-nav-cart-count-color: var(--cet-theme-white);
+			--cet-theme-secondary-nav-cart-count-letter-spacing: normal;
+
+			position: var(--cet-theme-secondary-nav-cart-count-position);
+			top: var(--cet-theme-secondary-nav-cart-count-top);
+			left: var(--cet-theme-secondary-nav-cart-count-left);
+			display: var(--cet-theme-secondary-nav-cart-count-display);
+			width: var(--cet-theme-secondary-nav-cart-count-width);
+			height: var(--cet-theme-secondary-nav-cart-count-height);
+			justify-content: var(--cet-theme-secondary-nav-cart-count-justify-content);
+			align-items: var(--cet-theme-secondary-nav-cart-count-align-items);
+			background-color: var(--cet-theme-secondary-nav-cart-count-bg-color);
+			border-radius: var(--cet-theme-secondary-nav-cart-count-border-radius);
+			font-size: var(--cet-theme-secondary-nav-cart-count-font-size);
+			font-weight: var(--cet-theme-font-weight-semi-bold);
+			line-height: var(--cet-theme-secondary-nav-cart-count-line-height);
+			color: var(--cet-theme-secondary-nav-cart-count-color);
+			letter-spacing: var(--cet-theme-secondary-nav-cart-count-letter-spacing);
+
+			&.is-empty {
+				display: none;
+			}
+		}
+	}
+}

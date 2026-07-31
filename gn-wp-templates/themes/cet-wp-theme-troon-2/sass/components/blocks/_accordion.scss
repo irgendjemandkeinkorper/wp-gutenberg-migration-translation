@@ -1,0 +1,29 @@
+:is(.cet-block-part-type-accordion, .cet-part-accordion),
+.cet-block-type-accordion {
+    &:not(:is(.cet-block-type-module-one-asset, .cet-entity-module-one-asset) *) {
+        padding-inline: 0;
+        padding-block: 0;
+        margin-bottom: var(--cet-theme-spacing-md);
+    }
+
+
+    .wp-block-accordion-heading {
+
+        .wp-block-accordion-heading__toggle-title,
+        .wp-block-accordion-heading__toggle-icon {
+            color: var(--cet-theme-gold-main);
+        }
+    }
+
+    :is(.cet-block-part-type-accordion-item, .cet-part-accordion-item).ghostkit-accordion-item {
+
+        &-active,
+        &:hover {
+            :is(.cet-block-part-type-accordion-heading, .cet-part-accordion-heading) {
+                color: var(--cet-theme-white);
+                border-color: var(--cet-theme-gold-main);
+                background-color: var(--cet-theme-gold-main)
+            }
+        }
+    }
+}

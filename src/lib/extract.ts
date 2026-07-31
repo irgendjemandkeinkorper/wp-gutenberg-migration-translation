@@ -3,11 +3,32 @@ import type { ExtractResult } from "./types";
 
 const TITLE_SPLIT_RE = /\s+[|–—-]\s+/;
 
+// Readability's scoring can latch onto a footer blurb on sparse or
+// builder-generated pages (sliders, widget rows, text split across divs).
+// If it captures less than this fraction of the page's visible text,
+// distrust it and look for a known content container instead.
+const MIN_CAPTURE_FRACTION = 0.4;
+
+// Common main-content containers across themes/builders; the densest match
+// wins. Only consulted when Readability under-captures.
+const CONTAINER_CANDIDATES = [
+  "main",
+  "article",
+  "#content",
+  ".entry-content",
+  ".post_box",
+  ".page-content",
+  "#primary",
+  ".content",
+];
+
 /**
  * Isolate the main content of a page.
  *
  * Order: explicit CSS selector override (inner HTML of the first match),
- * then Mozilla Readability, then the whole <body> as a last resort.
+ * then Mozilla Readability — unless it captures too little of the page's
+ * visible text, in which case the densest known content container is used —
+ * then the whole <body> as a last resort.
  */
 export function extractContent(
   rawHtml: string,
@@ -16,13 +37,13 @@ export function extractContent(
   const doc = new DOMParser().parseFromString(rawHtml, "text/html");
 
   let contentHtml = "";
-  let usedSelector = false;
+  let note = "";
   if (opts.selector) {
     try {
       const node = doc.querySelector(opts.selector);
       if (node && node.innerHTML.trim()) {
         contentHtml = node.innerHTML;
-        usedSelector = true;
+        note = "via CSS selector";
       }
     } catch {
       // invalid selector — fall through to Readability
@@ -31,25 +52,73 @@ export function extractContent(
 
   let readabilityTitle = "";
   if (!contentHtml) {
+    const bodyLen = visibleTextLength(doc.body);
+
+    let article: { content?: string | null; title?: string | null; textContent?: string | null } | null =
+      null;
     try {
-      const clone = doc.cloneNode(true) as Document;
-      const article = new Readability(clone).parse();
-      if (article?.content && article.content.trim()) {
-        contentHtml = article.content;
-        readabilityTitle = (article.title ?? "").trim();
-      }
+      article = new Readability(doc.cloneNode(true) as Document).parse();
     } catch {
       // Readability can throw on odd documents — fall through
     }
+    const articleLen = normalizedLength(article?.textContent ?? "");
+
+    if (article?.content?.trim() && articleLen >= MIN_CAPTURE_FRACTION * bodyLen) {
+      contentHtml = article.content;
+      readabilityTitle = (article.title ?? "").trim();
+      note = "via Readability";
+    } else {
+      const container = densestContainer(doc);
+      if (container && visibleTextLength(container.el) >= MIN_CAPTURE_FRACTION * bodyLen) {
+        contentHtml = container.el.innerHTML;
+        note = `via ${container.selector} (Readability captured too little)`;
+      }
+    }
   }
 
-  if (!contentHtml) contentHtml = doc.body?.innerHTML ?? "";
+  if (!contentHtml) {
+    contentHtml = doc.body?.innerHTML ?? "";
+    note = note || "whole page (no main container found)";
+  }
 
   return {
     title: deriveTitle(doc, readabilityTitle),
     html: contentHtml,
-    usedSelector,
+    note,
   };
+}
+
+function densestContainer(
+  doc: Document,
+): { el: Element; selector: string } | null {
+  let best: { el: Element; selector: string } | null = null;
+  let bestLen = 0;
+  for (const selector of CONTAINER_CANDIDATES) {
+    for (const el of Array.from(doc.querySelectorAll(selector))) {
+      const len = visibleTextLength(el);
+      if (len > bestLen) {
+        best = { el, selector };
+        bestLen = len;
+      }
+    }
+  }
+  return best;
+}
+
+/** Text length of an element ignoring script/style/etc. and whitespace runs. */
+function visibleTextLength(el: Element | null): number {
+  if (!el) return 0;
+  const clone = el.cloneNode(true) as Element;
+  for (const junk of Array.from(
+    clone.querySelectorAll("script, style, noscript, template, iframe"),
+  )) {
+    junk.remove();
+  }
+  return normalizedLength(clone.textContent ?? "");
+}
+
+function normalizedLength(text: string): number {
+  return text.replace(/\s+/g, " ").trim().length;
 }
 
 function deriveTitle(doc: Document, readabilityTitle: string): string {

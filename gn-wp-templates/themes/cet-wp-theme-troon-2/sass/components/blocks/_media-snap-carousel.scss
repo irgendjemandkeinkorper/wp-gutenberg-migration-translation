@@ -1,0 +1,111 @@
+@use "../../abstracts/variables/breakpoints";
+
+:is([data-cet-block="text-carousel"], [data-cet-entity="text-carousel"]).is-style-text-carousel {
+	--carousel-slides-gap: 0.25rem;
+
+	// Since core/columns forces display: flex
+	display: grid !important;
+	grid-template-columns: 1fr;
+	gap: 0;
+	padding: 0;
+	align-items: stretch;
+	overflow: hidden;
+	margin-bottom: 0;
+
+	>:is([data-cet-block-part="column"], [data-cet-part="column"]) {
+		min-width: 0;
+	}
+
+	>:is([data-cet-block-part="column"], [data-cet-part="column"]):not(:has(> :is([data-cet-block-part="image"], [data-cet-part="image"]))) {
+		align-content: center;
+		padding: 2.5rem 1rem;
+	}
+
+	>:is([data-cet-block-part="column"], [data-cet-part="column"]):has(> :is([data-cet-block-part="image"], [data-cet-part="image"])) {
+		display: flex;
+		gap: var(--carousel-slides-gap);
+		width: 100%;
+		height: 500px;
+		overflow-x: auto;
+		scroll-snap-type: x mandatory;
+		scroll-behavior: smooth;
+		scrollbar-width: none;
+		-webkit-overflow-scrolling: touch;
+
+		&::-webkit-scrollbar {
+			display: none;
+		}
+	}
+
+	:is([data-cet-block-part="image"], [data-cet-part="image"]) {
+		flex: 0 0 88%;
+		position: relative;
+		margin: 0;
+		overflow: hidden;
+		scroll-snap-align: start;
+
+		@include breakpoints.tablet {
+			flex: 0 0 79%;
+		}
+
+		a {
+			display: block;
+			width: 100%;
+			height: 100%;
+		}
+
+		&::after {
+			content: "";
+			position: absolute;
+			inset: 0;
+			z-index: 1;
+			background: rgba(0, 0, 0, 0.2);
+			pointer-events: none;
+		}
+
+		img {
+			display: block;
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			transition: transform 0.6s ease;
+		}
+
+		&:hover img {
+			transform: scale(1.04);
+		}
+	}
+
+	.wp-block-gallery,
+	.wp-block-ghostkit-carousel,
+	.ghostkit-carousel {
+		width: 100%;
+		min-width: 0;
+	}
+
+	.ghostkit-carousel {
+		overflow: hidden;
+	}
+
+	@include breakpoints.tablet {
+		grid-template-columns: 4fr 3fr;
+
+		&:is(.has-media-on-the-left, [data-cet-block-orientation="media-left"], [data-cet-block-orientation="left"]) {
+			grid-template-columns: 3fr 4fr;
+		}
+
+		&:has(> :is([data-cet-block-part="column"], [data-cet-part="column"]):first-child:has(> :is([data-cet-block-part="image"], [data-cet-part="image"]))) {
+			grid-template-columns: 3fr 4fr;
+		}
+
+		>:is([data-cet-block-part="column"], [data-cet-part="column"]):not(:has(> :is([data-cet-block-part="image"], [data-cet-part="image"]))) {
+			padding: 2.5rem 3rem;
+		}
+	}
+
+	@include breakpoints.desktop {
+		>:is([data-cet-block-part="column"], [data-cet-part="column"]):not(:has(> :is([data-cet-block-part="image"], [data-cet-part="image"]))) {
+			padding: 5rem 3.5rem;
+		}
+	}
+}

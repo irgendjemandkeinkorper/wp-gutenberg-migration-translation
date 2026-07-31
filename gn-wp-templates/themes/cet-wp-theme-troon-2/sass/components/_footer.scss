@@ -1,0 +1,10 @@
+/*
+ * Site Footer — Orchestrator
+ *
+ * Imports all footer sub-modules in dependency order.
+ * Edit files in the footer/ directory, not here.
+ */
+
+@use "footer/structure";
+@use "footer/social-nav";
+@use "footer/nav";

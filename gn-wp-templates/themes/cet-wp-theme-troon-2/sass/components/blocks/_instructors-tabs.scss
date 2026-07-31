@@ -1,0 +1,141 @@
+@use "../../abstracts/variables/breakpoints";
+@use "../../abstracts/functions" as *;
+
+:is(.cet-block-type-instructors, .cet-entity-instructors) {
+	--cet-theme-instructors-margin-block-end: 0;
+	--cet-theme-instructors-padding-block: 2.5rem;
+	--cet-theme-instructors-padding-inline: var(--cet-theme-spacing-sm);
+	--cet-theme-instructors-inner-max-width: 1304px;
+	--cet-theme-instructors-inner-margin-inline: auto;
+
+	margin-block-end: var(--cet-theme-instructors-margin-block-end);
+	padding-block: var(--cet-theme-instructors-padding-block);
+	padding-inline: var(--cet-theme-instructors-padding-inline);
+
+	@include breakpoints.desktop {
+		--cet-theme-instructors-padding-block: var(--cet-theme-spacing-xxl);
+	}
+
+	.is-style-caption {
+		--cet-theme-instructors-caption-margin: 0;
+
+		margin: var(--cet-theme-instructors-caption-margin);
+	}
+
+	:is(.cet-block-part-type-heading, .cet-part-heading) {
+		--cet-theme-instructors-heading-margin-block-start: #{rem(4)};
+		--cet-theme-instructors-heading-margin-block-end: var(--cet-theme-spacing-md);
+
+		margin-block-start: var(--cet-theme-instructors-heading-margin-block-start);
+		margin-block-end: var(--cet-theme-instructors-heading-margin-block-end);
+
+		@include breakpoints.desktop {
+			--cet-theme-instructors-heading-margin-block-start: var(--cet-theme-spacing-sm);
+		}
+	}
+
+	.cet-tabs-nav {
+		--cet-theme-instructors-nav-border-bottom: none;
+		--cet-theme-instructors-nav-display: flex;
+		--cet-theme-instructors-nav-flex-wrap: nowrap;
+		--cet-theme-instructors-nav-gap: 0;
+		--cet-theme-instructors-nav-overflow-x: auto;
+		--cet-theme-instructors-nav-margin-block-start: var(--cet-theme-spacing-md);
+		--cet-theme-instructors-nav-margin-block-end: var(--cet-theme-spacing-md);
+		--cet-theme-instructors-nav-margin-inline-start: -1rem;
+
+		border-bottom: var(--cet-theme-instructors-nav-border-bottom);
+		display: var(--cet-theme-instructors-nav-display);
+		flex-wrap: var(--cet-theme-instructors-nav-flex-wrap);
+		gap: var(--cet-theme-instructors-nav-gap);
+		overflow-x: var(--cet-theme-instructors-nav-overflow-x);
+		max-width: var(--cet-theme-instructors-inner-max-width);
+		margin-block-start: var(--cet-theme-instructors-nav-margin-block-start);
+		margin-block-end: var(--cet-theme-instructors-nav-margin-block-end);
+		margin-inline-start: var(--cet-theme-instructors-nav-margin-inline-start);
+
+		@include breakpoints.desktop {
+			--cet-theme-instructors-nav-flex-wrap: wrap;
+			--cet-theme-instructors-nav-overflow-x: visible;
+			margin-inline: var(--cet-theme-instructors-inner-margin-inline);
+			--cet-theme-instructors-nav-margin-inline-start: 0;
+		}
+	}
+
+	.cet-tabs-trigger-link {
+		--cet-theme-instructors-trigger-display: block;
+		--cet-theme-instructors-trigger-font-family: var(--cet-theme-font-heading);
+		--cet-theme-instructors-trigger-font-size: #{rem(14)};
+		--cet-theme-instructors-trigger-font-weight: var(--cet-theme-font-weight-medium);
+		--cet-theme-instructors-trigger-padding: var(--cet-theme-spacing-sm) 1.5rem;
+		--cet-theme-instructors-trigger-background: none;
+		--cet-theme-instructors-trigger-color: var(--cet-theme-color-secondary);
+		--cet-theme-instructors-trigger-text-decoration: none;
+		--cet-theme-instructors-trigger-cursor: pointer;
+		--cet-theme-instructors-trigger-border: none;
+		--cet-theme-instructors-trigger-border-right: 1px solid var(--cet-theme-neutral-400);
+		--cet-theme-instructors-trigger-appearance: none;
+		--cet-theme-instructors-trigger-opacity: initial;
+		--cet-theme-instructors-trigger-transition: color 0.2s ease, border-color 0.2s ease;
+		--cet-theme-instructors-trigger-white-space: nowrap;
+
+		display: var(--cet-theme-instructors-trigger-display);
+		font-family: var(--cet-theme-instructors-trigger-font-family);
+		font-size: var(--cet-theme-instructors-trigger-font-size);
+		font-weight: var(--cet-theme-instructors-trigger-font-weight);
+		padding: var(--cet-theme-instructors-trigger-padding);
+		background: var(--cet-theme-instructors-trigger-background);
+		color: var(--cet-theme-instructors-trigger-color);
+		text-decoration: var(--cet-theme-instructors-trigger-text-decoration);
+		cursor: var(--cet-theme-instructors-trigger-cursor);
+		border: var(--cet-theme-instructors-trigger-border);
+		border-right: var(--cet-theme-instructors-trigger-border-right);
+		appearance: var(--cet-theme-instructors-trigger-appearance);
+		opacity: var(--cet-theme-instructors-trigger-opacity);
+		transition: var(--cet-theme-instructors-trigger-transition);
+		white-space: var(--cet-theme-instructors-trigger-white-space);
+
+		@include breakpoints.desktop {
+			--cet-theme-instructors-trigger-font-size: #{rem(16)};
+			--cet-theme-instructors-trigger-padding: var(--cet-theme-spacing-sm) 2.5rem;
+		}
+
+		&:hover,
+		&.is-active,
+		&.ghostkit-tabs-buttons-item-active {
+			--cet-theme-instructors-trigger-color: var(--cet-theme-color-primary);
+		}
+	}
+
+	.cet-tabs-trigger:last-of-type .cet-tabs-trigger-link,
+	.ghostkit-tabs-buttons-item.cet-tabs-trigger-link:last-of-type {
+		--cet-theme-instructors-trigger-border-right: none;
+	}
+
+	.cet-tabs-panels {
+		max-width: var(--cet-theme-instructors-inner-max-width);
+		margin-inline: var(--cet-theme-instructors-inner-margin-inline);
+	}
+
+	.is-style-instructors-panels {
+		--cet-theme-instructors-panels-display: block;
+		--cet-theme-instructors-panels-margin-block-end: 0;
+
+		display: var(--cet-theme-instructors-panels-display);
+		margin-block-end: var(--cet-theme-instructors-panels-margin-block-end);
+	}
+
+	.is-style-instructors-panel {
+		--cet-theme-instructors-panel-display: none;
+
+		display: var(--cet-theme-instructors-panel-display);
+
+		&[data-cet-tab-active] {
+			--cet-theme-instructors-panel-display: block;
+		}
+
+		.is-style-instructor:last-of-type {
+			margin: 0;
+		}
+	}
+}

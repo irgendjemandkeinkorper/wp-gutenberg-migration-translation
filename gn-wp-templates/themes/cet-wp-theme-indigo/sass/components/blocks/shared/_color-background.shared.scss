@@ -1,0 +1,16 @@
+@use "../../../abstracts/variables/colors";
+
+@mixin color_background_shared() {
+    background-color: var(--secondary-color, #{colors.$secondary});
+    border-radius: 24px;
+    padding-top: 30px;
+    padding-right: 30px;
+    padding-bottom: 30px;
+    padding-left: 30px;
+
+    .ghostkit-col-content {
+        .wp-block-image img {
+            border-radius: 24px;
+        }
+    }
+}

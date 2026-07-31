@@ -1,0 +1,4 @@
+@use "./shared/event-details.shared"  as event-details;
+.is-style-event-details {
+    @include event-details.event_details_shared();
+}

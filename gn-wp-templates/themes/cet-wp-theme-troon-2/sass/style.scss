@@ -1,0 +1,61 @@
+/*!
+Theme Name: Troon 2.0
+Theme URI: https://github.com/wpcomvip/golfnow
+Author: Content Engineering Team
+Author URI: https://github.com/wpcomvip/golfnow
+Description: Independent block-based theme for Troon 2.0
+Version: 1.0.0
+Tested up to: 6.8
+Requires PHP: 8.2
+License: GNU General Public License v2 or later
+License URI: LICENSE
+Text Domain: cet-wp-theme-troon-2
+Tags: block-styles, wide-blocks, custom-logo, editor-style, threaded-comments, translation-ready
+
+This theme, like WordPress, is licensed under the GPL.
+*/
+
+/*--------------------------------------------------------------
+>>> LAYER ARCHITECTURE:
+----------------------------------------------------------------
+This theme uses CSS cascade layers to establish a reusable
+styling architecture for future themes.
+
+Layer order (specificity from lowest to highest):
+1. reset       - CSS reset and normalization
+2. tokens      - Design tokens (CSS custom properties)
+3. base        - Base element styling
+4. typography  - Typography-specific styles
+5. layout      - Structural layout patterns
+6. components  - Component-specific styling
+7. blocks      - Block-specific styling
+8. utilities   - Helper classes and utilities
+--------------------------------------------------------------*/
+
+/*--------------------------------------------------------------
+# Layer Order Declaration
+--------------------------------------------------------------*/
+@use "abstracts/layers";
+
+/*--------------------------------------------------------------
+# Import Partials
+--------------------------------------------------------------*/
+@use "base/base";
+@use "base/reset";
+@use "abstracts/abstracts";
+@use "base/legacy-bridge";
+@use "base/typography/typography";
+@use "base/elements/buttons";
+@use "base/elements/separator";
+@use "layouts/site";
+@use "layouts/content";
+@use "layouts/search-results";
+@use "components/_legacy";
+@use "components/header";
+@use "components/footer";
+@use "components/blocks";
+@use "components/forms";
+@use "components/search";
+@use "components/woocommerce";
+@use "utilities/accessibility";
+@use "utilities/helpers";
