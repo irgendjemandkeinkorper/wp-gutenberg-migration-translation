@@ -1,19 +1,28 @@
-export interface ImageRef {
+export type AssetType = "image" | "iframe" | "object" | "embed" | "video" | "audio" | "form";
+
+export interface AssetRef {
   index: number;
+  type: AssetType;
   src: string; // absolute URL when a page URL was provided
   alt: string;
   caption: string;
+  tagName: string;
+  attributes: Record<string, string>;
+  excerpt: string;
 }
+
+export type ImageRef = AssetRef;
 
 export interface ExtractResult {
   title: string;
   html: string;
-  usedSelector: boolean;
+  /** How the content was isolated, for the step display. */
+  note: string;
 }
 
 export interface TokenizeResult {
   html: string;
-  images: ImageRef[];
+  images: AssetRef[];
 }
 
 export interface PageResult {
@@ -21,10 +30,20 @@ export interface PageResult {
   sourceUrl: string;
   blocks: string;
   intermediateHtml: string;
-  images: ImageRef[];
+  /** Exact input HTML retained for migration QA. */
+  sourceHtml: string;
+  placeholders: MigrationPlaceholder[];
+  images: AssetRef[];
   /** indices whose position was lost and were re-appended at the end */
   lostPositions: number[];
   warnings: string[];
+}
+
+export interface MigrationPlaceholder {
+  index: number;
+  kind: string;
+  source: string;
+  label: string;
 }
 
 export interface BundlePage {
@@ -32,6 +51,9 @@ export interface BundlePage {
   link: string;
   contentBlocks: string;
   images: { src: string; alt: string }[];
+  sourceHtml?: string;
+  targetTemplate?: string;
+  placeholders?: MigrationPlaceholder[];
 }
 
 export type StepStatus = "pending" | "active" | "done" | "warn" | "error";

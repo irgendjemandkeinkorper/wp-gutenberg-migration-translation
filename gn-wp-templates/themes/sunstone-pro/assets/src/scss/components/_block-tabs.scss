@@ -1,0 +1,27 @@
+.ghostkit-tabs {
+	--gkt-tabs--button__border-width: 0;
+	--gkt-tabs--button__border-color: rgba(0, 0, 0, 0);
+	--gkt-tabs--button__font-weight: 700;
+	--gkt-tabs--button__opacity: 1;
+
+	.ghostkit-tabs-buttons-item {
+		color: $brand-headings-color;
+
+		&:hover,
+		&:focus {
+			color: $brand-link-hover;
+			background-color: rgba(0, 0, 0, 0.037);
+		}
+
+		&.ghostkit-tabs-buttons-item-active {
+			color: $brand-link;
+			font-weight: 800;
+			text-decoration: underline;
+			text-underline-offset: 4px;
+
+			&:focus {
+				text-decoration: none;
+			}
+		}
+	}
+}

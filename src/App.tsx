@@ -12,14 +12,29 @@ import type {
 } from "./lib/types";
 
 const STEP_ORDER = ["Fetch", "Extract", "Images", "Clean (LLM)", "Validate", "Blocks"];
+const GOLFNOW_TEMPLATES = [
+  "Albatross", "Aspen", "Austin", "Dogwood", "Eagleton", "Indigo", "Mulberry",
+  "Pine", "Quantum", "Redmond", "Sequoia", "Sunrise", "Sunstone", "Willow",
+];
 
 interface StepState {
   status: StepStatus;
   note?: string;
 }
 
+interface CrawledPage {
+  url: string;
+  title: string;
+  html: string;
+}
+
+interface BatchState {
+  status: "converting" | "done" | "error";
+  note?: string;
+}
+
 export default function App() {
-  const [tab, setTab] = useState<"paste" | "fetch">("paste");
+  const [tab, setTab] = useState<"paste" | "fetch" | "batch">("paste");
   const [pastedHtml, setPastedHtml] = useState("");
   const [pageUrl, setPageUrl] = useState("");
   const [selector, setSelector] = useState("");
@@ -29,8 +44,15 @@ export default function App() {
   const [apiKey, setApiKey] = useState(
     () => localStorage.getItem("blockify.apiKey") ?? "",
   );
-  const [model, setModel] = useState(
-    () => localStorage.getItem("blockify.model") ?? DEFAULT_MODEL,
+  const [model, setModel] = useState(() => {
+    // Snap stale saved IDs (e.g. retired gemini-2.5-*) back to a live model.
+    const stored = localStorage.getItem("blockify.model");
+    return stored === DEFAULT_MODEL || stored === FAST_MODEL
+      ? stored
+      : DEFAULT_MODEL;
+  });
+  const [skipLlm, setSkipLlm] = useState(
+    () => localStorage.getItem("blockify.skipLlm") === "1",
   );
 
   const [busy, setBusy] = useState(false);
@@ -42,15 +64,30 @@ export default function App() {
   const [showIntermediate, setShowIntermediate] = useState(false);
   const [showImages, setShowImages] = useState(false);
 
+  const [batch, setBatch] = useState<CrawledPage[]>([]);
+  const [batchFileName, setBatchFileName] = useState("");
+  const [batchStatus, setBatchStatus] = useState<Map<number, BatchState>>(
+    new Map(),
+  );
+  const [batchBusy, setBatchBusy] = useState(false);
+
   const [bundle, setBundle] = useState<BundlePage[]>(loadBundle);
   const [author, setAuthor] = useState("admin");
   const [postType, setPostType] = useState<"page" | "post">("page");
   const [status, setStatus] = useState<"draft" | "publish">("draft");
   const [sideload, setSideload] = useState(true);
+  const [targetTemplate, setTargetTemplate] = useState(
+    () => localStorage.getItem("blockify.targetTemplate") ?? "",
+  );
 
   useEffect(() => saveBundle(bundle), [bundle]);
   useEffect(() => localStorage.setItem("blockify.apiKey", apiKey), [apiKey]);
   useEffect(() => localStorage.setItem("blockify.model", model), [model]);
+  useEffect(
+    () => localStorage.setItem("blockify.skipLlm", skipLlm ? "1" : "0"),
+    [skipLlm],
+  );
+  useEffect(() => localStorage.setItem("blockify.targetTemplate", targetTemplate), [targetTemplate]);
 
   const lostSet = useMemo(
     () => new Set(result?.lostPositions ?? []),
@@ -66,7 +103,7 @@ export default function App() {
   }
 
   async function convert() {
-    if (!apiKey) {
+    if (!apiKey && !skipLlm) {
       setShowSettings(true);
       setError("Add your Gemini API key in Settings first.");
       return;
@@ -94,6 +131,7 @@ export default function App() {
           selector: selector.trim() || undefined,
           apiKey,
           model,
+          skipLlm,
         },
         onStep,
       );
@@ -111,6 +149,105 @@ export default function App() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function loadBatchFile(file: File) {
+    try {
+      const data: unknown = JSON.parse(await file.text());
+      const pages = Array.isArray(data)
+        ? data
+        : (data as { pages?: unknown }).pages;
+      if (
+        !Array.isArray(pages) ||
+        pages.length === 0 ||
+        !pages.every(
+          (p) =>
+            p &&
+            typeof (p as CrawledPage).url === "string" &&
+            typeof (p as CrawledPage).html === "string",
+        )
+      ) {
+        throw new Error("expected { pages: [{ url, html }, …] }");
+      }
+      setBatch(
+        pages.map((p) => ({
+          url: (p as CrawledPage).url,
+          title:
+            typeof (p as CrawledPage).title === "string"
+              ? (p as CrawledPage).title
+              : "",
+          html: (p as CrawledPage).html,
+        })),
+      );
+      setBatchFileName(file.name);
+      setBatchStatus(new Map());
+      setError("");
+    } catch (e) {
+      setError(
+        `Could not read the crawl file: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  }
+
+  async function convertBatch() {
+    if (!apiKey && !skipLlm) {
+      setShowSettings(true);
+      setError("Add your Gemini API key in Settings first (or enable Skip LLM).");
+      return;
+    }
+    setBatchBusy(true);
+    setError("");
+    const update = (i: number, s: BatchState) =>
+      setBatchStatus((prev) => new Map(prev).set(i, s));
+    for (let i = 0; i < batch.length; i++) {
+      const page = batch[i];
+      update(i, { status: "converting" });
+      try {
+        const res = await convertPage(
+          {
+            rawHtml: page.html,
+            url: page.url,
+            selector: selector.trim() || undefined,
+            apiKey,
+            model,
+            skipLlm,
+          },
+          () => {},
+        );
+        const entry: BundlePage = {
+          title: res.title || page.title || "Untitled",
+          link: page.url,
+          contentBlocks: res.blocks,
+          images: res.images
+            .filter((asset) => asset.type === "image")
+            .map(({ src, alt }) => ({ src, alt })),
+          sourceHtml: res.sourceHtml,
+          targetTemplate,
+          placeholders: res.placeholders,
+        };
+        // Replace an existing bundle entry for the same URL so re-running a
+        // batch stays idempotent.
+        setBundle((prev) => {
+          const at = prev.findIndex((b) => b.link === page.url);
+          if (at < 0) return [...prev, entry];
+          const next = [...prev];
+          next[at] = entry;
+          return next;
+        });
+        update(i, {
+          status: "done",
+          note: res.warnings.length
+            ? `${res.warnings.length} warning${res.warnings.length === 1 ? "" : "s"}`
+            : undefined,
+        });
+      } catch (e) {
+        update(i, {
+          status: "error",
+          note: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
+    setBatchBusy(false);
   }
 
   async function copyBlocks() {
@@ -131,7 +268,12 @@ export default function App() {
         title: pageTitle,
         link,
         contentBlocks: result.blocks,
-        images: result.images.map(({ src, alt }) => ({ src, alt })),
+        images: result.images
+          .filter((asset) => asset.type === "image")
+          .map(({ src, alt }) => ({ src, alt })),
+        sourceHtml: result.sourceHtml,
+        targetTemplate,
+        placeholders: result.placeholders,
       },
     ]);
   }
@@ -179,8 +321,8 @@ export default function App() {
           <label>
             Model
             <select value={model} onChange={(e) => setModel(e.target.value)}>
-              <option value={DEFAULT_MODEL}>{DEFAULT_MODEL} (best quality)</option>
-              <option value={FAST_MODEL}>{FAST_MODEL} (faster)</option>
+              <option value={DEFAULT_MODEL}>{DEFAULT_MODEL} (recommended)</option>
+              <option value={FAST_MODEL}>{FAST_MODEL} (fastest, cheapest)</option>
             </select>
           </label>
           <p className="hint">
@@ -204,9 +346,71 @@ export default function App() {
           >
             Fetch URL
           </button>
+          <button
+            className={tab === "batch" ? "tab active" : "tab"}
+            onClick={() => setTab("batch")}
+          >
+            Batch (crawl)
+          </button>
         </div>
 
-        {tab === "paste" ? (
+        <label>
+          Target GolfNow template
+          <select value={targetTemplate} onChange={(e) => setTargetTemplate(e.target.value)}>
+            <option value="">Not selected</option>
+            {GOLFNOW_TEMPLATES.map((name) => <option key={name} value={name}>{name}</option>)}
+          </select>
+        </label>
+        <p className="hint">
+          Saved with every imported page for implementation and QA. Review the{" "}
+          <a href="https://golfnowbusiness.com/template-library/" target="_blank" rel="noreferrer">template library</a>.
+        </p>
+
+        {tab === "batch" ? (
+          <>
+            <p className="hint">
+              Crawl the site from a terminal —{" "}
+              <code>node scripts/crawl.mjs https://example.com</code> — then
+              load the resulting <code>crawl/pages.json</code> here. Every page
+              is converted with the settings below (CSS selector, skip-LLM,
+              model) and added to the WXR bundle.
+            </p>
+            <input
+              type="file"
+              accept=".json,application/json"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) loadBatchFile(f);
+              }}
+            />
+            {batch.length > 0 && (
+              <>
+                <p className="hint">
+                  {batchFileName}: {batch.length} page
+                  {batch.length === 1 ? "" : "s"} loaded.
+                </p>
+                <ul className="bundle-list">
+                  {batch.map((p, i) => {
+                    const s = batchStatus.get(i);
+                    return (
+                      <li key={p.url}>
+                        <span>
+                          {s?.status === "done" && "✓ "}
+                          {s?.status === "error" && "✗ "}
+                          {s?.status === "converting" && "… "}
+                          {p.title || p.url}{" "}
+                          {s?.note && (
+                            <span className="muted">({s.note})</span>
+                          )}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            )}
+          </>
+        ) : tab === "paste" ? (
           <>
             <p className="hint">
               In your browser, open the page and use View Page Source (or copy
@@ -251,23 +455,53 @@ export default function App() {
           {showAdvanced ? "▾" : "▸"} Advanced
         </button>
         {showAdvanced && (
-          <label>
-            Content CSS selector{" "}
-            <span className="muted">
-              (overrides automatic extraction, e.g. <code>main article</code>)
-            </span>
-            <input
-              type="text"
-              value={selector}
-              onChange={(e) => setSelector(e.target.value)}
-              placeholder="e.g. #content .entry"
-            />
-          </label>
+          <div style={{ marginTop: "10px" }}>
+            <label>
+              Content CSS selector{" "}
+              <span className="muted">
+                (overrides automatic extraction, e.g. <code>main article</code>)
+              </span>
+              <input
+                type="text"
+                value={selector}
+                onChange={(e) => setSelector(e.target.value)}
+                placeholder="e.g. #content .entry"
+              />
+            </label>
+          </div>
         )}
 
-        <button className="primary" onClick={convert} disabled={busy}>
-          {busy ? "Converting…" : "Convert"}
-        </button>
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={skipLlm}
+            onChange={(e) => setSkipLlm(e.target.checked)}
+          />
+          Skip LLM cleanup (no API call)
+        </label>
+        {skipLlm && (
+          <p className="hint">
+            Deterministic mode: off-whitelist tags are stripped in code, but
+            nothing judges boilerplate — best for already-clean pages combined
+            with a content CSS selector. No API key needed.
+          </p>
+        )}
+
+        {tab === "batch" ? (
+          <button
+            className="primary"
+            onClick={convertBatch}
+            disabled={batchBusy || batch.length === 0}
+          >
+            {batchBusy
+              ? `Converting ${batchStatus.size}/${batch.length}…`
+              : "Convert all & add to bundle"}
+          </button>
+        ) : (
+          <button className="primary" onClick={convert} disabled={busy}>
+            {busy ? "Converting…" : "Convert"}
+          </button>
+        )}
       </section>
 
       {(busy || steps.size > 0) && (
@@ -317,16 +551,24 @@ export default function App() {
           </p>
           <pre className="code-view">{result.blocks}</pre>
 
+          {result.placeholders.length > 0 && (
+            <div className="warn-box">
+              <strong>Manual migration needed</strong>
+              <ul>{result.placeholders.map((p) => <li key={p.index}>{p.label}</li>)}</ul>
+            </div>
+          )}
+
           <button className="ghost small" onClick={() => setShowImages((v) => !v)}>
-            {showImages ? "▾" : "▸"} Images ({result.images.length})
+            {showImages ? "▾" : "▸"} Asset Manifest / Audit ({result.images.length})
           </button>
           {showImages && result.images.length > 0 && (
             <table className="images-table">
               <thead>
                 <tr>
                   <th>#</th>
+                  <th>Type</th>
                   <th>Source URL</th>
-                  <th>Alt text</th>
+                  <th>Details</th>
                   <th></th>
                 </tr>
               </thead>
@@ -334,8 +576,26 @@ export default function App() {
                 {result.images.map((img) => (
                   <tr key={img.index}>
                     <td>{img.index}</td>
-                    <td className="url-cell">{img.src}</td>
-                    <td>{img.alt || <span className="muted">—</span>}</td>
+                    <td>
+                      <span className="badge" style={{ backgroundColor: img.type === "image" ? undefined : "#f5f5f5", color: img.type === "image" ? undefined : "#333" }}>
+                        {img.type}
+                      </span>
+                    </td>
+                    <td className="url-cell">{img.src || <span className="muted">—</span>}</td>
+                    <td>
+                      {img.type === "image" ? (
+                        img.alt || <span className="muted">—</span>
+                      ) : (
+                        <details>
+                          <summary style={{ cursor: "pointer", fontSize: "0.75rem" }}>View details</summary>
+                          <div style={{ marginTop: "5px", fontSize: "0.75rem" }}>
+                            <strong>Attributes:</strong> <code>{JSON.stringify(img.attributes)}</code>
+                            <br />
+                            <strong>Excerpt:</strong> <pre style={{ whiteSpace: "pre-wrap", background: "#f9f9f9", padding: "4px", margin: "4px 0" }}>{img.excerpt}</pre>
+                          </div>
+                        </details>
+                      )}
+                    </td>
                     <td>
                       {lostSet.has(img.index) && (
                         <span className="badge">position lost</span>
@@ -356,6 +616,10 @@ export default function App() {
           {showIntermediate && (
             <pre className="code-view">{result.intermediateHtml}</pre>
           )}
+          <details>
+            <summary>Original source HTML (retained in WXR metadata)</summary>
+            <pre className="code-view">{result.sourceHtml}</pre>
+          </details>
         </section>
       )}
 
@@ -368,7 +632,8 @@ export default function App() {
                 <span>
                   {p.title}{" "}
                   <span className="muted">
-                    ({p.images.length} image{p.images.length === 1 ? "" : "s"})
+                    ({p.images.length} image{p.images.length === 1 ? "" : "s"}
+                    {p.targetTemplate ? ` · ${p.targetTemplate}` : ""})
                   </span>
                 </span>
                 <button

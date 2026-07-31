@@ -1,0 +1,302 @@
+@use "../../abstracts/variables/breakpoints";
+@use "../../abstracts/functions" as *;
+
+.cet-block-type-cover {
+    // Base layout — scoped to registered styles only so unstyled core/cover
+    // blocks are not affected. Mirrors the $cover_styles list in block_styles.php.
+    &:is(.is-style-hero-tall-image, .is-style-hero-tall-video, .is-style-hero-short-image, .is-style-contact, .is-style-feature) {
+        --cet-theme-cover-margin-block-start: 0;
+        --cet-theme-cover-margin-block-end: 0;
+        --cet-theme-cover-inner-container-max-width: 1240px;
+        --cet-theme-cover-inner-container-height: 100%;
+        --cet-theme-cover-inner-container-display: flex;
+        --cet-theme-cover-inner-container-flex-direction: column;
+
+        margin-block-start: var(--cet-theme-cover-margin-block-start);
+        margin-block-end: var(--cet-theme-cover-margin-block-end);
+
+        .cet-block-inner-container {
+            max-width: var(--cet-theme-cover-inner-container-max-width);
+            height: var(--cet-theme-cover-inner-container-height);
+            display: var(--cet-theme-cover-inner-container-display);
+            flex-direction: var(--cet-theme-cover-inner-container-flex-direction);
+        }
+
+        .is-style-caption {
+            --cet-theme-cover-style-caption-color: var(--cet-theme-gold-300);
+            --cet-theme-cover-style-caption-font-weight: var(--cet-theme-font-weight-semi-bold);
+            --cet-theme-cover-style-caption-line-height: 1.14;
+            --cet-theme-cover-style-caption-margin: 0;
+
+            color: var(--cet-theme-cover-style-caption-color);
+            font-weight: var(--cet-theme-cover-style-caption-font-weight);
+            line-height: var(--cet-theme-cover-style-caption-line-height);
+            margin: var(--cet-theme-cover-style-caption-margin);
+
+            @include breakpoints.tablet {
+                --cet-theme-cover-style-caption-line-height: 1.2;
+            }
+        }
+    }
+
+    // Styles `Hero Tall` and `Hero Tall Video`
+    &.is-style-hero-tall-image,
+    &.is-style-hero-tall-video {
+        --cet-theme-cover-hero-tall-height: 600px;
+        --cet-theme-cover-hero-tall-padding: var(--cet-theme-spacing-xl) 5rem;
+
+        height: var(--cet-theme-cover-hero-tall-height);
+        padding: var(--cet-theme-cover-hero-tall-padding);
+
+        @include breakpoints.tablet {
+            --cet-theme-cover-hero-tall-height: 800px;
+        }
+
+        @include breakpoints.laptop {
+            --cet-theme-cover-hero-tall-height: 1080px;
+            --cet-theme-cover-hero-tall-padding: 5rem 5rem 10rem 5rem;
+        }
+
+        &::after {
+            --cet-theme-cover-hero-tall-after-content: "";
+            --cet-theme-cover-hero-tall-after-position: absolute;
+            --cet-theme-cover-hero-tall-after-inset: 0;
+            --cet-theme-cover-hero-tall-after-z-index: 1;
+            --cet-theme-cover-hero-tall-after-background: linear-gradient(180deg, rgba(0, 0, 0, 0.20) 19.3%, rgba(102, 102, 102, 0.20) 26.67%),
+                radial-gradient(35.74% 35.74% at 50% 64.26%, rgba(255, 255, 255, 0.12) 52.4%, rgba(0, 0, 0, 0.24) 100%),
+                linear-gradient(rgba(0, 0, 0, 0.20), rgba(0, 0, 0, 0.20));
+            --cet-theme-cover-hero-tall-after-pointer-events: none;
+
+            content: var(--cet-theme-cover-hero-tall-after-content);
+            position: var(--cet-theme-cover-hero-tall-after-position);
+            inset: var(--cet-theme-cover-hero-tall-after-inset);
+            z-index: var(--cet-theme-cover-hero-tall-after-z-index);
+            background: var(--cet-theme-cover-hero-tall-after-background);
+            pointer-events: var(--cet-theme-cover-hero-tall-after-pointer-events);
+        }
+    }
+
+    // Style `Hero Tall Video`
+    &.is-style-hero-tall-video {
+        // Not palette color #EDEDED
+        --cet-theme-cover-hero-tall-border: 1px solid #EDEDED;
+
+        border: var(--cet-theme-cover-hero-tall-border);
+    }
+
+    // Style `Feature`
+    &.is-style-feature {
+        --cet-theme-cover-feature-height: 600px;
+        --cet-theme-cover-feature-padding: 2.5rem var(--cet-theme-spacing-unit);
+
+        height: var(--cet-theme-cover-feature-height);
+        padding: var(--cet-theme-cover-feature-padding);
+
+        @include breakpoints.tablet {
+            --cet-theme-cover-feature-height: 800px;
+            --cet-theme-cover-feature-padding: 7.5rem 2.5rem 5rem 2.5rem;
+        }
+
+        .cet-block-background {
+            --cet-theme-cover-feature-cover-bg: linear-gradient(180deg, rgba(102, 102, 102, 0.40) 0%, rgba(0, 0, 0, 0.40) 58.5%), linear-gradient(0deg, rgba(0, 0, 0, 0.24) 0%, rgba(0, 0, 0, 0.24) 100%);
+            --cet-theme-cover-feature-cover-box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 15px 0 rgba(0, 0, 0, 0.07);
+            --cet-theme-cover-feature-cover-opacity: 1;
+
+            background: var(--cet-theme-cover-feature-cover-bg);
+            box-shadow: var(--cet-theme-cover-feature-cover-box-shadow);
+            opacity: var(--cet-theme-cover-feature-cover-opacity);
+        }
+
+        .cet-block-inner-container {
+
+            h2.cet-block-part-type-heading:first-of-type {
+                --cet-theme-cover-feature-type-heading-font-size: 1.125rem;
+                --cet-theme-cover-feature-type-heading-margin: var(--cet-theme-spacing-xs) 0 var(--cet-theme-spacing-unit);
+                --cet-theme-cover-feature-type-heading-line-height: 1.25;
+                --cet-theme-cover-feature-type-heading-letter-spacing: 0.4px;
+
+                font-size: var(--cet-theme-cover-feature-type-heading-font-size);
+                line-height: var(--cet-theme-cover-feature-type-heading-line-height);
+                margin: var(--cet-theme-cover-feature-type-heading-margin);
+                letter-spacing: var(--cet-theme-cover-feature-type-heading-letter-spacing);
+
+                @include breakpoints.tablet {
+                    --cet-theme-cover-feature-type-heading-font-size: 2.25rem;
+                    --cet-theme-cover-feature-type-heading-line-height: 1.1;
+                    --cet-theme-cover-feature-type-heading-letter-spacing: -0.3px;
+                    --cet-theme-cover-feature-type-heading-margin: var(--cet-theme-spacing-unit) 0 var(--cet-theme-spacing-unit);
+                }
+            }
+
+            .cet-block-part-type-body {
+                --cet-theme-cover-feature-type-margin: 0;
+
+                margin: var(--cet-theme-cover-feature-type-margin);
+            }
+
+            > *:last-child {
+                --cet-theme-cover-feature-last-child-font-size: #{rem(16)};
+                --cet-theme-cover-feature-last-child-font-weight: var(--cet-theme-font-weight-medium);
+                --cet-theme-cover-feature-last-child-margin-top: auto;
+                --cet-theme-cover-feature-last-child-text-align: center;
+
+                font-size: var(--cet-theme-cover-feature-last-child-font-size);
+                font-weight: var(--cet-theme-cover-feature-last-child-font-weight);
+                margin-top: var(--cet-theme-cover-feature-last-child-margin-top);
+
+                @include breakpoints.tablet {
+                    --cet-theme-cover-feature-last-child-font-size: 1.25rem;
+                    --cet-theme-cover-feature-last-child-font-weight: var(--cet-theme-font-weight-regular);
+                }
+
+                @include breakpoints.mobile {
+                    text-align: var(--cet-theme-cover-feature-last-child-text-align);
+                }
+            }
+
+            p:not(.is-style-caption) {
+                --cet-theme-cover-feature-p-font-size: #{rem(12)};
+                --cet-theme-cover-feature-p-font-weight: var(--cet-theme-font-weight-medium);
+                --cet-theme-cover-feature-p-line-height: 1.64;
+                --cet-theme-cover-feature-p-letter-spacing: 0.2px;
+                --cet-theme-cover-feature-p-text-shadow: 0 4px 4px rgba(255, 255, 255, 0.16);
+
+                font-size: var(--cet-theme-cover-feature-p-font-size);
+                font-weight: var(--cet-theme-cover-feature-p-font-weight);
+                line-height: var(--cet-theme-cover-feature-p-line-height);
+                letter-spacing: var(--cet-theme-cover-feature-p-letter-spacing);
+                text-shadow: var(--cet-theme-cover-feature-p-text-shadow);
+
+                @include breakpoints.tablet {
+                    --cet-theme-cover-feature-p-font-size: #{rem(14)};
+                }
+            }
+        }
+    }
+
+    // Style `Hero Short Image`
+    &.is-style-hero-short-image.has-no-image {
+        background-color: var(--cet-theme-color-grey-100, #f0f0f0);
+    }
+
+    &.is-style-hero-short-image {
+        --cet-theme-cover-hero-short-height: 342px;
+        --cet-theme-cover-hero-short-padding: 10.625rem var(--cet-theme-spacing-unit) 2.5rem var(--cet-theme-spacing-unit);
+
+        height: var(--cet-theme-cover-hero-short-height);
+        padding: var(--cet-theme-cover-hero-short-padding);
+        min-height: unset;
+        margin-block-end: var(--cet-theme-cover-hero-short-offset-bottom, 1rem);
+
+        @include breakpoints.tablet {
+            --cet-theme-cover-hero-short-height: 486px;
+            --cet-theme-cover-hero-short-padding: var(--cet-theme-spacing-unit) var(--cet-theme-spacing-unit) 5rem var(--cet-theme-spacing-unit);
+        }
+
+        .cet-block-background {
+            --cet-theme-cover-hero-short-cover-bg: linear-gradient(180deg, rgba(0, 0, 0, 0.20) 19.3%, rgba(102, 102, 102, 0.20) 26.67%),
+                radial-gradient(35.74% 35.74% at 50% 64.26%, rgba(255, 255, 255, 0.12) 52.4%, rgba(0, 0, 0, 0.24) 100%),
+                linear-gradient(rgba(0, 0, 0, 0.20), rgba(0, 0, 0, 0.20));
+            --cet-theme-cover-hero-short-cover-opacity: 1;
+
+            background: var(--cet-theme-cover-hero-short-cover-bg);
+            opacity: var(--cet-theme-cover-hero-short-cover-opacity);
+        }
+
+        .cet-block-inner-container {
+            --cet-theme-cover-hero-short-inner-container-justify-content: flex-end;
+
+            justify-content: var(--cet-theme-cover-hero-short-inner-container-justify-content);
+
+            h1.cet-block-part-type-heading {
+                --cet-theme-cover-hero-short-h1-font-size: #{rem(22)};
+                --cet-theme-cover-hero-short-h1-letter-spacing: 0.4px;
+                --cet-theme-cover-hero-short-h1-color: var(--cet-theme-white);
+                --cet-theme-cover-hero-short-h1-font-weight: var(--cet-theme-font-weight-medium);
+                --cet-theme-cover-hero-short-h1-margin: 0.75rem 0 0;
+                --cet-theme-cover-hero-short-h1-text-shadow: 0 8px 16px rgba(255, 255, 255, 0.24);
+
+                font-size: var(--cet-theme-cover-hero-short-h1-font-size);
+                font-weight: var(--cet-theme-cover-hero-short-h1-font-weight);
+                letter-spacing: var(--cet-theme-cover-hero-short-h1-letter-spacing);
+                color: var(--cet-theme-cover-hero-short-h1-color);
+                margin: var(--cet-theme-cover-hero-short-h1-margin);
+                text-shadow: var(--cet-theme-cover-hero-short-h1-text-shadow);
+
+                @include breakpoints.tablet {
+                    --cet-theme-cover-hero-short-h1-font-size: 3rem;
+                    --cet-theme-cover-hero-short-h1-letter-spacing: -0.5px;
+                    --cet-theme-cover-hero-short-h1-font-weight: var(--cet-theme-font-weight-regular);
+                    --cet-theme-cover-hero-short-h1-margin: var(--cet-theme-spacing-unit) 0 0;
+                }
+            }
+        }
+    }
+
+    // Style `Contact`
+    &.is-style-contact {
+        --cet-theme-cover-contact-height: 440px;
+        --cet-theme-cover-contact-padding: var(--cet-theme-spacing-md) var(--cet-theme-spacing-unit);
+
+        height: var(--cet-theme-cover-contact-height);
+        padding: var(--cet-theme-cover-contact-padding);
+
+        @include breakpoints.tablet {
+            --cet-theme-cover-contact-height: 500px;
+            --cet-theme-cover-contact-padding: 5rem;
+        }
+
+        .cet-block-inner-container {
+            --cet-theme-cover-contact-inner-container-justify-content: flex-end;
+            --cet-theme-cover-inner-container-align-items: flex-start;
+
+            justify-content: var(--cet-theme-cover-contact-inner-container-justify-content);
+        }
+
+        .cet-block-background {
+            --cet-theme-cover-contact-cover-bg: linear-gradient(262deg, rgba(0, 0, 0, 0.00) 56.53%, rgba(0, 0, 0, 0.20) 65.2%), 
+                linear-gradient(0deg, rgba(0, 0, 0, 0.40) 0%, rgba(0, 0, 0, 0.40) 100%);
+            --cet-theme-cover-contact-cover-box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.08);
+            --cet-theme-cover-contact-cover-opacity: 1;
+
+            background: var(--cet-theme-cover-contact-cover-bg);
+            box-shadow: var(--cet-theme-cover-contact-cover-box-shadow);
+            opacity: var(--cet-theme-cover-contact-cover-opacity);
+        }
+
+        .cet-block-part-type-heading {
+            --cet-theme-cover-contact-type-heading-color: var(--cet-theme-white);
+
+            color: var(--cet-theme-cover-contact-type-heading-color);
+        }
+
+        h4.cet-block-part-type-heading {
+            --cet-theme-cover-contact-h4-font-size: #{rem(20)};
+            --cet-theme-cover-contact-h4-margin: 0 0 1.25rem;
+
+            font-size: var(--cet-theme-cover-contact-h4-font-size);
+            margin: var(--cet-theme-cover-contact-h4-margin);
+        }
+
+        p {
+            --cet-theme-cover-contact-p-font-size: #{rem(16)};
+            --cet-theme-cover-contact-p-line-height: 1.24;
+            --cet-theme-cover-contact-p-letter-spacing: 0.5px;
+            --cet-theme-cover-contact-p-margin: 0;
+
+            font-size: var(--cet-theme-cover-contact-p-font-size);
+            line-height: var(--cet-theme-cover-contact-p-line-height);
+            letter-spacing: var(--cet-theme-cover-contact-p-letter-spacing);
+            margin: var(--cet-theme-cover-contact-p-margin);
+        }
+
+        p:last-child {
+            --cet-theme-cover-contact-p-margin: var(--cet-theme-spacing-unit) 0 0;
+        }
+
+        .cet-block-part-type-body {
+            --cet-theme-cover-contact-type-color: var(--cet-theme-white);
+            color: var(--cet-theme-cover-contact-type-color);
+        }
+    }
+}

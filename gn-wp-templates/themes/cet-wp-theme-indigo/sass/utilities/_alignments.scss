@@ -1,0 +1,18 @@
+@use "../abstracts/mixins/mixins";
+.alignleft {
+	width: fit-content;
+	margin-inline-end: auto;
+	max-width: 65%;
+}
+
+.alignright {
+	width: fit-content;
+	margin-inline-start: auto;
+	max-width: 65%;
+}
+
+.aligncenter {
+	width: fit-content;
+	@include mixins.center-block;
+	max-width: 65%;
+}

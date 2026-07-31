@@ -1,0 +1,122 @@
+/*
+ * Typography
+ *
+ * Typography foundation styles and Gutenberg font size mappings.
+ */
+
+@use "sass:list";
+@use "copy";
+@use "headings";
+@use "links";
+@use "../../abstracts/variables/breakpoints";
+
+@layer typography {
+
+    body,
+    label,
+    input,
+    select,
+    optgroup,
+    textarea,
+    p,
+    li {
+        color: var(--cet-theme-color-text);
+        font-size: var(--cet-theme-paragraph2-font-size-mobile);
+        font-family: var(--cet-theme-font-body);
+        font-weight: var(--cet-theme-font-weight-regular);
+        line-height: var(--cet-theme-paragraph-secondary-line-height);
+        letter-spacing: var(--cet-theme-paragraph-secondary-letter-spacing);
+
+        @include breakpoints.tablet {
+            font-size: var(--cet-theme-paragraph2-font-size-tablet);
+        }
+    }
+
+    .p1,
+    .has-large-font-size {
+        font-size: var(--cet-theme-paragraph-font-size-mobile);
+        font-family: var(--cet-theme-font-body);
+        font-weight: var(--cet-theme-font-weight-medium);
+        line-height: var(--cet-theme-paragraph-line-height);
+        letter-spacing: var(--cet-theme-paragraph-letter-spacing);
+
+        @include breakpoints.tablet {
+            font-size: var(--cet-theme-paragraph-font-size-tablet);
+        }
+    }
+
+    .p2,
+    .has-medium-font-size {
+        font-size: var(--cet-theme-paragraph2-font-size-mobile);
+        font-family: var(--cet-theme-font-body);
+        font-weight: var(--cet-theme-font-weight-regular);
+        line-height: var(--cet-theme-paragraph-secondary-line-height);
+        letter-spacing: var(--cet-theme-paragraph-secondary-letter-spacing);
+
+        @include breakpoints.tablet {
+            font-size: var(--cet-theme-paragraph2-font-size-tablet);
+        }
+    }
+
+    .p3,
+    .has-small-font-size {
+        font-size: var(--cet-theme-paragraph3-font-size-mobile);
+        font-family: var(--cet-theme-font-body);
+        font-weight: var(--cet-theme-font-weight-medium);
+        line-height: var(--cet-theme-paragraph-secondary-line-height);
+        letter-spacing: var(--cet-theme-paragraph-secondary-letter-spacing);
+
+        @include breakpoints.tablet {
+            font-size: var(--cet-theme-paragraph3-font-size-tablet);
+        }
+    }
+
+    .caption,
+    .is-style-caption {
+        color: var(--cet-theme-gold-main);
+        font-size: var(--cet-theme-caption-font-size-mobile);
+        font-family: var(--cet-theme-font-body);
+        font-weight: var(--cet-theme-font-weight-regular);
+        line-height: var(--cet-theme-caption-line-height);
+        letter-spacing: var(--cet-theme-caption-letter-spacing);
+        text-transform: uppercase;
+
+        @include breakpoints.tablet {
+            font-size: var(--cet-theme-caption-font-size-tablet);
+        }
+    }
+
+    .overline,
+    .is-style-overline {
+        color: var(--cet-theme-color-text);
+        font-size: var(--cet-theme-caption-font-size-mobile);
+        font-family: var(--cet-theme-font-body);
+        font-weight: var(--cet-theme-font-weight-semi-bold);
+        line-height: var(--cet-theme-heading-line-height);
+        letter-spacing: var(--cet-theme-overline-letter-spacing);
+        text-transform: uppercase;
+
+        @include breakpoints.tablet {
+            font-size: var(--cet-theme-caption-font-size-tablet);
+        }
+
+    }
+
+    $headings-with-desktop: ('h1', 'h2', 'h3');
+
+    @each $h in ('h1', 'h2', 'h3', 'h4', 'h5', 'h6') {
+        .has-#{$h}-font-size {
+            font-size: var(--cet-theme-heading-font-size-#{$h}-mobile);
+
+            @include breakpoints.tablet {
+                font-size: var(--cet-theme-heading-font-size-#{$h}-tablet);
+            }
+
+            @if list.index($headings-with-desktop, $h) {
+                @include breakpoints.desktop {
+                    font-size: var(--cet-theme-heading-font-size-#{$h}-desktop);
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,193 @@
+@use "sass:map";
+@use "../../abstracts/variables/colors";
+@use "../../abstracts/mixins/buttons";
+@use "../../abstracts/variables/breakpoints";
+/*
+    Cart page overrides for woo commerce. 
+    Todo: Move logic from lib to here or vise versa.
+
+    The flow for Purchasing tickets is
+    1) The Events Calendar choose event
+    2) The Events Ticket add event into cart
+    3) Go to either WooCommerce Checkout/ WooCommerce Cart Page
+*/
+
+.wp-block-woocommerce-cart {
+
+    .wp-block-woocommerce-cart-items-block.wc-block-components-main , .wp-block-woocommerce-cart-totals-block {
+        width: 100%;
+    }
+
+    .wc-block-components-main.wp-block-woocommerce-cart-items-block {
+        margin-bottom: 48px;
+        border: 1px solid #{map.get(colors.$grey,200)};
+        border-radius: 24px; 
+        padding: 12px;
+
+        @include breakpoints.tablet{ 
+            padding: 24px;
+        }
+
+        @include breakpoints.desktop {
+            padding: 48px;
+        }
+
+        table.wp-block-woocommerce-cart-line-items-block {
+            border-bottom: 0;
+        }
+
+        .wc-block-cart-items__header {
+            display: block;
+            margin-bottom: 12px;
+
+            .wc-block-cart-items__header-total {
+                display: none;
+            }
+        }
+
+        .wc-block-cart-items__row {
+            padding: 24px 40px;
+            background-color: #f9f9f9;
+            display: flex;
+            gap: 24px;
+            border-radius: 24px;
+
+            > * {
+                // To account for cart.css important and display content
+                background-color: #f9f9f9 !important;
+                border-top: 0;
+            }
+
+            .wc-block-cart-item__image { 
+                display: none;
+                margin-bottom: 0;
+                padding: 0;
+
+                @include breakpoints.laptop {
+                    display: block;
+
+                    img {
+                        height: 80px;
+                        width: 80px;
+                    }
+                }
+            }
+
+            .wc-block-cart-item__total {
+                display: none;
+            }
+        }
+
+        .wc-block-cart-items__header-image {
+            font-size: 24px;
+        }
+
+        .wc-block-cart-item__product {
+            width: 100%;
+            padding: 0;
+            margin-bottom: 0;
+
+            .wc-block-cart-item__wrap {
+                display: grid;
+                grid-template-columns: 2fr 1fr;
+                grid-template-rows: 1fr 1fr 1fr;
+
+                @include breakpoints.tablet {
+                    grid-template-rows: 2fr;
+                }
+
+                > * {
+                    margin-bottom: 6px;
+                    display: flex;
+                    align-items: center;
+                    @include breakpoints.tablet {
+                        margin-bottom: 0;
+                    }
+                }
+
+                > .wc-block-components-product-name {
+                    grid-column: 1;
+                }
+
+                > .wc-block-cart-item__prices {
+                    
+                    grid-column: 3;
+                    grid-row: 3;
+                    text-align: center;
+                    @include breakpoints.tablet {
+                        grid-row: 1;
+                        grid-column: 2;
+                    }
+
+                }
+
+                > .wc-block-components-product-metadata  {
+                    grid-column: 1 / span 2;
+                    grid-row: 2;
+                }
+
+                > .wc-block-cart-item__quantity {
+                    grid-column: 3;
+                    grid-row: 1 / span 2;
+                    display: flex;
+                    flex-direction: column;
+                    padding: 0;
+                }
+
+            }
+        }
+
+   }
+
+    .wc-block-components-sidebar.wp-block-woocommerce-cart-totals-block {
+        border: 1px solid #E0E0E0;
+        border-radius: 24px; 
+        padding: 12px;
+
+        @include breakpoints.tablet{ 
+            padding: 24px;
+        }
+
+        @include breakpoints.desktop {
+            padding: 48px;
+        }
+
+
+        .wc-block-components-totals-wrapper {
+            border-top: none;
+        }
+        .wc-block-cart__totals-title {
+            font-weight: 700;
+            font-size: 24px;
+        }
+
+        .wp-block-woocommerce-cart-order-summary-coupon-form-block {
+            .wc-block-components-totals-coupon__button {
+                @include buttons.button;
+                color: white;
+                background-color: var(--primary-color, #{colors.$primary});
+                &:disabled {
+                    background-color: #CCCFD1;
+                    color: #626B72;
+                }
+                
+            }
+
+        }
+
+        .wc-block-cart__submit-container {
+            display: flex;
+            justify-content: center;
+
+
+            .wc-block-cart__submit-button {
+                @include buttons.button;
+                background-color: var(--primary-color, #{colors.$primary});
+                width: max-content;
+                min-height: 100%;
+                color: white;
+                text-decoration: none;
+            }
+        }
+    }
+}

@@ -1,0 +1,8 @@
+@use "../../abstracts/variables/colors";
+@use "./shared/image-grid.shared" as image_grid;
+
+.wp-block-group.is-style-image-grid {
+
+     @include image_grid.image_grid_shared();
+
+}

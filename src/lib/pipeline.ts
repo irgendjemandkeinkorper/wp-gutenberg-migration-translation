@@ -1,6 +1,7 @@
 import { serializeBlocks } from "./blocks";
+import { cleanCacheKey, readCleanCache, writeCleanCache } from "./cache";
 import { extractContent } from "./extract";
-import { cleanHtml } from "./llm";
+import { cleanHtml, SYSTEM_PROMPT } from "./llm";
 import { TOKEN_PREFIX } from "./tokens";
 import { tokenizeImages } from "./tokenize";
 import {
@@ -18,6 +19,8 @@ export interface ConvertInput {
   selector?: string;
   apiKey: string;
   model: string;
+  /** Deterministic mode: enforce the whitelist in code only, no Gemini call. */
+  skipLlm?: boolean;
 }
 
 export async function convertPage(
@@ -35,18 +38,112 @@ export async function convertPage(
   onStep({
     step: "Extract",
     status: "done",
-    note: extracted.usedSelector ? "via CSS selector" : "via Readability",
+    note: extracted.note,
   });
 
   onStep({ step: "Images", status: "active" });
   const tokenized = tokenizeImages(extracted.html, input.url);
+  const placeholders = tokenized.images
+    .filter((asset) => asset.type !== "image")
+    .map((asset) => ({
+      index: asset.index,
+      kind: asset.type,
+      source: asset.src,
+      label:
+        `MIGRATION PLACEHOLDER ${asset.index + 1}: ${asset.type}` +
+        (asset.src ? ` — ${asset.src}` : ""),
+    }));
   onStep({
     step: "Images",
     status: "done",
-    note: `${tokenized.images.length} image${tokenized.images.length === 1 ? "" : "s"} tokenized`,
+    note:
+      `${tokenized.images.length} asset${tokenized.images.length === 1 ? "" : "s"} tokenized; ` +
+      `${placeholders.length} placeholder${placeholders.length === 1 ? "" : "s"}`,
   });
 
   const expected = tokenized.images.map((i) => i.index);
+  let validatedHtml: string;
+  let lostPositions: number[];
+
+  if (input.skipLlm) {
+    onStep({ step: "Clean (LLM)", status: "done", note: "skipped — no API call" });
+    onStep({ step: "Validate", status: "active" });
+    ({ html: validatedHtml, lostPositions } = enforceTokens(
+      tokenized.html,
+      expected,
+    ));
+    onStep({
+      step: "Validate",
+      status: lostPositions.length ? "warn" : "done",
+      note: lostPositions.length ? "repaired" : "deterministic cleanup",
+    });
+  } else {
+    // The prompt is part of the key so editing it invalidates old entries.
+    const cacheKey = cleanCacheKey(input.model, SYSTEM_PROMPT, tokenized.html);
+    const cached = readCleanCache(cacheKey);
+    if (cached) {
+      onStep({ step: "Clean (LLM)", status: "done", note: "cached — no API call" });
+      onStep({ step: "Validate", status: "done", note: "cached" });
+      validatedHtml = cached.html;
+      lostPositions = cached.lostPositions;
+    } else {
+      ({ html: validatedHtml, lostPositions } = await cleanWithRetries(
+        input,
+        extracted.title,
+        tokenized.html,
+        expected,
+        onStep,
+      ));
+      writeCleanCache(cacheKey, { html: validatedHtml, lostPositions });
+    }
+  }
+
+  if (lostPositions.length) {
+    warnings.push(
+      `Position lost for asset${lostPositions.length === 1 ? "" : "s"} ` +
+        `${lostPositions.join(", ")} — appended at the end of the page.`,
+    );
+  }
+  if (placeholders.length) {
+    warnings.push(
+      `${placeholders.length} unsupported feature${placeholders.length === 1 ? " was" : "s were"} ` +
+        "retained as visible migration placeholders.",
+    );
+  }
+
+  onStep({ step: "Blocks", status: "active" });
+  const assetMap = new Map(tokenized.images.map((i) => [i.index, i]));
+  const blocks = serializeBlocks(validatedHtml, assetMap);
+
+  if (!blocks.trim()) throw new Error("Empty output after block conversion.");
+  if (blocks.includes(TOKEN_PREFIX)) {
+    throw new Error(
+      "Internal error: an asset token leaked into the final markup. " +
+        "Please report this page's HTML as a bug.",
+    );
+  }
+  onStep({ step: "Blocks", status: "done" });
+
+  return {
+    title: extracted.title,
+    sourceUrl: input.url ?? "",
+    blocks,
+    intermediateHtml: validatedHtml,
+    sourceHtml: input.rawHtml,
+    placeholders,
+    images: tokenized.images,
+    lostPositions,
+    warnings,
+  };
+}
+
+async function cleanWithRetries(
+  input: ConvertInput,
+  title: string,
+  tokenizedHtml: string,
+  expected: number[],
+  onStep: (u: StepUpdate) => void,
+): Promise<{ html: string; lostPositions: number[] }> {
   let violationNote: string | undefined;
   let validatedHtml = "";
   let clean = true;
@@ -56,8 +153,8 @@ export async function convertPage(
     const cleaned = await cleanHtml({
       apiKey: input.apiKey,
       model: input.model,
-      title: extracted.title,
-      html: tokenized.html,
+      title,
+      html: tokenizedHtml,
       violationNote,
     });
     if (!cleaned.trim()) throw new Error("The model returned an empty result.");
@@ -80,42 +177,23 @@ export async function convertPage(
   }
   onStep({ step: "Clean (LLM)", status: "done" });
 
-  let lostPositions: number[] = [];
-  if (!clean) {
-    const repaired = repairTokens(validatedHtml, expected);
-    validatedHtml = repaired.html;
-    lostPositions = repaired.lostPositions;
-    if (lostPositions.length) {
-      warnings.push(
-        `Position lost for image${lostPositions.length === 1 ? "" : "s"} ` +
-          `${lostPositions.join(", ")} — appended at the end of the page.`,
-      );
-    }
-    onStep({ step: "Validate", status: "warn", note: "repaired after retries" });
-  } else {
+  if (clean) {
     onStep({ step: "Validate", status: "done" });
+    return { html: validatedHtml, lostPositions: [] };
   }
+  const repaired = repairTokens(validatedHtml, expected);
+  onStep({ step: "Validate", status: "warn", note: "repaired after retries" });
+  return repaired;
+}
 
-  onStep({ step: "Blocks", status: "active" });
-  const imageMap = new Map(tokenized.images.map((i) => [i.index, i]));
-  const blocks = serializeBlocks(validatedHtml, imageMap);
-
-  if (!blocks.trim()) throw new Error("Empty output after block conversion.");
-  if (blocks.includes(TOKEN_PREFIX)) {
-    throw new Error(
-      "Internal error: an image token leaked into the final markup. " +
-        "Please report this page's HTML as a bug.",
-    );
+/** Validate + (if tokens drifted) repair, without any model involvement. */
+function enforceTokens(
+  html: string,
+  expected: number[],
+): { html: string; lostPositions: number[] } {
+  const { html: validated, report } = validateFragment(html, expected);
+  if (!report.missing.length && !report.extra.length) {
+    return { html: validated, lostPositions: [] };
   }
-  onStep({ step: "Blocks", status: "done" });
-
-  return {
-    title: extracted.title,
-    sourceUrl: input.url ?? "",
-    blocks,
-    intermediateHtml: validatedHtml,
-    images: tokenized.images,
-    lostPositions,
-    warnings,
-  };
+  return repairTokens(validated, expected);
 }

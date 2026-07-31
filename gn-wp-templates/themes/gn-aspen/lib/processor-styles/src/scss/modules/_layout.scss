@@ -1,0 +1,169 @@
+@import "bootstrap/scss/functions";
+
+// 1. Add variable adjustments here
+
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/variables-dark";
+
+// 2. Include remainder of required parts
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+
+$gray: 			#cacaca 	!default;
+$gray-dark: 	#646464 	!default;
+$dark-dark: 	#141414	!default;
+
+$new-bg: (
+	"gray": 		to-rgb($gray),
+	"gray-dark": 	to-rgb($gray-dark),
+    "dark-dark":    to-rgb($dark-dark),
+);
+
+$utilities: (
+	"color-rgb": (
+		css-var: true,
+		css-variable-name: text-color-rgb,
+		class: text,
+		values: $utilities-text
+	),
+	"color": map-merge(
+		map-get($utilities, "color"),
+		(
+			local-vars: map-merge(
+				map-get( map-get( $utilities, "color" ), "local-vars" ),
+				(
+					text-color: var( --#{$prefix}text-color-rgb, var(--#{$prefix}text-opacity) ),
+				)
+			),
+			values: map-loop( $new-bg, rgba-css-var, "$key", "bg" )
+		),
+	),
+	"background-color":	 map-merge(
+		map-get( $utilities, "background-color" ),
+		(
+			values: map-loop($new-bg, rgba-css-var, "$key", "bg")
+		)
+	),
+);
+
+// 3. Include additional parts
+// @import "bootstrap/scss/helpers";
+@import "bootstrap/scss/utilities/api";
+
+/* Site Layout
+---------------------------------------------------------------------------- */
+
+/* Container
+--------------------------------------------- */
+.site-container {
+	position: relative;
+
+	.entry-content {
+		margin-bottom: 2rem;
+	}
+}
+
+/* Entry Content
+--------------------------------------------- */
+.entry,
+.archive {
+	&-header {
+		margin-top: 0 !important;
+		padding-top: 4rem;
+
+		& .text-center,
+		&.text-center {
+			text-align: center;
+
+			.entry-title,
+			.archive-title {
+				&::after {
+					margin: 10px auto 10px;
+				}
+			}
+		}
+
+		@extend %title-width;
+	}
+
+	&-title {
+		font-size: 2.5rem;
+
+		&::after {
+			position: relative;
+			display: block;
+			width: 30px;
+			height: 2px;
+			margin: 10px 0 20px;
+			background-color: var( --#{$prefix}primary );
+			transition: width 0.5s ease;
+			content: "";
+
+			.bg-primary & {
+				background-color: var( --#{$prefix}primary-contrast );
+			}
+		}
+	}
+
+	.card {
+		&-header {
+			@extend %title-width;
+		}
+	}
+}
+
+.blog {
+	&:not( .genesis-singular-image-visible ) {
+		.site-header.floating {
+			position: relative;
+			top: 0;
+		}
+
+		.archive {
+			&-title {
+				&::after {
+					margin: 10px auto 10px;
+				}
+			}
+
+			&-description {
+				margin-top: 4rem;
+
+				@extend %title-width;
+			}
+		}
+	}
+}
+
+%title-width {
+	&:hover,
+	&:focus-within {
+		.entry-title,
+		.archive-title {
+			&::after {
+				width: 70px;
+			}
+		}
+	}
+
+}
+
+/* Preloader
+--------------------------------------------- */
+#preloader {
+	position: fixed !important;
+
+	.queryloader__overlay {
+		&__percentage {
+			margin-top: -70px !important;
+			font-family: var(--#{$prefix}header-font),var(--#{$prefix}font-sans-serif);
+			font-weight: 900;
+		}
+
+		&__bar {
+			top: auto !important;
+			bottom: 0 !important;
+		}
+	}
+}

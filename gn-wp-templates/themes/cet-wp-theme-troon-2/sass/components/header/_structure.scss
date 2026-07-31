@@ -1,0 +1,118 @@
+/*
+ * Site Header — Structure
+ *
+ * Sticky shell and all .site-header BEM elements.
+ * Z-index chain is defined here on .site-header so all
+ * siblings (overlay, burger-nav) inherit via the common ancestor.
+ */
+
+@use "../../abstracts/variables/breakpoints";
+
+@layer components {
+
+	.sticky-container {
+		--cet-theme-site-header-position: fixed;
+
+		position: var(--cet-theme-site-header-position);
+		// Didn't apply variable, since value in `%` turns into `px`, which breaks the layout.
+		width: 100%;
+		top: var(--admin-bar-height, 0);
+		z-index: var(--cet-theme-site-header-z-index);
+	}
+
+	.site-header {
+		--cet-theme-site-header-z-index: 110;
+		--cet-theme-overlay-z-index: calc(var(--cet-theme-site-header-z-index) + 1);
+		--cet-theme-burger-nav-z-index: calc(var(--cet-theme-overlay-z-index) + 5);
+
+		--cet-theme-site-header-background-color: rgba(34, 34, 34, 0.40);
+		--cet-theme-site-header-backdrop-filter: blur(40px);
+		--cet-theme-logo-filter: grayscale(1) brightness(0) invert(1);
+
+		&__body {
+			background: var(--cet-theme-site-header-background-color);
+			backdrop-filter: var(--cet-theme-site-header-backdrop-filter);
+		}
+
+		&__container {
+			--cet-theme-site-header-container-display: flex;
+			--cet-theme-site-header-container-align-items: center;
+			--cet-theme-site-header-container-justify-content: space-between;
+			--cet-theme-site-header-container-max-width: 1320px;
+			--cet-theme-site-header-container-padding: 0.625rem var(--cet-theme-spacing-sm);
+			--cet-theme-site-header-container-margin: 0 auto;
+			--cet-theme-site-header-container-min-height: 80px;
+
+			display: var(--cet-theme-site-header-container-display);
+			align-items: var(--cet-theme-site-header-container-align-items);
+			justify-content: var(--cet-theme-site-header-container-justify-content);
+			max-width: var(--cet-theme-site-header-container-max-width);
+			padding: var(--cet-theme-site-header-container-padding);
+			margin: var(--cet-theme-site-header-container-margin);
+			min-height: var(--cet-theme-site-header-container-min-height);
+
+			@include breakpoints.laptop {
+				--cet-theme-site-header-container-min-height: 100px;
+			}
+		}
+
+		&__menus-wrapper {
+			--cet-theme-site-header-menus-wrapper-display: flex;
+			--cet-theme-site-header-menus-wrapper-align-items: center;
+
+			display: var(--cet-theme-site-header-menus-wrapper-display);
+			align-items: var(--cet-theme-site-header-menus-wrapper-align-items);
+		}
+
+		&__burger {
+			--cet-theme-burger-background: transparent;
+			--cet-theme-burger-backdrop-filter: unset;
+			--cet-theme-burger-border: none;
+			--cet-theme-burger-color: var(--cet-theme-white);
+			--cet-theme-burger-cursor: pointer;
+			--cet-theme-burger-padding: 0;
+			--cet-theme-burger-margin-inline-start: 1rem;
+			--cet-theme-burger-display: revert;
+
+			background: var(--cet-theme-burger-background);
+			backdrop-filter: var(--cet-theme-burger-backdrop-filter);
+			border: var(--cet-theme-burger-border);
+			color: var(--cet-theme-burger-color);
+			cursor: var(--cet-theme-burger-cursor);
+			padding: var(--cet-theme-burger-padding);
+			margin-inline-start: var(--cet-theme-burger-margin-inline-start);
+			display: var(--cet-theme-burger-display);
+
+			@include breakpoints.laptop {
+				--cet-theme-burger-display: none;
+
+				&.has-tertiary-menu {
+					--cet-theme-burger-display: block;
+				}
+			}
+		}
+
+		&__overlay {
+			--cet-theme-overlay-visibility: hidden;
+			--cet-theme-overlay-position: fixed;
+			--cet-theme-overlay-top: 0;
+			--cet-theme-overlay-left: 0;
+			--cet-theme-overlay-background-color: rgba(0, 0, 0, 0.4);
+			--cet-theme-overlay-opacity: 0;
+			--cet-theme-overlay-transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+			--cet-theme-overlay-width: 100%;
+			--cet-theme-overlay-height: 100%;
+
+			visibility: var(--cet-theme-overlay-visibility);
+			position: var(--cet-theme-overlay-position);
+			top: var(--cet-theme-overlay-top);
+			left: var(--cet-theme-overlay-left);
+			width: var(--cet-theme-overlay-width);
+			height: var(--cet-theme-overlay-height);
+			background-color: var(--cet-theme-overlay-background-color);
+			opacity: var(--cet-theme-overlay-opacity);
+			z-index: var(--cet-theme-overlay-z-index);
+			transition: var(--cet-theme-overlay-transition);
+		}
+	}
+}

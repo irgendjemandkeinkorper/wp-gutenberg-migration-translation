@@ -1,0 +1,200 @@
+@use "../../abstracts/variables/colors";
+@use "../../abstracts/variables/breakpoints";
+
+.rkv-event-aggregator.list.horizontal {
+    position: relative;
+    background-color: var(--secondary-color, #{colors.$secondary}); 
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding: 48px 0;
+    > p:empty {
+    display: none;
+    }
+    p:empty {
+        display: none;
+    }
+    .ghostkit-carousel {
+        position: relative;
+        &:has(.ghostkit-carousel-arrow-prev[aria-disabled="true"])
+        :has(.ghostkit-carousel-arrow-next[aria-disabled="true"]) {
+            .ghostkit-carousel-arrow {
+            display: none;   
+            }
+        }
+    }
+    .item-wrap {
+        padding-bottom: 50px;
+    }
+    .item {
+        border-radius: 24px;
+        padding: 20px;
+        background-color: #fff;
+        box-sizing: border-box;
+        margin-right: 0;   
+    }
+
+    .event-card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    .event-details-and-tags {
+       .event-image {
+        padding: 0;
+        margin: 0 0 20px 0;
+        border-radius: 24px;
+        position: relative;
+        max-height: 550px;
+        width: 100%;
+        svg {
+            padding: 5px;
+            border: 1px solid #fff;
+            border-radius: 20px;
+            background-color: rgba(0, 0, 0, .4);
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            bottom: 19px;
+            right: 21px;
+            color: #fff;
+        }
+        img {
+            border-radius: 24px;
+            width: 100%;
+        }
+       } 
+       .event-primary-tag {
+        position: absolute;
+        top: 8px;
+        right: 25px;
+        color: #fff;
+        background-color: var(--primary-color, #{colors.$primary}); 
+        padding: 2px 16px;
+        border-radius: 24px;
+        font-size: 12px;
+       }
+       .event-title {
+        text-decoration: none;
+        color: black;
+        font-size: 18px;
+        padding: 0;
+        font-weight: 600;
+        margin-bottom: 16px;
+       }
+       .event-excerpt {
+        font-size: 14px;
+        margin-bottom: 16px;
+       }
+       
+    }
+    .event-actions {
+        margin-top: auto;
+        display: flex;
+        gap: 15px;
+        align-items: stretch;
+            .wp-block-button {
+                flex: 1 1 0;
+                display: flex;        
+                align-items: stretch;
+                min-width: 0;         
+                margin: 0;   
+            }
+            .wp-block-button__link {
+                font-size: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                height: 100%;
+                flex: 1 1 auto;
+                box-sizing: border-box;
+                margin: 0;        
+                padding: 9px 20px;   
+            }
+       }
+    .ghostkit-carousel-bullets {
+        display: none;
+    }
+
+     .ghostkit-carousel-arrow {
+        width: 60px;
+        height: 60px;
+        top: initial;
+        bottom: -90px;
+        border: 2px solid gray;
+        &.ghostkit-carousel-arrow-prev {
+            left: 40%;
+        @media screen and (max-width: 350px) {
+             left: 15%; 
+        }
+        @media screen and (min-width: 351px) and (max-width: 767px) {
+            left: 30%;
+        }
+
+        @include breakpoints.tablet {
+            left: 40%;
+        }
+
+        @include breakpoints.desktop {
+            left: 43%;
+        }
+    }
+
+        &.ghostkit-carousel-arrow-next {
+            right:40%;
+        @media screen and (max-width: 350px) {
+           right: 15%;
+        }
+        @media screen and (min-width: 351px) and (max-width: 767px) {
+            right: 30%;
+        }
+
+        @include breakpoints.tablet {
+            right: 40%;
+        }
+
+        @include breakpoints.desktop {
+            right: 43%;
+        }
+    }
+    }
+
+
+
+    .ghostkit-carousel-arrow svg.ghostkit-svg-icon {
+        height: 2em;
+        width: 2em;
+    }
+
+    .ghostkit-carousel-arrow:hover {
+        border: 2px solid #274f8c;
+    }
+
+    .ghostkit-carousel-arrow:hover svg.ghostkit-svg-icon {
+        color: #274f8c;
+    }
+
+    .ghostkit-carousel-arrow {
+        opacity: initial;
+        &.swiper-button-disabled {
+            opacity: .3;
+        }
+    }
+
+    .rkv-events-additional-links {
+		display: none;
+	}
+
+     .ghostkit-carousel[data-slides-per-view="5"] {
+     .event-image {
+        svg {
+            width: 30px;
+            height: 30px;
+            bottom: 9px;
+            right: 12px;
+        }
+       } 
+  }
+}

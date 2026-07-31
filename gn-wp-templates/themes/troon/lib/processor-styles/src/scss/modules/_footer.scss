@@ -1,0 +1,247 @@
+@import "bootstrap/scss/functions";
+
+// 1. Add variable adjustments here
+
+@import "bootstrap/scss/variables";
+
+// 2. Include remainder of required parts
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+
+// 3. Include additional parts
+@import "bootstrap/scss/buttons";
+
+/* Site Footer
+---------------------------------------------------------------------------- */
+
+.site-footer {
+    .footer-widgets {
+        .widget-title {
+            font-family: var( --#{$prefix}body-font-family );
+            font-size: 1.125rem;
+            margin-bottom: .5rem;
+        }
+
+        
+        a {
+            color: rgba( var(--#{$prefix}text-color-rgb), 0.8 );
+            transition: color 0.3s;
+
+            &:hover,
+            &:focus {
+                color: rgba( var(--#{$prefix}text-color-rgb), 1 );
+            }
+        }
+
+        strong {
+            display: block;
+            margin-top: 1.25rem;
+            font-size: 1.25rem;
+        }
+    }
+
+    .widget-area {
+        display: flex;
+    }
+
+    ul {
+        list-style-type: none;
+        margin-bottom: 0;
+        padding-left: 0;
+
+        li {
+            list-style-type: none;
+        }
+    }
+
+    &::before {
+        content: "";
+        display: block;
+        height: 4px;
+        width: 100%;
+        background-color: var( --#{$prefix}primary );
+    }
+}
+
+/* Menu Widget In Footer
+--------------------------------------------- */
+
+.site-footer {
+    .menu {
+        display: flex;
+        flex-wrap: wrap;
+        grid-gap: var( --#{$prefix}gutter-x );
+
+        .menu-item-header {
+            margin-bottom: 21px;
+            font-family: var(--#{$prefix}body-font-family);
+            font-size: 1.125rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        & > .menu-item {
+            min-width: 16.66666667%;
+
+            & > a {
+                font-size: 1.125rem;
+                font-weight: 800;
+                line-height: 1.5;
+                text-transform: uppercase;
+            }
+        }
+
+        ul {
+            .menu-item-has-children {
+                margin-top: 21px;
+                border-top: 1px solid rgba( var(--#{$prefix}text-color-rgb), 0.3 );
+                padding-top: 21px;
+
+                & + .menu-item {
+                    padding-top: 21px;
+                    border-top: 1px solid rgba( var(--#{$prefix}text-color-rgb), 0.3 );
+                    margin-top: 21px;
+                }
+            }
+        }
+
+        @include media-breakpoint-down( md ) {
+            justify-content: center;
+
+            & > .menu-item {
+                min-width: 100%;
+            }
+        }
+    }
+
+    .power-footer-widget-area {
+        grid-gap: calc(var(--#{$prefix}gutter-x)*.5);
+    }
+}
+
+/* GolfNow Footer Wrap
+--------------------------------------------- */
+
+.golfnow-footer-wrap {
+    @include media-breakpoint-up( lg ) {
+        .row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+        }
+    }
+
+    .hr-container-for-footer {
+        grid-column: 1 / 4;
+        hr {
+            margin-top: 5rem;
+            margin-bottom: 0;
+        }
+    }
+
+    .troon-logo {
+        padding: 1.5625rem calc( var( --#{$prefix}gutter-x ) * .5 );
+        text-align: center;
+
+        img {
+            max-width: 150px;
+        }
+
+        @include media-breakpoint-up( md ) {
+            flex: 1;
+            text-align: left;
+        }
+    }
+
+    .golfnow-footer {
+        text-align: center;
+
+        img {
+            max-height: 15px;
+        }
+
+        .poweredbyGCS {
+            display: flex;
+            justify-content: center;
+            grid-gap: 5px;
+
+			img {
+				max-width: 200px;
+			}
+        }
+
+        @include media-breakpoint-down( lg ) {
+            flex: auto;
+        }
+    }
+
+    .menu {
+        grid-gap: 0.75rem;
+        justify-content: end;
+        padding-right: 0.75rem;
+
+        .menu-item {
+            padding: 0 !important;
+
+            a {
+                color: rgba( var(--#{$prefix}text-color-rgb), 0.7 );
+                font-size: 1.125rem;
+                font-weight: 400;
+                line-height: 1.5;
+                text-transform: none;
+                text-decoration: none;;
+
+                &:hover,
+                &:focus {
+                    color:rgba( var(--#{$prefix}text-color-rgb), 1 );
+                }
+            }
+        }
+
+    }
+}
+
+/* Return to Top Button
+--------------------------------------------- */
+
+.return-to-top-button {
+    @extend .btn;
+    position: fixed;
+    bottom: 5px;
+    right: 5px;
+    z-index: 50;
+    transition: background-color 0.15s ease-in;
+    transition-property: background-color, border-color, opacity;
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.75);
+    color: #333;
+
+    @media (prefers-reduced-motion: reduce) {
+        transition: none !important;
+    }
+
+    body:not(.scrolled) & {
+        opacity: 0;
+    }
+
+    .footer-in-view & {
+        position: absolute;
+    }
+
+    &:hover,
+    &:focus,
+    &:active {
+        background-color: rgba(255, 255, 255, 1);
+        color: #333;
+        border-color: var( --#{$prefix}secondary, var( --#{$prefix}primary ) );
+    }
+
+    &:active {
+        box-shadow: 5px 5px 5px var( 0, 0, 0, 0.15 );
+    }
+
+    &__container {
+        position: relative;
+        bottom: auto;
+    }
+}

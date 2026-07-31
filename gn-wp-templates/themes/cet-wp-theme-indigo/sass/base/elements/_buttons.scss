@@ -1,0 +1,91 @@
+@use "../../abstracts/variables/colors";
+@use "../../abstracts/variables/breakpoints";
+@use "../../abstracts/mixins/buttons";
+
+a.button,
+button,
+input[type="button"],
+input[type="reset"],
+input[type="submit"] {
+
+	@include buttons.button;
+
+	&.primary {
+		@include buttons.button-primary;
+	}
+
+	&.secondary {
+		@include buttons.button-secondary;
+	}
+
+	&.outline {
+		@include buttons.button-outline;
+	}
+
+	&.ghost {
+		@include buttons.button-ghost;
+	}
+}
+
+.wp-block-button,
+.wp-block-button.button,
+.wp-block-buttons,
+.wp-block-buttons.button {
+	a {
+		@include buttons.button;
+		@include buttons.button-primary;
+	}
+
+	&.is-style-secondary {
+		a {
+			@include buttons.button-secondary;
+		}
+	}
+
+	&.is-style-outline {
+		a {
+			@include buttons.button-outline;
+		}
+	}
+
+	&.is-style-ghost {
+		a {
+			@include buttons.button-ghost;
+		}
+	}
+
+	&.is-style-text {
+		a {
+			@include buttons.button-text;
+		}
+	}
+
+	&.is-style-icon {
+		a {
+			@include buttons.button-ghost;
+			@include buttons.button-icon;
+		}
+	}
+}
+.woocommerce:where(body:not(.woocommerce-block-theme-has-button-styles)) a.button.primary {
+	@include buttons.button;
+	@include buttons.button-primary;
+}
+
+div.wpforms-container-full .wpforms-submit-container button[type=submit].wpforms-submit,
+.woocommerce:where(body:not(.woocommerce-block-theme-has-button-styles)) input.button.primary {
+	@include buttons.button;
+	@include buttons.button-primary;
+
+	width: 100%;
+	height: auto;
+
+	&:after {
+		display: none;
+	}
+
+	@include breakpoints.tablet {
+		width: auto;
+		padding-inline: 44px;
+	}
+}

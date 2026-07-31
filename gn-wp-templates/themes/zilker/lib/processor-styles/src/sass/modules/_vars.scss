@@ -1,0 +1,47 @@
+$desktop_width: 1260px;
+$page_padding: (
+    "default": 15px,
+    "cards": 20px,
+    "banner": 25px,
+    "large": 30px,
+);
+
+$font-sizes: (
+    "h1": 2.375rem,
+    "h2": 1.75rem,
+    "h3": 1.375rem,
+    "h4": 1.125rem,
+    "h5": 1rem,
+    "h6": 0.9375rem,
+    "p" : 1rem,
+    "p2": 0.875rem,
+    "p3": 0.75rem,
+);
+
+$font-weights: (
+    "h1": var(--font-weight-level-1),
+    "h2": var(--font-weight-level-2),
+    "h3": var(--font-weight-level-2),
+    "h4": var(--font-weight-level-2),
+    "h5": var(--font-weight-level-1),
+    "h6": var(--font-weight-level-1),
+    "nav": var(--font-weight-navs),
+    "p": 400
+);
+
+$line-height: 1.5;
+
+$theme: (
+    "primary": #e1513e,
+    "dark-background": #252932,
+    "dark-contrast": #ffffff,
+    "light-background": #ffffff,
+    "light-contast": #111111,
+    "almost-black": #111111,
+    "white": #ffffff,
+    "lt-gray": #fafafa,
+    "lt-gray--dark": #eee,
+    "gray": #9ca4af,
+    "medium-gray": #434955,
+    "dark-gray": #353b47,
+);

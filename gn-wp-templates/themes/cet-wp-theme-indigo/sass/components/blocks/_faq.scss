@@ -1,0 +1,98 @@
+@use "../../abstracts/variables/colors";
+@use "../../abstracts/variables/breakpoints";
+
+:where(.wp-block-group.is-style-faq) {
+    background-color: var(--secondary-color, #{colors.$secondary});
+    padding: clamp(24px, 4vw, 60px) clamp(16px, 3vw, 40px);
+
+    &.alignfull {
+        width: 100vw;
+        position: relative;
+        left: 50%;
+        margin-left: -50vw;
+        padding-inline: 0;
+
+        > * {
+            max-width: 1140px;
+            margin-inline: auto;
+            padding-inline: clamp(16px, 3vw, 40px);
+        }
+    }
+    counter-reset: faq-counter;
+
+    .wp-block-heading {
+        margin-block-end: clamp(16px, 2vw, 32px);
+    }
+
+    .wp-block-details {
+        background-color: #{colors.$white};
+        border-radius: 24px;
+        padding: clamp(12px, 1.5vw, 20px) clamp(16px, 2vw, 24px);
+        counter-increment: faq-counter;
+
+        & + .wp-block-details {
+            margin-block-start: 12px;
+        }
+
+        > summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            list-style: none;
+            cursor: pointer;
+            color: var(--primary-color, #{colors.$primary});
+            font-weight: 700;
+            padding-block: 4px;
+
+            &::-webkit-details-marker {
+                display: none;
+            }
+
+            &::before {
+                content: counter(faq-counter);
+                flex: 0 0 auto;
+                width: 28px;
+                height: 28px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                background-color: var(--primary-color, #{colors.$primary});
+                color: #{colors.$white};
+                border-radius: 50%;
+                font-size: 14px;
+            }
+
+            &::after {
+                content: "";
+                flex: 0 0 auto;
+                width: 8px;
+                height: 8px;
+                border-right: 2px solid currentcolor;
+                border-bottom: 2px solid currentcolor;
+                margin-inline-start: auto;
+                transform: rotate(45deg);
+                transition: transform 0.2s ease;
+            }
+        }
+
+        &[open] > summary {
+            padding-block-end: clamp(8px, 1vw, 16px);
+
+            &::after {
+                transform: rotate(225deg);
+            }
+        }
+
+        .wp-block-paragraph,
+        .wp-block-list {
+            color: #{colors.$primary_text};
+            font-size: clamp(14px, 1.1vw, 16px);
+            padding-inline-start: 40px;
+            margin-block-start: 0;
+        }
+
+        .wp-block-list {
+            list-style-position: inside;
+        }
+    }
+}

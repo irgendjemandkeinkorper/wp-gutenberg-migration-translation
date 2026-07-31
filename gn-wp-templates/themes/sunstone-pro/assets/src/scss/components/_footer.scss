@@ -1,0 +1,154 @@
+/* Site Footer
+---------------------------------------------------------------------------- */
+
+.footer-widgets,
+.site-footer {
+	font-family: $font-secondary;
+	color: $footer-text-color;
+
+	* a {
+		color: $footer-link-color;
+
+		&:hover,
+		&:focus {
+			color: $brand-footer-links-hover;
+		}
+	}
+}
+
+.footer-widgets {
+	background-color: $footer-top-bg-color;
+	font-size: 16px;
+	padding: 40px 0 20px;
+
+	.widget-area {
+		padding: 0 10px;
+		margin-bottom: 20px;
+	}
+
+	.widget-title {
+		color: $footer-widget-title-color;
+		padding: 0;
+		margin: 0 0 0.5rem 0;
+		font-weight: 500;
+		font-size: 1.6rem;
+		line-height: 1.2;
+		position: relative;
+
+		&:after {
+			content: '';
+			display: block;
+			width: 60px;
+			height: 2px;
+			margin-top: 5px;
+			margin-bottom: 5px;
+			background-color: $footer-widget-underline-color;
+			transition: width 300ms;
+		}
+	}
+
+	&:hover .widget-title:after {
+		width: 80px;
+	}
+}
+
+.site-footer {
+	background-color: $footer-bottom-bg-color;
+	font-size: 16px;
+
+	.wrap {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0 10px;
+
+		.nav-secondary {
+			order: 2;
+			margin-left: 15px;
+
+			a {
+				margin: 0;
+			}
+
+			.genesis-nav-menu {
+				@media screen and (max-width: 960px) {
+					padding-bottom: 0;
+				}
+
+				@media screen and (max-width: 767px) {
+					padding-bottom: 25px;
+				}
+			}
+
+			li:not(:last-child) {
+				position: relative;
+
+				&:after {
+					content: ' |';
+				}
+			}
+
+			li.accessibility-icon a {
+				position: relative;
+				padding-left: 20px;
+
+				&:before {
+					content: '';
+					height: 16px;
+					width: 16px;
+					position: absolute;
+					top: 50%;
+					transform: translateY(-50%);
+					left: 0px;
+					-webkit-mask: url( '/wp-content/themes/sunstone-pro/images/universal-access.svg' ) no-repeat 50% 50%;
+					mask: url( '/wp-content/themes/sunstone-pro/images/universal-access.svg' ) no-repeat 50% 50%;
+					-webkit-mask-size: cover;
+					mask-size: cover;
+					background: $brand-footer-links;
+				}
+
+				&:hover:before {
+					background: $brand-footer-links-hover;
+				}
+			}
+		}
+
+		@media (min-width: 768px) {
+			min-height: 70px;
+		}
+
+		&:before,
+		&:after {
+			content: none;
+		}
+	}
+
+	.golfnow-footer {
+		display: flex;
+		align-items: center;
+		gap: 20px;
+	}
+
+	@media (max-width: 767px) {
+		.wrap {
+			flex-direction: column;
+			justify-content: center;
+		}
+
+		.golfnow-footer {
+			margin: 25px 0 20px 0;
+			flex-direction: column;
+		}
+	}
+}
+
+.site-container div#golfadvisor_b1 {
+	width: 100%;
+    text-align: center;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    background: $footer-top-bg-color;
+    margin: 0;
+    height: 140px;
+}

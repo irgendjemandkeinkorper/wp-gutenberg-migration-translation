@@ -1,0 +1,53 @@
+/*
+ * CSS Reset
+ *
+ * Wrapped in the 'reset' layer.
+ */
+
+@layer reset {
+
+	*,
+	*::before,
+	*::after {
+		box-sizing: border-box;
+	}
+
+	html {
+		-webkit-text-size-adjust: 100%;
+	}
+
+	body {
+		margin: 0;
+	}
+
+	img {
+		max-width: 100%;
+		height: auto;
+		border-style: none;
+	}
+
+	button,
+	input,
+	optgroup,
+	select,
+	textarea {
+		font-family: inherit;
+		font-size: 100%;
+		line-height: var(--cet-theme-paragraph-line-height);
+		margin: 0;
+	}
+
+	button,
+	input {
+		overflow: visible;
+	}
+
+	button,
+	select {
+		text-transform: none;
+	}
+}
+
+figure.wp-block-image {
+  margin: 0;
+}

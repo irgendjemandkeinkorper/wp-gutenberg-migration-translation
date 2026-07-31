@@ -1,0 +1,13 @@
+/.claude
+/test-results
+/node_modules
+/vendor
+/build
+style.css
+style.css.map
+style-rtl.css
+editor.css
+editor.css.map
+.DS_Store
+*.map
+.phpunit.result.cache

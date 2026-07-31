@@ -1,0 +1,283 @@
+@import "bootstrap/scss/functions";
+
+// 1. Add variable adjustments here
+
+@import "bootstrap/scss/variables";
+
+// 2. Include remainder of required parts
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+
+// 3. Include additional parts
+
+@import "bootstrap/scss/utilities/api";
+
+$gray: 			#cacaca 	!default;
+$charcoal: 	    #121212	!default;
+
+$new-bg: (
+    "gray": 		to-rgb($gray),
+    "charcoal":     to-rgb($charcoal),
+);
+
+$utilities: (
+    "color-rgb": (
+        css-var: true,
+        css-variable-name: text-color-rgb,
+        class: text,
+        values: $utilities-text
+    ),
+    "color": map-merge(
+        map-get($utilities, "color"),
+        (
+            local-vars: map-merge(
+                map-get( map-get( $utilities, "color" ), "local-vars" ),
+                (
+                    text-color: var( --#{$prefix}text-color-rgb, var(--#{$prefix}text-opacity) ),
+                )
+            ),
+            values: map-loop( $new-bg, rgba-css-var, "$key", "bg" )
+        ),
+    ),
+    "background-color":	 map-merge(
+        map-get( $utilities, "background-color" ),
+        (
+            values: map-loop($new-bg, rgba-css-var, "$key", "bg")
+        )
+    ),
+);
+
+@import "bootstrap/scss/utilities/api";
+
+$container-max-widths: map-merge(
+	$container-max-widths,
+	(
+		sm: 540px,
+		md: 720px,
+		lg: 720px,
+		xl: 960px,
+		xxl: 1140px
+	),
+);
+
+
+@import "bootstrap/scss/containers";
+@import "bootstrap/scss/grid";
+@import "bootstrap/scss/offcanvas";
+
+/* Structure and Layout
+---------------------------------------------------------------------------- */
+
+/* Site Container
+--------------------------------------------- */
+
+.site-container {
+
+	@include media-breakpoint-up( lg ) {
+		flex-direction: row !important;
+		flex-wrap: wrap;
+	}
+
+	.admin-bar & {
+		min-height: calc(100vh - 32px);
+	}
+}
+
+
+/* Alignment
+--------------------------------------------- */
+
+.site-container {
+	.main-container {
+		@extend .container;
+		width: calc(100% - 17.5vw) !important; //all other site-inners need width: 100% !important;
+		//width: 100%;
+
+		& > .site-inner {
+			width: 100%;
+			padding: 0 !important;
+		}
+	
+		.alignfull {
+			@extend .container-fluid;
+
+			margin-left: calc((-100vw + var(--scrollbar-width, 17px))/2 + 50%);
+			margin-right: calc(-50vw + 50%);
+			width: calc(100vw - var(--scrollbar-width, 17px));
+	
+			@include media-breakpoint-up( lg ) {
+				width: calc(82.5vw - var(--scrollbar-width, 17px)) !important;
+				margin-left: calc((-82.5vw + var(--scrollbar-width, 17px))/2 + 50%) !important;
+				margin-right: calc(-50vw + 50%) !important;
+			}
+	
+			.alignwide {
+				@extend .container;
+			}
+		}
+	
+		.alignwide {
+			@include media-breakpoint-up( lg ) {
+				margin-left: calc(82.5vw - 7.5%);
+				margin-right: calc(82.5vw - 7.5%);
+				max-width: calc(82.5vw - var(--scrollbar-width, 17px));
+				width: 115%;
+			}	
+		}
+	}
+
+	.alignfull:not(.has-background) .wp-block-group__inner-container > p:not(.has-background-color) {
+		padding-left: 0px !important;
+		padding-right: 0px !important;
+	}
+}
+
+/* Pine CTA
+--------------------------------------------- */
+
+.pine-cta {
+	.wp-block-button__link {
+		box-shadow: inset 0 0 0 0 var(--#{$prefix}primary) !important;
+		-webkit-transition: ease-out 0.4s;
+		-moz-transition: ease-out 0.4s;
+		transition: ease-out 0.4s;
+
+		&:hover {
+			box-shadow: inset 400px 0 0 0 var(--#{$prefix}primary) !important;	
+			color: var(--#{$prefix}primary-contrast) !important;
+		}
+	}	
+}
+
+/* Page Headers
+--------------------------------------------- */
+.entry-header {
+	width: 100%;	
+	margin-bottom: 3.75rem !important;
+
+	.entry-title {
+        text-align: center;
+        text-transform: uppercase;
+		letter-spacing: 2px;
+    }
+
+	.entry-image {
+        filter: none !important;
+	}	
+
+	@include media-breakpoint-up( lg ) {
+		width: calc( 100% - 17.5vw );
+		margin: 0 0 0 auto;
+	}
+}
+
+
+/* Pine Buttons
+--------------------------------------------- */
+
+.wp-block-button {
+
+	.wp-block-button__link {
+		border-radius: 0px !important;
+		font-weight: bold;
+		padding: 10px 30px;
+		text-transform: uppercase; 
+		/*for slide hover effect*/
+		box-shadow: inset 0 0 0 0 var(--#{$prefix}primary-darker) !important;
+		transition: ease-out 0.4s;
+
+		&:hover {
+			box-shadow: inset 400px 0 0 0 var(--#{$prefix}primary-darker) !important;
+		}
+	}
+
+	&.is-style-outline {
+
+		.wp-block-button__link {
+			border: 2px solid var( --#{$prefix}primary ) !important;
+			color: var( --#{$prefix}primary ) !important;			
+			/*for slide hover effect*/
+			box-shadow: inset 0 0 0 0 var(--#{$prefix}primary) !important;
+			transition: ease-out 0.4s;
+
+		&:hover {
+			box-shadow: inset 400px 0 0 0 var(--#{$prefix}primary) !important;	
+			border: 2px solid var( --#{$prefix}primary ) !important;
+			color: var(--#{$prefix}primary-contrast) !important;
+		}
+	
+			.has-parallax & {
+				border: 2px solid #fff !important;
+				color: #fff !important;
+
+				box-shadow: inset 0 0 0 0 var(--#{$prefix}primary) !important;
+				transition: ease-out 0.4s;
+
+				&:hover {
+					box-shadow: inset 400px 0 0 0 var(--#{$prefix}primary) !important;
+					border: 2px solid var( --#{$prefix}primary ) !important;
+					color: var(--#{$prefix}primary-contrast) !important;
+				}
+			}
+		}
+	}  
+}
+
+/* Sidebar Button
+--------------------------------------------- */
+.sidebar-button {
+	position: absolute;
+	right: 100%;
+	top: 27vh;
+	visibility: visible;
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+	padding-right: calc( var( --#{$prefix}btn-padding-x ) / 2.3 );
+	font-size: 1.3rem;
+	--#{$prefix}btn-padding-y: 1.25rem;
+	--#{$prefix}btn-padding-x: .5rem;
+
+	@include media-breakpoint-up( lg ) {
+		display: none;
+	}
+}
+
+/* Site Footer
+--------------------------------------------- */
+
+.site-footer {
+	position: relative;
+	line-height: 1.5;
+	margin-top: auto;
+	width: 100%;
+
+	@include media-breakpoint-up( lg ) {
+		width: calc( 100% - 17.5vw );
+		margin: 0 0 0 auto;
+	}
+
+	p {
+		margin-bottom: 0;
+	}
+}
+
+/* Pine Images
+--------------------------------------------- */
+
+.wp-block-image {
+
+	img {
+		box-shadow: 1px 1px 40px rgba(32,32,32,.2);
+		border: solid 5px #fff;
+	}
+}
+
+/* Pine Testimonial
+--------------------------------------------- */
+.pine-testimonial {
+	border: solid 4px #fff !important;
+	img {
+		border: 0px !important;
+	}	
+}

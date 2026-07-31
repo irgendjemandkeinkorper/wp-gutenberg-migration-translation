@@ -1,0 +1,174 @@
+@use "../functions" as *;
+
+@mixin button {
+    --cet-theme-link-text-decoration: none;
+    font-size: var(--cet-theme-button-font-size);
+    font-weight: var(--cet-theme-button-font-weight);
+    line-height: var(--cet-theme-button-line-height);
+    letter-spacing: var(--cet-theme-button-letter-spacing);
+    display: inline-block;
+    backdrop-filter: var(--cet-theme-button-backdrop-filter);
+    background-color: var(--cet-theme-button-bg-color);
+    border-radius: var(--cet-theme-button-border-radius);
+    color: var(--cet-theme-button-color);
+    padding: var(--cet-theme-button-padding);
+    transition: all 300ms;
+}
+
+// The mixin is used with link_arrow_1_button_no_state and link_arrow_2_button_no_state mixins
+@mixin arrow_button {
+    position: relative;
+
+    &::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        right: 2px;
+        transform: translateY(-50%) rotate(-45deg);
+        width: 8px;
+        height: 8px;
+        border: 1.5px solid currentColor;
+        border-top: none;
+        border-left: none;
+    }
+}
+
+// `primary_button_no_state` mixin is used for Gutenberg editor styles,
+// where we want to show the default button state without hover/active/focus states,
+// since those don't work properly while content edition.
+@mixin primary_button_no_state {
+    --cet-theme-button-bg-color: var(--cet-theme-button-primary-bg-color);
+    --cet-theme-button-color: var(--cet-theme-button-primary-text-color);
+    border: var(--cet-theme-button-border-weight) solid var(--cet-theme-button-primary-border-color);
+}
+
+@mixin primary_button_state {
+    &:hover,
+    &:active,
+    &:focus,
+    &:focus-within {
+        --cet-theme-button-bg-color: var(--cet-theme-button-primary-bg-color-hover);
+        border: var(--cet-theme-button-border-weight) solid var(--cet-theme-button-primary-border-color-hover);
+        --cet-theme-button-color: var(--cet-theme-button-primary-text-color-hover);
+    }
+}
+
+// Both `primary_button_no_state` and `primary_button_state` mixins are used on front-end
+@mixin primary_button {
+    @include primary_button_no_state;
+    @include primary_button_state;
+}
+
+// `secondary_button_no_state` mixin is used for Gutenberg editor styles,
+// where we want to show the default button state without hover/active/focus states,
+// since those don't work properly while content edition.
+@mixin secondary_button_no_state {
+    --cet-theme-button-bg-color: var(--cet-theme-button-secondary-bg-color);
+    border: var(--cet-theme-button-border-weight) solid var(--cet-theme-button-secondary-border-color);
+    --cet-theme-button-color: var(--cet-theme-button-secondary-text-color);
+}
+
+@mixin secondary_button_state {
+    &:hover,
+    &:active,
+    &:focus,
+    &:focus-within {
+        --cet-theme-button-bg-color: var(--cet-theme-button-secondary-bg-color-hover);
+        border: var(--cet-theme-button-border-weight) solid var(--cet-theme-button-secondary-border-color-hover);
+        --cet-theme-button-color: var(--cet-theme-button-secondary-text-color-hover);
+    }
+}
+
+// Both `secondary_button_no_state` and `secondary_button_state` mixins are used on front-end
+@mixin secondary_button {
+    @include secondary_button_no_state;
+    @include secondary_button_state;
+}
+
+// `outline_button_no_state` mixin is used for Gutenberg editor styles,
+// where we want to show the default button state without hover/active/focus states,
+// since those don't work properly while content edition.
+@mixin outline_button_no_state {
+    --cet-theme-button-bg-color: var(--cet-theme-button-outline-bg-color);
+    border: var(--cet-theme-button-border-weight) solid var(--cet-theme-button-outline-border-color);
+    --cet-theme-button-color: var(--cet-theme-button-outline-text-color);
+}
+
+@mixin outline_button_state {
+    &:hover,
+    &:active,
+    &:focus,
+    &:focus-within {
+        --cet-theme-button-bg-color: var(--cet-theme-button-outline-bg-color-hover);
+        border: var(--cet-theme-button-border-weight) solid var(--cet-theme-button-outline-border-color-hover);
+        --cet-theme-button-color: var(--cet-theme-button-outline-text-color-hover);
+    }
+}
+
+// Both `outline_button_no_state` and `outline_button_state` mixins are used on front-end
+@mixin outline_button {
+    @include outline_button_no_state;
+    @include outline_button_state;
+}
+
+// `link_arrow_1_button_no_state` mixin is used for Gutenberg editor styles,
+// where we want to show the default button state without hover/active/focus states,
+// since those don't work properly while content edition.
+@mixin link_arrow_1_button_no_state {
+    --cet-theme-button-bg-color: var(--cet-theme-button-link-arrow-1-bg-color);
+    --cet-theme-button-color: var(--cet-theme-button-link-arrow-1-text-color);
+
+    @include arrow_button;
+}
+
+@mixin link_arrow_1_button_state {
+    &:hover,
+    &:active,
+    &:focus,
+    &:focus-within {
+        --cet-theme-button-color: var(--cet-theme-button-link-arrow-1-text-color-hover);
+    }
+}
+
+// Both `link_arrow_1_button_no_state` and `link_arrow_1_button_state` mixins are used on front-end
+@mixin link_arrow_1_button {
+    @include link_arrow_1_button_no_state;
+    @include link_arrow_1_button_state;
+}
+
+// `link_arrow_2_button_no_state` mixin is used for Gutenberg editor styles,
+// where we want to show the default button state without hover/active/focus states,
+// since those don't work properly while content edition.
+@mixin link_arrow_2_button_no_state {
+    --cet-theme-button-bg-color: var(--cet-theme-button-link-arrow-2-bg-color);
+    --cet-theme-button-color: var(--cet-theme-button-link-arrow-2-text-color);
+
+    @include arrow_button;
+}
+
+@mixin link_arrow_2_button_state {
+    &:hover,
+    &:active,
+    &:focus,
+    &:focus-within {
+        --cet-theme-button-color: var(--cet-theme-button-link-arrow-2-text-color-hover);
+    }
+}
+
+// Both `link_arrow_2_button_no_state` and `link_arrow_2_button_state` mixins are used on front-end
+@mixin link_arrow_2_button {
+    @include link_arrow_2_button_no_state;
+    @include link_arrow_2_button_state;
+}
+
+@mixin large_button {
+    --cet-theme-button-padding: #{rem(15.312)} #{rem(24)};
+}
+
+@mixin medium_button {
+    --cet-theme-button-padding: #{rem(12.312)} #{rem(20)};
+}
+
+@mixin small_button {
+    --cet-theme-button-padding: #{rem(10.312)} #{rem(16)};
+}

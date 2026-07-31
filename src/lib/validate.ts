@@ -10,6 +10,25 @@ const WHITELIST = new Set([
 // Elements the model sometimes wraps the whole answer in; unwrap silently.
 const WRAPPERS = new Set(["div", "article", "section", "main"]);
 
+// Elements whose entire subtree is noise (code, page chrome, embeds) — remove
+// outright rather than unwrap, so script text or nav link lists never leak
+// into content. This matters most in skip-LLM mode, where raw extracted HTML
+// reaches the validator without a model pass to judge boilerplate.
+const DROP = new Set([
+  "script", "style", "noscript", "template", "iframe", "object", "embed",
+  "svg", "canvas", "video", "audio", "form", "button", "input", "select",
+  "textarea", "nav", "aside", "footer",
+]);
+
+// Off-whitelist tags that should keep their role, not just their text.
+const RENAME: Record<string, string> = {
+  b: "strong",
+  i: "em",
+  h1: "h2",
+  h5: "h4",
+  h6: "h4",
+};
+
 export interface TokenReport {
   missing: number[]; // expected but absent
   extra: number[]; // present but never issued (hallucinated or duplicated)
@@ -106,6 +125,15 @@ function diffTokens(expected: number[], found: number[]): TokenReport {
   return { missing, extra: extra.sort((a, b) => a - b) };
 }
 
+function unwrap(el: Element): void {
+  const doc = el.ownerDocument;
+  const frag = doc.createDocumentFragment();
+  while (el.firstChild) {
+    frag.appendChild(el.firstChild);
+  }
+  el.replaceWith(frag);
+}
+
 function unwrapWrappers(body: HTMLElement): void {
   // Repeatedly unwrap while the body has a single element child (ignoring
   // whitespace) that is a known wrapper.
@@ -127,7 +155,7 @@ function unwrapWrappers(body: HTMLElement): void {
     const el = only as HTMLElement;
     if (!WRAPPERS.has(el.tagName.toLowerCase())) return;
 
-    el.replaceWith(...Array.from(el.childNodes));
+    unwrap(el);
   }
 }
 
@@ -136,10 +164,12 @@ function enforceWhitelist(body: HTMLElement): void {
   // are already in the snapshot, so one pass suffices.
   for (const el of Array.from(body.querySelectorAll("*"))) {
     const tag = el.tagName.toLowerCase();
-    if (tag === "b" || tag === "i") {
-      rename(el, tag === "b" ? "strong" : "em");
+    if (DROP.has(tag)) {
+      el.remove();
+    } else if (RENAME[tag]) {
+      if (el.isConnected) rename(el, RENAME[tag]);
     } else if (!WHITELIST.has(tag)) {
-      el.replaceWith(...Array.from(el.childNodes));
+      unwrap(el);
     }
   }
   for (const el of Array.from(body.querySelectorAll("*"))) {
@@ -151,7 +181,7 @@ function enforceWhitelist(body: HTMLElement): void {
       if (href) {
         el.setAttribute("href", href);
       } else {
-        el.replaceWith(...Array.from(el.childNodes));
+        unwrap(el);
       }
     } else {
       while (el.attributes.length > 0) {
@@ -164,7 +194,9 @@ function enforceWhitelist(body: HTMLElement): void {
 function rename(el: Element, newTag: string): void {
   const doc = el.ownerDocument;
   const repl = doc.createElement(newTag);
-  repl.append(...Array.from(el.childNodes));
+  while (el.firstChild) {
+    repl.appendChild(el.firstChild);
+  }
   el.replaceWith(repl);
 }
 
@@ -194,7 +226,7 @@ function isolateTokens(body: HTMLElement): void {
     };
     for (const node of Array.from(child.childNodes)) {
       if (node.nodeType === Node.TEXT_NODE) {
-        const parts = (node.textContent ?? "").split(/(⟦IMG_\d+⟧)/);
+        const parts = (node.textContent ?? "").split(/(⟦ASSET_\d+⟧)/);
         for (const part of parts) {
           if (!part) continue;
           if (isLoneToken(part)) {

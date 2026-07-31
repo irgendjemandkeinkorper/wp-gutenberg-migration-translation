@@ -1,0 +1,42 @@
+@use "./shared/embed.shared" as embed;
+
+@include embed.embed_shared();
+
+.wp-block-embed {
+  .jetpack-video-wrapper {
+    margin-block-end: 0;
+  }
+
+  iframe {
+    height: auto;
+    aspect-ratio: 16/9;
+  }
+
+  &.alignleft, &.alignright {
+    max-width: 65%;
+    width: fit-content;
+
+    .wp-block-embed__wrapper {
+      min-width: unset;
+    }
+  }
+
+  &.alignwide {
+    iframe {
+      width: 100%;
+    }
+  }
+
+  &.alignfull  {
+    .wp-block-embed__wrapper {
+      width: 100vw;
+      position: relative;
+      left: 50%;
+      margin-left: -50vw;
+
+      iframe {
+        width: 100%;
+      }
+    }
+  }
+}
