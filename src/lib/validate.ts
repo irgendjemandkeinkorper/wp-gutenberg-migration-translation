@@ -148,7 +148,7 @@ function enforceWhitelist(body: HTMLElement): void {
       while (el.attributes.length > 0) {
         el.removeAttribute(el.attributes[0].name);
       }
-      if (href) {
+      if (href && isSafeHref(href)) {
         el.setAttribute("href", href);
       } else {
         el.replaceWith(...Array.from(el.childNodes));
@@ -159,6 +159,16 @@ function enforceWhitelist(body: HTMLElement): void {
       }
     }
   }
+}
+
+function isSafeHref(href: string): boolean {
+  const trimmed = href.trim().toLowerCase();
+  // Strip control characters to prevent bypasses like java\nscript:
+  const noControlChars = trimmed.replace(/[\x00-\x1F\x7F]/g, "");
+  if (noControlChars.startsWith("javascript:")) return false;
+  if (noControlChars.startsWith("vbscript:")) return false;
+  if (noControlChars.startsWith("data:")) return false;
+  return true;
 }
 
 function rename(el: Element, newTag: string): void {
