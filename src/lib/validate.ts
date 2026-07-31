@@ -194,7 +194,7 @@ function isolateTokens(body: HTMLElement): void {
     };
     for (const node of Array.from(child.childNodes)) {
       if (node.nodeType === Node.TEXT_NODE) {
-        const parts = (node.textContent ?? "").split(/(⟦IMG_\d+⟧)/);
+        const parts = (node.textContent ?? "").split(/(⟦ASSET_\d+⟧)/);
         for (const part of parts) {
           if (!part) continue;
           if (isLoneToken(part)) {

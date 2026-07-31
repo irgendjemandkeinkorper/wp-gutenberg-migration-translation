@@ -25,6 +25,7 @@ export default function App() {
   const [selector, setSelector] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [skipLlm, setSkipLlm] = useState(false);
 
   const [apiKey, setApiKey] = useState(
     () => localStorage.getItem("blockify.apiKey") ?? "",
@@ -66,7 +67,7 @@ export default function App() {
   }
 
   async function convert() {
-    if (!apiKey) {
+    if (!apiKey && !skipLlm) {
       setShowSettings(true);
       setError("Add your Gemini API key in Settings first.");
       return;
@@ -94,6 +95,7 @@ export default function App() {
           selector: selector.trim() || undefined,
           apiKey,
           model,
+          skipLlm,
         },
         onStep,
       );
@@ -131,7 +133,9 @@ export default function App() {
         title: pageTitle,
         link,
         contentBlocks: result.blocks,
-        images: result.images.map(({ src, alt }) => ({ src, alt })),
+        images: result.images
+          .filter((img) => img.type === "image")
+          .map(({ src, alt }) => ({ src, alt })),
       },
     ]);
   }
@@ -251,18 +255,28 @@ export default function App() {
           {showAdvanced ? "▾" : "▸"} Advanced
         </button>
         {showAdvanced && (
-          <label>
-            Content CSS selector{" "}
-            <span className="muted">
-              (overrides automatic extraction, e.g. <code>main article</code>)
-            </span>
-            <input
-              type="text"
-              value={selector}
-              onChange={(e) => setSelector(e.target.value)}
-              placeholder="e.g. #content .entry"
-            />
-          </label>
+          <div style={{ marginTop: "10px" }}>
+            <label>
+              Content CSS selector{" "}
+              <span className="muted">
+                (overrides automatic extraction, e.g. <code>main article</code>)
+              </span>
+              <input
+                type="text"
+                value={selector}
+                onChange={(e) => setSelector(e.target.value)}
+                placeholder="e.g. #content .entry"
+              />
+            </label>
+            <label className="checkbox" style={{ marginTop: "10px" }}>
+              <input
+                type="checkbox"
+                checked={skipLlm}
+                onChange={(e) => setSkipLlm(e.target.checked)}
+              />
+              Skip LLM step (Direct local parsing &amp; cleanup)
+            </label>
+          </div>
         )}
 
         <button className="primary" onClick={convert} disabled={busy}>
@@ -318,15 +332,16 @@ export default function App() {
           <pre className="code-view">{result.blocks}</pre>
 
           <button className="ghost small" onClick={() => setShowImages((v) => !v)}>
-            {showImages ? "▾" : "▸"} Images ({result.images.length})
+            {showImages ? "▾" : "▸"} Asset Manifest / Audit ({result.images.length})
           </button>
           {showImages && result.images.length > 0 && (
             <table className="images-table">
               <thead>
                 <tr>
                   <th>#</th>
+                  <th>Type</th>
                   <th>Source URL</th>
-                  <th>Alt text</th>
+                  <th>Details</th>
                   <th></th>
                 </tr>
               </thead>
@@ -334,8 +349,26 @@ export default function App() {
                 {result.images.map((img) => (
                   <tr key={img.index}>
                     <td>{img.index}</td>
-                    <td className="url-cell">{img.src}</td>
-                    <td>{img.alt || <span className="muted">—</span>}</td>
+                    <td>
+                      <span className="badge" style={{ backgroundColor: img.type === "image" ? undefined : "#f5f5f5", color: img.type === "image" ? undefined : "#333" }}>
+                        {img.type}
+                      </span>
+                    </td>
+                    <td className="url-cell">{img.src || <span className="muted">—</span>}</td>
+                    <td>
+                      {img.type === "image" ? (
+                        img.alt || <span className="muted">—</span>
+                      ) : (
+                        <details>
+                          <summary style={{ cursor: "pointer", fontSize: "0.75rem" }}>View details</summary>
+                          <div style={{ marginTop: "5px", fontSize: "0.75rem" }}>
+                            <strong>Attributes:</strong> <code>{JSON.stringify(img.attributes)}</code>
+                            <br />
+                            <strong>Excerpt:</strong> <pre style={{ whiteSpace: "pre-wrap", background: "#f9f9f9", padding: "4px", margin: "4px 0" }}>{img.excerpt}</pre>
+                          </div>
+                        </details>
+                      )}
+                    </td>
                     <td>
                       {lostSet.has(img.index) && (
                         <span className="badge">position lost</span>
