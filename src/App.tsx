@@ -647,6 +647,7 @@ export default function App() {
                 </span>
                 <button
                   className="ghost small"
+                  aria-label={`Remove "${p.title}" from bundle`}
                   onClick={() =>
                     setBundle((prev) => prev.filter((_, j) => j !== i))
                   }
@@ -698,7 +699,14 @@ export default function App() {
             <button className="primary" onClick={downloadWxr}>
               Download WXR
             </button>
-            <button className="ghost" onClick={() => setBundle([])}>
+            <button
+              className="ghost"
+              onClick={() => {
+                if (window.confirm("Are you sure you want to clear the entire bundle?")) {
+                  setBundle([]);
+                }
+              }}
+            >
               Clear bundle
             </button>
           </div>
