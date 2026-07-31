@@ -1,17 +1,17 @@
 import { isLoneToken, tokenIndices } from "./tokens";
-import type { ImageRef } from "./types";
+import type { AssetRef } from "./types";
 
 /**
  * Deterministic whitelist-HTML → Gutenberg block serializer. No LLM here.
  *
  * Input must already be validated (validate.ts): only whitelist tags, no
- * stray attributes, every ⟦IMG_n⟧ token alone in its own top-level <p>.
- * Image URLs/captions are joined in from the image map, so positions come
+ * stray attributes, every ⟦ASSET_n⟧ token alone in its own top-level <p>.
+ * Asset URLs/captions are joined in from the asset map, so positions come
  * from the source DOM, never guessed.
  */
 export function serializeBlocks(
   html: string,
-  images: Map<number, ImageRef>,
+  images: Map<number, AssetRef>,
 ): string {
   const doc = new DOMParser().parseFromString(html, "text/html");
   const out: string[] = [];
@@ -32,7 +32,7 @@ export function serializeBlocks(
 
 function elementToBlock(
   el: HTMLElement,
-  images: Map<number, ImageRef>,
+  images: Map<number, AssetRef>,
 ): string {
   const tag = el.tagName.toLowerCase();
   switch (tag) {
@@ -41,7 +41,7 @@ function elementToBlock(
       if (isLoneToken(text)) {
         const idx = tokenIndices(text)[0];
         const media = images.get(idx);
-        return media ? imageBlock(media) : "";
+        return media ? assetBlock(media) : "";
       }
       const inner = el.innerHTML.trim();
       return inner ? paragraphBlock(inner) : "";
@@ -154,16 +154,37 @@ function listBlock(el: HTMLElement, ordered: boolean): string {
   );
 }
 
-function imageBlock(media: ImageRef): string {
-  const alt = escapeAttr(media.alt);
-  const caption = media.caption
-    ? `<figcaption class="wp-element-caption">${escapeHtml(media.caption)}</figcaption>`
-    : "";
-  return (
-    `<!-- wp:image {"sizeSlug":"large"} -->\n` +
-    `<figure class="wp-block-image size-large"><img src="${escapeAttr(media.src)}" alt="${alt}"/>${caption}</figure>\n` +
-    `<!-- /wp:image -->`
-  );
+function assetBlock(media: AssetRef): string {
+  if (media.type === "image") {
+    const alt = escapeAttr(media.alt);
+    const caption = media.caption
+      ? `<figcaption class="wp-element-caption">${escapeHtml(media.caption)}</figcaption>`
+      : "";
+    return (
+      `<!-- wp:image {"sizeSlug":"large"} -->\n` +
+      `<figure class="wp-block-image size-large"><img src="${escapeAttr(media.src)}" alt="${alt}"/>${caption}</figure>\n` +
+      `<!-- /wp:image -->`
+    );
+  } else {
+    // Unsupported reference serialization into an intentionally visible Gutenberg block with stable machine-readable identity
+    const sanitizedAttrs = JSON.stringify(media.attributes);
+    const excerptEscaped = escapeHtml(media.excerpt);
+    const label = `Unsupported ${media.type.toUpperCase()}: ${media.tagName.toUpperCase()}`;
+    const srcHtml = media.src ? `<p><strong>Source:</strong> <code>${escapeHtml(media.src)}</code></p>` : "";
+    return (
+      `<!-- wp:html {"blockifyAsset":true,"assetIndex":${media.index},"assetType":"${media.type}"} -->\n` +
+      `<div class="blockify-unsupported-placeholder" style="border: 2px dashed #ff4d4f; padding: 15px; margin: 15px 0; background-color: #fff2f0; font-family: monospace;" data-asset-index="${media.index}" data-asset-type="${media.type}">\n` +
+      `  <h4 style="margin: 0 0 10px 0; color: #ff4d4f;">⚠️ ${label} (Placeholder #${media.index})</h4>\n` +
+      `  ${srcHtml}\n` +
+      `  <p><strong>Attributes:</strong> <code>${escapeHtml(sanitizedAttrs)}</code></p>\n` +
+      `  <details>\n` +
+      `    <summary style="cursor: pointer; font-weight: bold;">Original Source Excerpt</summary>\n` +
+      `    <pre style="margin-top: 10px; background: #fafafa; padding: 10px; border: 1px solid #d9d9d9; overflow: auto; white-space: pre-wrap;"><code>${excerptEscaped}</code></pre>\n` +
+      `  </details>\n` +
+      `</div>\n` +
+      `<!-- /wp:html -->`
+    );
+  }
 }
 
 export function escapeHtml(text: string): string {
