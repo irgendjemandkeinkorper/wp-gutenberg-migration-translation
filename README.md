@@ -81,6 +81,14 @@ instead of duplicating them.
   keyed on model + prompt + extracted content, so re-converting an unchanged
   page never repeats the Gemini call (last 40 pages kept).
 
+### Privacy & Reliability
+
+When migrating content, keep the following security and privacy boundaries in mind:
+
+- **Fetch URL (Browser Mode):** Uses third-party public CORS proxies (`corsproxy.io` and `api.allorigins.win`) to fetch page source. Avoid this mode for sensitive, paywalled, or internal intranet pages, as your request and content pass through these public services.
+- **Paste HTML (Recommended Private Path):** Pasting the source HTML directly is fully private. All extraction, tokenization, and cleaning (if Skip LLM is checked) occur locally in your browser. (LLM requests only send the cleaned text to Gemini if enabled).
+- **Local Site Crawler:** Running `scripts/crawl.mjs` runs locally on your machine. It makes direct requests from your Node process, avoiding third-party proxies, making it the secure and reliable path for private or bulk content.
+
 ## Development
 
 ```bash
