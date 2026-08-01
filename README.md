@@ -37,7 +37,7 @@ The pipeline keeps the LLM on judgment and off mechanics (the design proven in
    included for more reliable WordPress imports.
 7. **Migration QA** — unsupported interactive content (embeds, media players,
    and forms) becomes a visible `MIGRATION PLACEHOLDER` instead of disappearing.
-   The exact original HTML, source URL, selected GolfNow template, and
+   The exact original HTML, source URL, selected GolfNow template stable ID, and
    placeholder manifest are retained as `_blockify_*` post metadata in WXR.
 
 ## Usage
@@ -45,8 +45,8 @@ The pipeline keeps the LLM on judgment and off mechanics (the design proven in
 1. Open the app, add your [Gemini API key](https://aistudio.google.com/apikey)
    in Settings (stored in `localStorage` only).
 2. Paste a page's HTML (View Page Source), or try Fetch URL.
-3. Select the target design from the current
-   [GolfNow template library](https://golfnowbusiness.com/template-library/).
+3. Select the target template for QA metadata from the current
+   [GolfNow template library](https://golfnowbusiness.com/template-library/). Note that template selection does not affect the conversion output or block generation; it is purely recorded in WXR metadata for QA tracking and verification purposes.
 4. Convert, review the blocks and any manual-migration placeholders, then either copy-paste into the block editor's
    Code editor view or add the page to the WXR bundle.
 5. Download the WXR and import it: WP admin → Tools → Import → WordPress,
