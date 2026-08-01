@@ -1,7 +1,7 @@
 import { serializeBlocks } from "./blocks";
 import { cleanCacheKey, readCleanCache, writeCleanCache } from "./cache";
 import { extractContent } from "./extract";
-import { cleanHtml, SYSTEM_PROMPT } from "./llm";
+import { cleanHtml, SYSTEM_PROMPT, validateProviderModel } from "./llm";
 import { TOKEN_PREFIX } from "./tokens";
 import { tokenizeImages } from "./tokenize";
 import {
@@ -19,6 +19,7 @@ export interface ConvertInput {
   selector?: string;
   apiKey: string;
   model: string;
+  provider?: string;
   /** Deterministic mode: enforce the whitelist in code only, no Gemini call. */
   skipLlm?: boolean;
 }
@@ -27,6 +28,10 @@ export async function convertPage(
   input: ConvertInput,
   onStep: (u: StepUpdate) => void,
 ): Promise<PageResult> {
+  if (!input.skipLlm) {
+    validateProviderModel(input.provider ?? "google", input.model);
+  }
+
   const warnings: string[] = [];
 
   onStep({ step: "Extract", status: "active" });
@@ -156,6 +161,7 @@ async function cleanWithRetries(
       title,
       html: tokenizedHtml,
       violationNote,
+      provider: input.provider,
     });
     if (!cleaned.trim()) throw new Error("The model returned an empty result.");
 
