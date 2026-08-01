@@ -41,9 +41,24 @@ export default function App() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  const [apiKey, setApiKey] = useState(
-    () => localStorage.getItem("blockify.apiKey") ?? "",
+  // Clear any legacy apiKey on load to prevent leaks.
+  useEffect(() => {
+    localStorage.removeItem("blockify.apiKey");
+  }, []);
+
+  const [connectionMode, setConnectionMode] = useState<"pilot" | "proxy">(
+    () => {
+      const stored = localStorage.getItem("blockify.connectionMode");
+      return stored === "proxy" ? "proxy" : "pilot";
+    },
   );
+  const [proxyUrl, setProxyUrl] = useState(
+    () => localStorage.getItem("blockify.proxyUrl") ?? "",
+  );
+  const [proxyToken, setProxyToken] = useState("");
+
+  // Sensitive credentials (apiKey, proxyToken) are kept strictly in memory (React state).
+  const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState(() => {
     // Snap stale saved IDs (e.g. retired gemini-2.5-*) back to a live model.
     const stored = localStorage.getItem("blockify.model");
@@ -81,7 +96,12 @@ export default function App() {
   );
 
   useEffect(() => saveBundle(bundle), [bundle]);
-  useEffect(() => localStorage.setItem("blockify.apiKey", apiKey), [apiKey]);
+  useEffect(() => {
+    localStorage.setItem("blockify.connectionMode", connectionMode);
+  }, [connectionMode]);
+  useEffect(() => {
+    localStorage.setItem("blockify.proxyUrl", proxyUrl);
+  }, [proxyUrl]);
   useEffect(() => localStorage.setItem("blockify.model", model), [model]);
   useEffect(
     () => localStorage.setItem("blockify.skipLlm", skipLlm ? "1" : "0"),
@@ -103,10 +123,17 @@ export default function App() {
   }
 
   async function convert() {
-    if (!apiKey && !skipLlm) {
-      setShowSettings(true);
-      setError("Add your Gemini API key in Settings first.");
-      return;
+    if (!skipLlm) {
+      if (connectionMode === "pilot" && !apiKey) {
+        setShowSettings(true);
+        setError("Add your Gemini API key in Settings first under Private Pilot Mode.");
+        return;
+      }
+      if (connectionMode === "proxy" && !proxyUrl.trim()) {
+        setShowSettings(true);
+        setError("Configure your Proxy Endpoint URL in Settings first under Production Proxy Mode.");
+        return;
+      }
     }
     setBusy(true);
     setError("");
@@ -132,6 +159,8 @@ export default function App() {
           apiKey,
           model,
           skipLlm,
+          proxyUrl: connectionMode === "proxy" ? proxyUrl.trim() : undefined,
+          proxyToken: connectionMode === "proxy" ? proxyToken.trim() : undefined,
         },
         onStep,
       );
@@ -190,10 +219,17 @@ export default function App() {
   }
 
   async function convertBatch() {
-    if (!apiKey && !skipLlm) {
-      setShowSettings(true);
-      setError("Add your Gemini API key in Settings first (or enable Skip LLM).");
-      return;
+    if (!skipLlm) {
+      if (connectionMode === "pilot" && !apiKey) {
+        setShowSettings(true);
+        setError("Add your Gemini API key in Settings first (or enable Skip LLM) under Private Pilot Mode.");
+        return;
+      }
+      if (connectionMode === "proxy" && !proxyUrl.trim()) {
+        setShowSettings(true);
+        setError("Configure your Proxy Endpoint URL in Settings first (or enable Skip LLM) under Production Proxy Mode.");
+        return;
+      }
     }
     setBatchBusy(true);
     setError("");
@@ -211,6 +247,8 @@ export default function App() {
             apiKey,
             model,
             skipLlm,
+            proxyUrl: connectionMode === "proxy" ? proxyUrl.trim() : undefined,
+            proxyToken: connectionMode === "proxy" ? proxyToken.trim() : undefined,
           },
           () => {},
         );
@@ -306,33 +344,89 @@ export default function App() {
           className="ghost"
           onClick={() => setShowSettings((v) => !v)}
           aria-expanded={showSettings}
+          aria-label="Toggle settings"
         >
           ⚙ Settings
         </button>
       </header>
 
+      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
+        {skipLlm ? (
+          <span className="badge" style={{ backgroundColor: "var(--code-bg)", color: "var(--muted)", border: "1px solid var(--border)", padding: "0.25rem 0.75rem", fontSize: "0.8rem", fontWeight: "600" }}>
+            ⚡ Connection Mode: Deterministic (No LLM API Calls)
+          </span>
+        ) : connectionMode === "proxy" ? (
+          <span className="badge" style={{ backgroundColor: "var(--accent)", color: "var(--accent-text)", padding: "0.25rem 0.75rem", fontSize: "0.8rem", fontWeight: "600" }}>
+            🔒 Connection Mode: Production Proxy (Secure)
+          </span>
+        ) : (
+          <span className="badge" style={{ backgroundColor: "var(--warn-bg)", color: "var(--warn-text)", padding: "0.25rem 0.75rem", fontSize: "0.8rem", fontWeight: "600" }}>
+            ⚠️ Connection Mode: Private Pilot (Direct-Browser - Unsafe for Public Production)
+          </span>
+        )}
+      </div>
+
       {showSettings && (
         <section className="panel settings">
           <label>
-            Gemini API key
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="AIza…  (stored only in this browser)"
-            />
+            API Connection / Deployment Mode
+            <select value={connectionMode} onChange={(e) => setConnectionMode(e.target.value as "pilot" | "proxy")}>
+              <option value="pilot">Private Pilot (Direct-Browser - Client Key)</option>
+              <option value="proxy">Production Proxy Mode (Server Key)</option>
+            </select>
           </label>
+
+          {connectionMode === "pilot" ? (
+            <>
+              <label>
+                Gemini API key
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="AIza…  (held only in browser memory)"
+                  aria-label="Gemini API Key"
+                />
+              </label>
+              <p className="warn-box" style={{ marginTop: "10px", marginBottom: "15px" }}>
+                ⚠️ <strong>Private Pilot Mode Notice:</strong> Direct-browser mode sends API requests directly from this browser using client-side keys. The API key you enter is held <strong>strictly in browser memory (session state)</strong> and will be cleared if you close or reload the tab. It is <strong>never</strong> saved to persistent storage like localStorage. This mode is restricted to local testing and private pilots. Direct-browser key input is unsafe for public production deployments as frontend credentials cannot be fully protected.
+              </p>
+            </>
+          ) : (
+            <>
+              <label>
+                Proxy Endpoint URL
+                <input
+                  type="url"
+                  value={proxyUrl}
+                  onChange={(e) => setProxyUrl(e.target.value)}
+                  placeholder="https://api.yourproxy.com"
+                  aria-label="Proxy Endpoint URL"
+                />
+              </label>
+              <label>
+                Proxy Access Token (Optional)
+                <input
+                  type="password"
+                  value={proxyToken}
+                  onChange={(e) => setProxyToken(e.target.value)}
+                  placeholder="Bearer or authorization token for your proxy"
+                  aria-label="Proxy Access Token (Optional)"
+                />
+              </label>
+              <p className="warn-box" style={{ marginTop: "10px", marginBottom: "15px", backgroundColor: "var(--code-bg)", color: "var(--text)", borderColor: "var(--border)" }}>
+                🔒 <strong>Production Proxy Mode Notice:</strong> This mode uses a secure, production-ready architecture. Requests are routed through a backend proxy server, which safely handles API keys on the server side. No Gemini API key is written to or held by the client browser. Ensure your proxy respects the required API request shape and CORS policies.
+              </p>
+            </>
+          )}
+
           <label>
             Model
-            <select value={model} onChange={(e) => setModel(e.target.value)}>
+            <select value={model} onChange={(e) => setModel(e.target.value)} aria-label="Model select">
               <option value={DEFAULT_MODEL}>{DEFAULT_MODEL} (recommended)</option>
               <option value={FAST_MODEL}>{FAST_MODEL} (fastest, cheapest)</option>
             </select>
           </label>
-          <p className="hint">
-            The key is kept in localStorage and sent only to
-            generativelanguage.googleapis.com.
-          </p>
         </section>
       )}
 

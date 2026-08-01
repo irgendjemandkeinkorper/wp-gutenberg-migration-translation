@@ -1,3 +1,7 @@
 ## 2024-05-18 - Prevent Accidental Data Loss & Add Screen Reader Context
 **Learning:** Destructive actions that clear all user data (like "Clear bundle") without confirmation can lead to significant frustration if clicked accidentally. Additionally, repeated generic action buttons (like "Remove") inside lists need contextual ARIA labels because screen readers will read them out of context (e.g., hearing "Remove" multiple times without knowing *what* is being removed).
 **Action:** Always wrap bulk-destructive actions in a confirmation dialog (e.g., `window.confirm`). When rendering identical action buttons in a list, inject the item's title or identifying information into an `aria-label` to provide context for assistive technologies.
+
+## 2024-06-15 - Explicit Connection Modes and Disclaimers
+**Learning:** Security choices must be visually and contextually explicit to operators. When an application supports multiple connection modes with varying levels of security (e.g., client-side key entry vs. server-side proxy), operators must be able to identify the current mode before performing any action. Highlighting these boundaries using prominent visual badges, distinct selection models, and helper disclaimers prevents human error and accidental credential storage.
+**Action:** Always provide a highly visible indicator (such as a badge/bar) representing the active connection mode at the top level of the UI, and accompany credential inputs with specific disclaimer blocks clarifying security boundaries.
