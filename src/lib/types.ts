@@ -63,3 +63,10 @@ export interface StepUpdate {
   status: StepStatus;
   note?: string;
 }
+
+export type BatchPageStatus = "pending" | "converting" | "done" | "error" | "cancelled";
+
+export interface BatchPageState {
+  status: BatchPageStatus;
+  note?: string;
+}

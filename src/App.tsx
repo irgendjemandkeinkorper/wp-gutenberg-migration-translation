@@ -1,5 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
-import { downloadFile, loadBundle, saveBundle } from "./lib/bundle";
+import { useEffect, useMemo, useState, useRef } from "react";
+import {
+  downloadFile,
+  loadBundle,
+  saveBundle,
+  loadBatchPages,
+  saveBatchPages,
+  loadBatchStatus,
+  saveBatchStatus,
+  loadBatchFileName,
+  saveBatchFileName,
+} from "./lib/bundle";
 import { fetchPage } from "./lib/fetchPage";
 import { DEFAULT_MODEL, FAST_MODEL } from "./lib/llm";
 import { convertPage } from "./lib/pipeline";
@@ -9,6 +19,7 @@ import type {
   PageResult,
   StepStatus,
   StepUpdate,
+  BatchPageState,
 } from "./lib/types";
 
 const STEP_ORDER = ["Fetch", "Extract", "Images", "Clean (LLM)", "Validate", "Blocks"];
@@ -25,12 +36,7 @@ interface StepState {
 interface CrawledPage {
   url: string;
   title: string;
-  html: string;
-}
-
-interface BatchState {
-  status: "converting" | "done" | "error";
-  note?: string;
+  html?: string;
 }
 
 export default function App() {
@@ -66,10 +72,11 @@ export default function App() {
 
   const [batch, setBatch] = useState<CrawledPage[]>([]);
   const [batchFileName, setBatchFileName] = useState("");
-  const [batchStatus, setBatchStatus] = useState<Map<number, BatchState>>(
+  const [batchStatus, setBatchStatus] = useState<Map<number, BatchPageState>>(
     new Map(),
   );
   const [batchBusy, setBatchBusy] = useState(false);
+  const cancelRef = useRef(false);
 
   const [bundle, setBundle] = useState<BundlePage[]>(loadBundle);
   const [author, setAuthor] = useState("admin");
@@ -89,10 +96,58 @@ export default function App() {
   );
   useEffect(() => localStorage.setItem("blockify.targetTemplate", targetTemplate), [targetTemplate]);
 
+  // Load persisted batch on mount
+  useEffect(() => {
+    const savedPages = loadBatchPages();
+    const savedName = loadBatchFileName();
+    const savedStatus = loadBatchStatus();
+    if (savedPages.length > 0) {
+      setBatch(savedPages);
+      setBatchFileName(savedName);
+      const statusMap = new Map<number, BatchPageState>();
+      savedPages.forEach((p, i) => {
+        const saved = savedStatus[p.url];
+        if (saved) {
+          statusMap.set(i, { status: saved.status, note: saved.note });
+        } else {
+          statusMap.set(i, { status: "pending" });
+        }
+      });
+      setBatchStatus(statusMap);
+    }
+  }, []);
+
   const lostSet = useMemo(
     () => new Set(result?.lostPositions ?? []),
     [result],
   );
+
+  const batchHtmlLoaded = useMemo(() => {
+    return batch.length > 0 && batch.every((p) => typeof p.html === "string" && p.html.length > 0);
+  }, [batch]);
+
+  const counts = useMemo(() => {
+    let completed = 0;
+    let failed = 0;
+    let cancelled = 0;
+    let pending = 0;
+    let converting = 0;
+
+    for (let i = 0; i < batch.length; i++) {
+      const s = batchStatus.get(i)?.status ?? "pending";
+      if (s === "done") completed++;
+      else if (s === "error") failed++;
+      else if (s === "cancelled") cancelled++;
+      else if (s === "converting") converting++;
+      else pending++;
+    }
+
+    return { completed, failed, cancelled, pending, converting, total: batch.length };
+  }, [batch, batchStatus]);
+
+  const hasProgress = useMemo(() => {
+    return counts.completed > 0 || counts.failed > 0 || counts.cancelled > 0;
+  }, [counts]);
 
   function onStep(u: StepUpdate) {
     setSteps((prev) => {
@@ -169,18 +224,38 @@ export default function App() {
       ) {
         throw new Error("expected { pages: [{ url, html }, …] }");
       }
-      setBatch(
-        pages.map((p) => ({
-          url: (p as CrawledPage).url,
-          title:
-            typeof (p as CrawledPage).title === "string"
-              ? (p as CrawledPage).title
-              : "",
-          html: (p as CrawledPage).html,
-        })),
-      );
+      const mappedPages: CrawledPage[] = pages.map((p) => ({
+        url: (p as CrawledPage).url,
+        title:
+          typeof (p as CrawledPage).title === "string"
+            ? (p as CrawledPage).title
+            : "",
+        html: (p as CrawledPage).html,
+      }));
+
+      setBatch(mappedPages);
       setBatchFileName(file.name);
-      setBatchStatus(new Map());
+      saveBatchPages(mappedPages);
+      saveBatchFileName(file.name);
+
+      const savedStatus = loadBatchStatus();
+      const statusMap = new Map<number, BatchPageState>();
+      mappedPages.forEach((p, i) => {
+        const saved = savedStatus[p.url];
+        if (saved) {
+          statusMap.set(i, { status: saved.status, note: saved.note });
+        } else {
+          statusMap.set(i, { status: "pending" });
+        }
+      });
+      setBatchStatus(statusMap);
+
+      const statusObj: Record<string, BatchPageState> = {};
+      mappedPages.forEach((p, i) => {
+        statusObj[p.url] = statusMap.get(i) ?? { status: "pending" };
+      });
+      saveBatchStatus(statusObj);
+
       setError("");
     } catch (e) {
       setError(
@@ -189,7 +264,7 @@ export default function App() {
     }
   }
 
-  async function convertBatch() {
+  async function runBatch(resumeOnly: boolean) {
     if (!apiKey && !skipLlm) {
       setShowSettings(true);
       setError("Add your Gemini API key in Settings first (or enable Skip LLM).");
@@ -197,12 +272,72 @@ export default function App() {
     }
     setBatchBusy(true);
     setError("");
-    const update = (i: number, s: BatchState) =>
-      setBatchStatus((prev) => new Map(prev).set(i, s));
+    cancelRef.current = false;
+
+    // Use current batch status Map to avoid React stale closure within async loop
+    const currentStatuses = new Map(batchStatus);
+
+    // If restarting, reset all status to "pending"
+    if (!resumeOnly) {
+      for (let i = 0; i < batch.length; i++) {
+        currentStatuses.set(i, { status: "pending" });
+      }
+      setBatchStatus(new Map(currentStatuses));
+      const statusObj: Record<string, BatchPageState> = {};
+      batch.forEach((p) => {
+        statusObj[p.url] = { status: "pending" };
+      });
+      saveBatchStatus(statusObj);
+    }
+
+    const update = (index: number, s: BatchPageState) => {
+      currentStatuses.set(index, s);
+      setBatchStatus(new Map(currentStatuses));
+      const statusObj: Record<string, BatchPageState> = {};
+      batch.forEach((p, k) => {
+        const state = currentStatuses.get(k);
+        if (state) {
+          statusObj[p.url] = state;
+        }
+      });
+      saveBatchStatus(statusObj);
+    };
+
     for (let i = 0; i < batch.length; i++) {
       const page = batch[i];
+
+      // Check cancellation before converting the next page
+      if (cancelRef.current) {
+        // Mark remaining pending/converting pages as cancelled
+        for (let j = i; j < batch.length; j++) {
+          const state = currentStatuses.get(j);
+          if (!state || state.status === "pending" || state.status === "converting") {
+            currentStatuses.set(j, { status: "cancelled", note: "Cancelled by operator" });
+          }
+        }
+        setBatchStatus(new Map(currentStatuses));
+        const statusObj: Record<string, BatchPageState> = {};
+        batch.forEach((p, k) => {
+          const state = currentStatuses.get(k);
+          if (state) {
+            statusObj[p.url] = state;
+          }
+        });
+        saveBatchStatus(statusObj);
+        break;
+      }
+
+      const currentState = currentStatuses.get(i);
+      if (resumeOnly && currentState?.status === "done") {
+        continue;
+      }
+
       update(i, { status: "converting" });
+
       try {
+        if (!page.html) {
+          throw new Error("HTML content is missing. Please re-upload pages.json file.");
+        }
         const res = await convertPage(
           {
             rawHtml: page.html,
@@ -340,19 +475,22 @@ export default function App() {
         <div className="tabs">
           <button
             className={tab === "paste" ? "tab active" : "tab"}
-            onClick={() => setTab("paste")}
+            onClick={() => !batchBusy && setTab("paste")}
+            disabled={batchBusy}
           >
             Paste HTML
           </button>
           <button
             className={tab === "fetch" ? "tab active" : "tab"}
-            onClick={() => setTab("fetch")}
+            onClick={() => !batchBusy && setTab("fetch")}
+            disabled={batchBusy}
           >
             Fetch URL
           </button>
           <button
             className={tab === "batch" ? "tab active" : "tab"}
-            onClick={() => setTab("batch")}
+            onClick={() => !batchBusy && setTab("batch")}
+            disabled={batchBusy}
           >
             Batch (crawl)
           </button>
@@ -382,6 +520,7 @@ export default function App() {
             <input
               type="file"
               accept=".json,application/json"
+              disabled={batchBusy}
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) loadBatchFile(f);
@@ -393,24 +532,124 @@ export default function App() {
                   {batchFileName}: {batch.length} page
                   {batch.length === 1 ? "" : "s"} loaded.
                 </p>
-                <ul className="bundle-list">
-                  {batch.map((p, i) => {
-                    const s = batchStatus.get(i);
-                    return (
-                      <li key={p.url}>
-                        <span>
-                          {s?.status === "done" && "✓ "}
-                          {s?.status === "error" && "✗ "}
-                          {s?.status === "converting" && "… "}
-                          {p.title || p.url}{" "}
-                          {s?.note && (
-                            <span className="muted">({s.note})</span>
-                          )}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
+
+                {!batchHtmlLoaded && (
+                  <p className="warn-box" style={{ marginTop: "10px" }}>
+                    HTML content is not loaded in browser memory. Please re-upload <strong>{batchFileName || "pages.json"}</strong> to run or resume the batch.
+                  </p>
+                )}
+
+                {/* Batch Progress Counter & Summary Panel */}
+                <div style={{
+                  background: "var(--code-bg)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  padding: "1rem",
+                  margin: "1rem 0"
+                }}>
+                  <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1rem" }}>Batch Summary</h3>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "1.5rem" }}>
+                    <div><strong>Total:</strong> {counts.total}</div>
+                    <div style={{ color: "#137333" }}><strong>Completed:</strong> {counts.completed}</div>
+                    <div style={{ color: "var(--error-text)" }}><strong>Failed:</strong> {counts.failed}</div>
+                    <div style={{ color: "var(--warn-text)" }}><strong>Cancelled:</strong> {counts.cancelled}</div>
+                    <div style={{ color: "var(--muted)" }}><strong>Pending:</strong> {counts.pending}</div>
+                  </div>
+                </div>
+
+                {/* Batch Controls */}
+                <div className="row" style={{ marginTop: "1rem", flexWrap: "wrap" }}>
+                  {batchBusy ? (
+                    <button
+                      className="primary"
+                      type="button"
+                      onClick={() => {
+                        cancelRef.current = true;
+                      }}
+                      style={{ backgroundColor: "var(--error-text)", color: "#fff", marginTop: 0 }}
+                    >
+                      Cancel Conversion
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        className="primary"
+                        onClick={() => runBatch(true)}
+                        disabled={counts.completed === counts.total || !batchHtmlLoaded}
+                        style={{ marginTop: 0 }}
+                      >
+                        {hasProgress ? `Resume Batch (${counts.total - counts.completed} left)` : "Start Batch"}
+                      </button>
+                      {hasProgress && (
+                        <button
+                          className="ghost"
+                          onClick={() => {
+                            if (window.confirm("Are you sure you want to restart all conversions? This will clear all page statuses to pending.")) {
+                              runBatch(false);
+                            }
+                          }}
+                          disabled={!batchHtmlLoaded}
+                          style={{ marginTop: 0 }}
+                        >
+                          Restart All
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                <div style={{ marginTop: "1.5rem" }}>
+                  <h4>Pages in Batch</h4>
+                  <ul className="bundle-list">
+                    {batch.map((p, i) => {
+                      const s = batchStatus.get(i) || { status: "pending" };
+                      return (
+                        <li key={`${p.url}-${i}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div style={{ flex: 1, minWidth: 0, marginRight: "10px" }}>
+                            <span style={{
+                              color: s.status === "done" ? "#10b981" :
+                                     s.status === "error" ? "var(--error-text)" :
+                                     s.status === "cancelled" ? "var(--warn-text)" :
+                                     s.status === "converting" ? "var(--accent)" : "var(--text)"
+                            }}>
+                              {s.status === "done" && "✓ "}
+                              {s.status === "error" && "✗ "}
+                              {s.status === "cancelled" && "🛑 "}
+                              {s.status === "converting" && "⏳ "}
+                              {s.status === "pending" && "○ "}
+                              <strong>{p.title || p.url}</strong>
+                            </span>
+                            <div className="hint" style={{ margin: "2px 0 0", wordBreak: "break-all" }}>{p.url}</div>
+                            {s.note && (
+                              <div style={{
+                                color: s.status === "error" ? "var(--error-text)" : "var(--muted)",
+                                fontSize: "0.82rem",
+                                marginTop: "2px",
+                                background: s.status === "error" ? "var(--error-bg)" : "transparent",
+                                padding: s.status === "error" ? "4px 8px" : "0",
+                                borderRadius: "4px"
+                              }}>
+                                {s.note}
+                              </div>
+                            )}
+                          </div>
+                          <span className="badge" style={{
+                            backgroundColor: s.status === "done" ? "#e6f4ea" :
+                                             s.status === "error" ? "var(--error-bg)" :
+                                             s.status === "cancelled" ? "var(--warn-bg)" :
+                                             s.status === "converting" ? "#e8f0fe" : "var(--code-bg)",
+                            color: s.status === "done" ? "#137333" :
+                                   s.status === "error" ? "var(--error-text)" :
+                                   s.status === "cancelled" ? "var(--warn-text)" :
+                                   s.status === "converting" ? "var(--accent)" : "var(--muted)"
+                          }}>
+                            {s.status}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               </>
             )}
           </>
@@ -495,17 +734,7 @@ export default function App() {
           </p>
         )}
 
-        {tab === "batch" ? (
-          <button
-            className="primary"
-            onClick={convertBatch}
-            disabled={batchBusy || batch.length === 0}
-          >
-            {batchBusy
-              ? `Converting ${batchStatus.size}/${batch.length}…`
-              : "Convert all & add to bundle"}
-          </button>
-        ) : (
+        {tab !== "batch" && (
           <button className="primary" onClick={convert} disabled={busy}>
             {busy ? "Converting…" : "Convert"}
           </button>
