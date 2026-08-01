@@ -422,6 +422,7 @@ export default function App() {
               here.
             </p>
             <textarea
+              aria-label="HTML source code to convert"
               value={pastedHtml}
               onChange={(e) => setPastedHtml(e.target.value)}
               placeholder="<html>…</html>"
@@ -548,7 +549,7 @@ export default function App() {
             />
           </label>
           <div className="row">
-            <button className="primary" onClick={copyBlocks}>
+            <button className="primary" onClick={copyBlocks} aria-live="polite">
               {copied ? "Copied ✓" : "Copy to clipboard"}
             </button>
             <button onClick={addToBundle}>Add page to WXR bundle</button>
@@ -566,7 +567,7 @@ export default function App() {
             </div>
           )}
 
-          <button className="ghost small" onClick={() => setShowImages((v) => !v)}>
+          <button className="ghost small" onClick={() => setShowImages((v) => !v)} aria-expanded={showImages}>
             {showImages ? "▾" : "▸"} Asset Manifest / Audit ({result.images.length})
           </button>
           {showImages && result.images.length > 0 && (
