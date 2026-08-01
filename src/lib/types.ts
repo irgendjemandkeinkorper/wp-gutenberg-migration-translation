@@ -54,6 +54,10 @@ export interface BundlePage {
   sourceHtml?: string;
   targetTemplate?: string;
   placeholders?: MigrationPlaceholder[];
+  id?: string | number;
+  parentUrl?: string;
+  parentId?: string | number;
+  menuOrder?: number;
 }
 
 export type StepStatus = "pending" | "active" | "done" | "warn" | "error";
