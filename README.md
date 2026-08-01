@@ -95,6 +95,8 @@ Deploys to GitHub Pages automatically on push to `main`
 
 ## Limitations
 
+- **WXR Bundle Storage Limit (`localStorage`):** Since everything runs fully client-side, the WXR bundle is saved in the browser's `localStorage` (typically limited to 5MB by standard browsers). If your bundle contains many converted pages or large page sources, it may exceed this quota. If this happens, Blockify will display a non-blocking warning informing you that changes cannot be persisted across reloads. The active in-memory bundle remains fully functional and intact, allowing you to safely download the WXR file before refreshing. For very large migrations, it is recommended to download your intermediate WXR files periodically or migrate in smaller batches.
+- **Idempotent Duplicate URLs Handling:** To keep the bundle state predictable and prevent duplicate entries, re-adding a page with an already existing source URL (either manually or via batch conversion) will replace/update the existing entry in place rather than appending a duplicate.
 - Embeds and forms require manual rebuilding; visible migration placeholders
   retain their source details. Columns and galleries are not inferred.
 - Cross-origin URL fetch depends on public CORS proxies; paste HTML when it
