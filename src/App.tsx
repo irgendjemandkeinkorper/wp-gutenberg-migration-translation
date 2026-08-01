@@ -61,6 +61,7 @@ export default function App() {
   const [result, setResult] = useState<PageResult | null>(null);
   const [title, setTitle] = useState("");
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
   const [showIntermediate, setShowIntermediate] = useState(false);
   const [showImages, setShowImages] = useState(false);
 
@@ -112,6 +113,7 @@ export default function App() {
     setError("");
     setResult(null);
     setCopied(false);
+    setCopyError(null);
     setSteps(new Map());
     try {
       let rawHtml = pastedHtml;
@@ -252,9 +254,39 @@ export default function App() {
 
   async function copyBlocks() {
     if (!result) return;
-    await navigator.clipboard.writeText(result.blocks);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopyError(null);
+    setCopied(false);
+    let success = false;
+    try {
+      if (typeof navigator === "undefined" || !navigator.clipboard || !navigator.clipboard.writeText) {
+        throw new Error("Clipboard API not available");
+      }
+      await navigator.clipboard.writeText(result.blocks);
+      success = true;
+    } catch (e) {
+      const codeView = document.getElementById("result-code-view");
+      if (codeView) {
+        try {
+          const range = document.createRange();
+          range.selectNodeContents(codeView);
+          const sel = window.getSelection();
+          if (sel) {
+            sel.removeAllRanges();
+            sel.addRange(range);
+          }
+        } catch (selErr) {
+          // Ignore selection failures in environments with limited DOM support
+        }
+        (codeView as HTMLElement).focus();
+      }
+      setCopyError(
+        "Could not copy automatically. The text below has been selected. Please press Ctrl+C or Cmd+C to copy manually."
+      );
+    }
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   }
 
   function addToBundle() {
@@ -553,11 +585,18 @@ export default function App() {
             </button>
             <button onClick={addToBundle}>Add page to WXR bundle</button>
           </div>
+          {copyError && (
+            <p className="warn-box" role="alert">
+              {copyError}
+            </p>
+          )}
           <p className="hint">
             To paste directly: WordPress block editor → ⋮ menu → Code editor →
             paste.
           </p>
-          <pre className="code-view">{result.blocks}</pre>
+          <pre id="result-code-view" className="code-view" tabIndex={0}>
+            {result.blocks}
+          </pre>
 
           {result.placeholders.length > 0 && (
             <div className="warn-box">

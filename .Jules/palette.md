@@ -1,3 +1,7 @@
 ## 2024-05-18 - Prevent Accidental Data Loss & Add Screen Reader Context
 **Learning:** Destructive actions that clear all user data (like "Clear bundle") without confirmation can lead to significant frustration if clicked accidentally. Additionally, repeated generic action buttons (like "Remove") inside lists need contextual ARIA labels because screen readers will read them out of context (e.g., hearing "Remove" multiple times without knowing *what* is being removed).
 **Action:** Always wrap bulk-destructive actions in a confirmation dialog (e.g., `window.confirm`). When rendering identical action buttons in a list, inject the item's title or identifying information into an `aria-label` to provide context for assistive technologies.
+
+## 2025-02-15 - Resilient Clipboard Operations & Focusable Elements
+**Learning:** Browser clipboard write actions can fail or be rejected under strict sandbox permissions, insecure contexts, or virtual environments. To ensure seamless user experience, we must handle these errors by fallback manual selection, focusing the content view, and offering prominent guidance text. Additionally, rendering scrollable block code containers with `tabIndex={0}` ensures they are keyboard focusable and scrollable for assistive technologies.
+**Action:** Wrap browser clipboard writes in try-catch structures. When failures happen, automatically select and focus the corresponding text, display clear instructions in an accessible container, and ensure scrollable elements have proper keyboard access indicators.

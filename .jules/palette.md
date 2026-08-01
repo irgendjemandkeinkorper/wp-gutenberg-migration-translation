@@ -1,3 +1,7 @@
 ## 2024-05-31 - Focus Visible and ARIA Expanded attributes
 **Learning:** Adding standard `:focus-visible` outlines and hover transitions for interactive elements, along with `aria-expanded` attributes on toggle buttons, significantly improves keyboard navigation and provides essential context for screen reader users when UI sections expand or collapse.
 **Action:** When working with toggleable sections or buttons without focus states in vanilla CSS projects, proactively add `aria-expanded` properties and define `:focus-visible` and `hover` styles on interactive elements to ensure the app is fully accessible.
+
+## 2025-02-15 - Resilient Clipboard Operations & Focusable Elements
+**Learning:** Browser clipboard write actions can fail or be rejected under strict sandbox permissions, insecure contexts, or virtual environments. To ensure seamless user experience, we must handle these errors by fallback manual selection, focusing the content view, and offering prominent guidance text. Additionally, rendering scrollable block code containers with `tabIndex={0}` ensures they are keyboard focusable and scrollable for assistive technologies.
+**Action:** Wrap browser clipboard writes in try-catch structures. When failures happen, automatically select and focus the corresponding text, display clear instructions in an accessible container, and ensure scrollable elements have proper keyboard access indicators.
