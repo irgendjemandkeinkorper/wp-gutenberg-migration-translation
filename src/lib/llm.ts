@@ -45,8 +45,22 @@ export async function cleanHtml(opts: {
   title: string;
   html: string;
   violationNote?: string;
+  proxyUrl?: string;
+  proxyToken?: string;
 }): Promise<string> {
-  const ai = new GoogleGenAI({ apiKey: opts.apiKey });
+  const initOpts: Record<string, any> = {};
+  if (opts.proxyUrl) {
+    // Under Production Proxy Mode, route requests through the self-hosted proxy.
+    initOpts.apiKey = opts.apiKey || "PROXY_MANAGED_KEY";
+    initOpts.httpOptions = {
+      baseUrl: opts.proxyUrl,
+      headers: opts.proxyToken ? { "Authorization": `Bearer ${opts.proxyToken}` } : undefined,
+    };
+  } else {
+    // Under Private Pilot Mode, direct-browser key is used.
+    initOpts.apiKey = opts.apiKey;
+  }
+  const ai = new GoogleGenAI(initOpts as any);
 
   let user =
     `Article title (for context; do NOT include it in the body): ${opts.title}\n\n` +
