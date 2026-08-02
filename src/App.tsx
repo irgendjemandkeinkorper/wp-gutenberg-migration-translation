@@ -27,6 +27,10 @@ interface CrawledPage {
   url: string;
   title: string;
   html: string;
+  id?: string | number;
+  parentUrl?: string;
+  parentId?: string | number;
+  menuOrder?: number;
 }
 
 interface BatchState {
@@ -218,14 +222,18 @@ export default function App() {
         throw new Error("expected { pages: [{ url, html }, …] }");
       }
       setBatch(
-        pages.map((p) => ({
-          url: (p as CrawledPage).url,
-          title:
-            typeof (p as CrawledPage).title === "string"
-              ? (p as CrawledPage).title
-              : "",
-          html: (p as CrawledPage).html,
-        })),
+        pages.map((p) => {
+          const cp = p as CrawledPage;
+          return {
+            url: cp.url,
+            title: typeof cp.title === "string" ? cp.title : "",
+            html: cp.html,
+            id: cp.id,
+            parentUrl: typeof cp.parentUrl === "string" ? cp.parentUrl : undefined,
+            parentId: cp.parentId,
+            menuOrder: typeof cp.menuOrder === "number" ? cp.menuOrder : undefined,
+          };
+        }),
       );
       setBatchFileName(file.name);
       setBatchStatus(new Map());
@@ -283,6 +291,10 @@ export default function App() {
           sourceHtml: res.sourceHtml,
           targetTemplate,
           placeholders: res.placeholders,
+          id: page.id,
+          parentUrl: page.parentUrl,
+          parentId: page.parentId,
+          menuOrder: page.menuOrder,
         };
         setBundle((prev) => addOrReplaceBundleEntry(prev, entry));
         update(i, {
@@ -359,13 +371,17 @@ export default function App() {
   }
 
   function downloadWxr() {
-    const xml = buildWxr(bundle, {
-      author: author.trim() || "admin",
-      postType,
-      status,
-      emitAttachments: sideload,
-    });
-    downloadFile("export.wxr", xml, "application/xml");
+    try {
+      const xml = buildWxr(bundle, {
+        author: author.trim() || "admin",
+        postType,
+        status,
+        emitAttachments: sideload,
+      });
+      downloadFile("export.wxr", xml, "application/xml");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
   }
 
   const visibleSteps = STEP_ORDER.filter(
@@ -559,13 +575,18 @@ export default function App() {
                 <ul className="bundle-list">
                   {batch.map((p, i) => {
                     const s = batchStatus.get(i);
+                    const metaParts: string[] = [];
+                    if (p.parentId !== undefined) metaParts.push(`parentId: ${p.parentId}`);
+                    if (p.parentUrl !== undefined) metaParts.push(`parentUrl: ${p.parentUrl}`);
+                    if (p.menuOrder !== undefined) metaParts.push(`order: ${p.menuOrder}`);
+                    const metaStr = metaParts.length ? ` [${metaParts.join(", ")}]` : "";
                     return (
                       <li key={p.url}>
                         <span>
                           {s?.status === "done" && "✓ "}
                           {s?.status === "error" && "✗ "}
                           {s?.status === "converting" && "… "}
-                          {p.title || p.url}{" "}
+                          {p.title || p.url}{metaStr}{" "}
                           {s?.note && (
                             <span className="muted">({s.note})</span>
                           )}
@@ -819,27 +840,35 @@ export default function App() {
             <>
               <h2>WXR bundle ({bundle.length} page{bundle.length === 1 ? "" : "s"})</h2>
               <ul className="bundle-list">
-                {bundle.map((p, i) => (
-                  <li key={`${p.link}-${i}`}>
-                    <span>
-                      {p.title}{" "}
-                      <span className="muted">
-                        ({p.images.length} image{p.images.length === 1 ? "" : "s"}
-                        {p.targetTemplate ? ` · ${getTemplateDisplayName(p.targetTemplate)}` : ""})
+                {bundle.map((p, i) => {
+                  const metaParts: string[] = [];
+                  if (p.parentId !== undefined) metaParts.push(`parentId: ${p.parentId}`);
+                  if (p.parentUrl !== undefined) metaParts.push(`parentUrl: ${p.parentUrl}`);
+                  if (p.menuOrder !== undefined) metaParts.push(`order: ${p.menuOrder}`);
+                  const metaStr = metaParts.length ? ` · ${metaParts.join(", ")}` : "";
+                  return (
+                    <li key={`${p.link}-${i}`}>
+                      <span>
+                        {p.title}{" "}
+                        <span className="muted">
+                          ({p.images.length} image{p.images.length === 1 ? "" : "s"}
+                          {p.targetTemplate ? ` · ${getTemplateDisplayName(p.targetTemplate)}` : ""}
+                          {metaStr})
+                        </span>
                       </span>
-                    </span>
-                    <button
-                      className="ghost small"
-                      aria-label={`Remove "${p.title}" from bundle`}
-                      onClick={() => {
-                        setLastClearedBundle(null);
-                        setBundle((prev) => prev.filter((_, j) => j !== i));
-                      }}
-                    >
-                      Remove
-                    </button>
-                  </li>
-                ))}
+                      <button
+                        className="ghost small"
+                        aria-label={`Remove "${p.title}" from bundle`}
+                        onClick={() => {
+                          setLastClearedBundle(null);
+                          setBundle((prev) => prev.filter((_, j) => j !== i));
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
               <div className="row wrap">
                 <label>
