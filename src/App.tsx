@@ -10,12 +10,13 @@ import type {
   StepStatus,
   StepUpdate,
 } from "./lib/types";
+import {
+  TEMPLATE_REGISTRY,
+  getTemplateDisplayName,
+  normalizeTemplateId,
+} from "./lib/templates";
 
 const STEP_ORDER = ["Fetch", "Extract", "Images", "Clean (LLM)", "Validate", "Blocks"];
-const GOLFNOW_TEMPLATES = [
-  "Albatross", "Aspen", "Austin", "Dogwood", "Eagleton", "Indigo", "Mulberry",
-  "Pine", "Quantum", "Redmond", "Sequoia", "Sunrise", "Sunstone", "Willow",
-];
 
 interface StepState {
   status: StepStatus;
@@ -79,7 +80,7 @@ export default function App() {
   const [status, setStatus] = useState<"draft" | "publish">("draft");
   const [sideload, setSideload] = useState(true);
   const [targetTemplate, setTargetTemplate] = useState(
-    () => localStorage.getItem("blockify.targetTemplate") ?? "",
+    () => normalizeTemplateId(localStorage.getItem("blockify.targetTemplate") ?? ""),
   );
 
   useEffect(() => {
@@ -356,14 +357,18 @@ export default function App() {
         </div>
 
         <label>
-          Target GolfNow template
+          Target template for QA metadata
           <select value={targetTemplate} onChange={(e) => setTargetTemplate(e.target.value)}>
             <option value="">Not selected</option>
-            {GOLFNOW_TEMPLATES.map((name) => <option key={name} value={name}>{name}</option>)}
+            {TEMPLATE_REGISTRY.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.displayName} {t.status === "metadata-only" ? "(Metadata-only)" : ""}
+              </option>
+            ))}
           </select>
         </label>
         <p className="hint">
-          Saved with every imported page for implementation and QA. Review the{" "}
+          Saved in WXR metadata for QA tracking and labeling. Target template selection does NOT affect block generation or conversion output. Review the{" "}
           <a href="https://golfnowbusiness.com/template-library/" target="_blank" rel="noreferrer">template library</a>.
         </p>
 
@@ -419,6 +424,7 @@ export default function App() {
               here.
             </p>
             <textarea
+              aria-label="HTML source code to convert"
               value={pastedHtml}
               onChange={(e) => setPastedHtml(e.target.value)}
               placeholder="<html>…</html>"
@@ -545,7 +551,7 @@ export default function App() {
             />
           </label>
           <div className="row">
-            <button className="primary" onClick={copyBlocks}>
+            <button className="primary" onClick={copyBlocks} aria-live="polite">
               {copied ? "Copied ✓" : "Copy to clipboard"}
             </button>
             <button onClick={addToBundle}>Add page to WXR bundle</button>
@@ -563,7 +569,7 @@ export default function App() {
             </div>
           )}
 
-          <button className="ghost small" onClick={() => setShowImages((v) => !v)}>
+          <button className="ghost small" onClick={() => setShowImages((v) => !v)} aria-expanded={showImages}>
             {showImages ? "▾" : "▸"} Asset Manifest / Audit ({result.images.length})
           </button>
           {showImages && result.images.length > 0 && (
@@ -648,7 +654,7 @@ export default function App() {
                       {p.title}{" "}
                       <span className="muted">
                         ({p.images.length} image{p.images.length === 1 ? "" : "s"}
-                        {p.targetTemplate ? ` · ${p.targetTemplate}` : ""})
+                        {p.targetTemplate ? ` · ${getTemplateDisplayName(p.targetTemplate)}` : ""})
                       </span>
                     </span>
                     <button
