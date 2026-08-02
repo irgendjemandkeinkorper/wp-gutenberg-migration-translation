@@ -21,6 +21,8 @@ export interface ConvertInput {
   model: string;
   /** Deterministic mode: enforce the whitelist in code only, no Gemini call. */
   skipLlm?: boolean;
+  proxyUrl?: string;
+  proxyToken?: string;
 }
 
 export async function convertPage(
@@ -156,6 +158,8 @@ async function cleanWithRetries(
       title,
       html: tokenizedHtml,
       violationNote,
+      proxyUrl: input.proxyUrl,
+      proxyToken: input.proxyToken,
     });
     if (!cleaned.trim()) throw new Error("The model returned an empty result.");
 
