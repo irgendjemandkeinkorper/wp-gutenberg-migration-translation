@@ -27,6 +27,18 @@ Rules:
 const FENCE_OPEN_RE = /^```[a-zA-Z]*\n/;
 const FENCE_CLOSE_RE = /\n```\s*$/;
 
+export function sanitizeErrorMessage(msg: string): string {
+  if (!msg) return "";
+  let clean = msg;
+  // Sanitize Google API keys
+  clean = clean.replace(/AIzaSy[a-zA-Z0-9_-]+/g, "[REDACTED_API_KEY]");
+  // Sanitize query params like key=...
+  clean = clean.replace(/(\?|&)key=[^&]+/g, "$1key=[REDACTED]");
+  // Sanitize Bearer tokens
+  clean = clean.replace(/Bearer\s+[a-zA-Z0-9\-\._~]+/g, "Bearer [REDACTED]");
+  return clean;
+}
+
 export async function cleanHtml(opts: {
   apiKey: string;
   model: string;
@@ -55,15 +67,20 @@ export async function cleanHtml(opts: {
     `Extracted HTML to clean:\n\n${opts.html}`;
   if (opts.violationNote) user += `\n\n${opts.violationNote}`;
 
-  const resp = await ai.models.generateContent({
-    model: opts.model,
-    contents: user,
-    config: {
-      systemInstruction: SYSTEM_PROMPT,
-      temperature: 0,
-    },
-  });
+  try {
+    const resp = await ai.models.generateContent({
+      model: opts.model,
+      contents: user,
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        temperature: 0,
+      },
+    });
 
-  const text = resp.text ?? "";
-  return text.replace(FENCE_OPEN_RE, "").replace(FENCE_CLOSE_RE, "").trim();
+    const text = resp.text ?? "";
+    return text.replace(FENCE_OPEN_RE, "").replace(FENCE_CLOSE_RE, "").trim();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(sanitizeErrorMessage(msg));
+  }
 }

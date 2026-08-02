@@ -37,15 +37,15 @@ The pipeline keeps the LLM on judgment and off mechanics (the design proven in
    included for more reliable WordPress imports.
 7. **Migration QA** — unsupported interactive content (embeds, media players,
    and forms) becomes a visible `MIGRATION PLACEHOLDER` instead of disappearing.
-   The exact original HTML, source URL, selected GolfNow template, and
+   The exact original HTML, source URL, selected GolfNow template stable ID, and
    placeholder manifest are retained as `_blockify_*` post metadata in WXR.
 
 ## Usage
 
 1. Open the app, configure your connection mode in Settings: choose Private Pilot Mode and enter your [Gemini API key](https://aistudio.google.com/apikey) (held strictly in browser memory), or choose Production Proxy Mode to route requests securely.
 2. Paste a page's HTML (View Page Source), or try Fetch URL.
-3. Select the target design from the current
-   [GolfNow template library](https://golfnowbusiness.com/template-library/).
+3. Select the target template for QA metadata from the current
+   [GolfNow template library](https://golfnowbusiness.com/template-library/). Note that template selection does not affect the conversion output or block generation; it is purely recorded in WXR metadata for QA tracking and verification purposes.
 4. Convert, review the blocks and any manual-migration placeholders, then either copy-paste into the block editor's
    Code editor view or add the page to the WXR bundle.
 5. Download the WXR and import it: WP admin → Tools → Import → WordPress,
@@ -165,6 +165,13 @@ Before deploying Blockify publicly or upgrading your pilot, check off the follow
 - [ ] **No Raw Payload Logging**: Configure proxy logging so that it records metadata (timestamp, model, status) but **never** logs the raw HTML contents, source URLs, or authorization tokens.
 - [ ] **Key Rotation Schedule**: Put in place a regular rotation schedule (e.g., every 90 days) for both Google Gemini API keys and Proxy Access Tokens.
 - [ ] **Rate Limiting**: Enforce strict server-side rate limits on the proxy (e.g., max 5 requests per minute per IP) to prevent abuse and budget exhaustion.
+### Privacy & Reliability
+
+When migrating content, keep the following security and privacy boundaries in mind:
+
+- **Fetch URL (Browser Mode):** Uses third-party public CORS proxies (`corsproxy.io` and `api.allorigins.win`) to fetch page source. Avoid this mode for sensitive, paywalled, or internal intranet pages, as your request and content pass through these public services.
+- **Paste HTML (Recommended Private Path):** Pasting the source HTML directly is fully private. All extraction, tokenization, and cleaning (if Skip LLM is checked) occur locally in your browser. (LLM requests only send the cleaned text to Gemini if enabled).
+- **Local Site Crawler:** Running `scripts/crawl.mjs` runs locally on your machine. It makes direct requests from your Node process, avoiding third-party proxies, making it the secure and reliable path for private or bulk content.
 
 ## Development
 
@@ -180,6 +187,8 @@ Deploys to GitHub Pages automatically on push to `main`
 
 ## Limitations
 
+- **WXR Bundle Storage Limit (`localStorage`):** Since everything runs fully client-side, the WXR bundle is saved in the browser's `localStorage` (typically limited to 5MB by standard browsers). If your bundle contains many converted pages or large page sources, it may exceed this quota. If this happens, Blockify will display a non-blocking warning informing you that changes cannot be persisted across reloads. The active in-memory bundle remains fully functional and intact, allowing you to safely download the WXR file before refreshing. For very large migrations, it is recommended to download your intermediate WXR files periodically or migrate in smaller batches.
+- **Idempotent Duplicate URLs Handling:** To keep the bundle state predictable and prevent duplicate entries, re-adding a page with an already existing source URL (either manually or via batch conversion) will replace/update the existing entry in place rather than appending a duplicate.
 - Embeds and forms require manual rebuilding; visible migration placeholders
   retain their source details. Columns and galleries are not inferred.
 - Cross-origin URL fetch depends on public CORS proxies; paste HTML when it

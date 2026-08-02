@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { downloadFile, loadBundle, saveBundle } from "./lib/bundle";
+import { downloadFile, loadBundle, saveBundle, addOrReplaceBundleEntry } from "./lib/bundle";
 import { fetchPage } from "./lib/fetchPage";
 import { DEFAULT_MODEL, FAST_MODEL } from "./lib/llm";
 import { convertPage } from "./lib/pipeline";
@@ -10,12 +10,13 @@ import type {
   StepStatus,
   StepUpdate,
 } from "./lib/types";
+import {
+  TEMPLATE_REGISTRY,
+  getTemplateDisplayName,
+  normalizeTemplateId,
+} from "./lib/templates";
 
 const STEP_ORDER = ["Fetch", "Extract", "Images", "Clean (LLM)", "Validate", "Blocks"];
-const GOLFNOW_TEMPLATES = [
-  "Albatross", "Aspen", "Austin", "Dogwood", "Eagleton", "Indigo", "Mulberry",
-  "Pine", "Quantum", "Redmond", "Sequoia", "Sunrise", "Sunstone", "Willow",
-];
 
 interface StepState {
   status: StepStatus;
@@ -87,15 +88,20 @@ export default function App() {
   const [batchBusy, setBatchBusy] = useState(false);
 
   const [bundle, setBundle] = useState<BundlePage[]>(loadBundle);
+  const [lastClearedBundle, setLastClearedBundle] = useState<BundlePage[] | null>(null);
+  const [saveFailed, setSaveFailed] = useState(false);
   const [author, setAuthor] = useState("admin");
   const [postType, setPostType] = useState<"page" | "post">("page");
   const [status, setStatus] = useState<"draft" | "publish">("draft");
   const [sideload, setSideload] = useState(true);
   const [targetTemplate, setTargetTemplate] = useState(
-    () => localStorage.getItem("blockify.targetTemplate") ?? "",
+    () => normalizeTemplateId(localStorage.getItem("blockify.targetTemplate") ?? ""),
   );
 
-  useEffect(() => saveBundle(bundle), [bundle]);
+  useEffect(() => {
+    const success = saveBundle(bundle);
+    setSaveFailed(!success);
+  }, [bundle]);
   useEffect(() => {
     localStorage.setItem("blockify.connectionMode", connectionMode);
   }, [connectionMode]);
@@ -231,6 +237,7 @@ export default function App() {
         return;
       }
     }
+    setLastClearedBundle(null);
     setBatchBusy(true);
     setError("");
     const update = (i: number, s: BatchState) =>
@@ -263,15 +270,7 @@ export default function App() {
           targetTemplate,
           placeholders: res.placeholders,
         };
-        // Replace an existing bundle entry for the same URL so re-running a
-        // batch stays idempotent.
-        setBundle((prev) => {
-          const at = prev.findIndex((b) => b.link === page.url);
-          if (at < 0) return [...prev, entry];
-          const next = [...prev];
-          next[at] = entry;
-          return next;
-        });
+        setBundle((prev) => addOrReplaceBundleEntry(prev, entry));
         update(i, {
           status: "done",
           note: res.warnings.length
@@ -300,20 +299,19 @@ export default function App() {
     const pageTitle = title.trim() || "Untitled";
     const link =
       result.sourceUrl || `https://example.com/${slugify(pageTitle)}`;
-    setBundle((prev) => [
-      ...prev,
-      {
-        title: pageTitle,
-        link,
-        contentBlocks: result.blocks,
-        images: result.images
-          .filter((asset) => asset.type === "image")
-          .map(({ src, alt }) => ({ src, alt })),
-        sourceHtml: result.sourceHtml,
-        targetTemplate,
-        placeholders: result.placeholders,
-      },
-    ]);
+    const entry: BundlePage = {
+      title: pageTitle,
+      link,
+      contentBlocks: result.blocks,
+      images: result.images
+        .filter((asset) => asset.type === "image")
+        .map(({ src, alt }) => ({ src, alt })),
+      sourceHtml: result.sourceHtml,
+      targetTemplate,
+      placeholders: result.placeholders,
+    };
+    setLastClearedBundle(null);
+    setBundle((prev) => addOrReplaceBundleEntry(prev, entry));
   }
 
   function downloadWxr() {
@@ -453,14 +451,18 @@ export default function App() {
         </div>
 
         <label>
-          Target GolfNow template
+          Target template for QA metadata
           <select value={targetTemplate} onChange={(e) => setTargetTemplate(e.target.value)}>
             <option value="">Not selected</option>
-            {GOLFNOW_TEMPLATES.map((name) => <option key={name} value={name}>{name}</option>)}
+            {TEMPLATE_REGISTRY.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.displayName} {t.status === "metadata-only" ? "(Metadata-only)" : ""}
+              </option>
+            ))}
           </select>
         </label>
         <p className="hint">
-          Saved with every imported page for implementation and QA. Review the{" "}
+          Saved in WXR metadata for QA tracking and labeling. Target template selection does NOT affect block generation or conversion output. Review the{" "}
           <a href="https://golfnowbusiness.com/template-library/" target="_blank" rel="noreferrer">template library</a>.
         </p>
 
@@ -516,6 +518,7 @@ export default function App() {
               here.
             </p>
             <textarea
+              aria-label="HTML source code to convert"
               value={pastedHtml}
               onChange={(e) => setPastedHtml(e.target.value)}
               placeholder="<html>…</html>"
@@ -542,6 +545,9 @@ export default function App() {
                 placeholder="https://example.com/about"
               />
             </label>
+            <div className="warn-box" style={{ marginTop: "10px", marginBottom: "10px" }}>
+              <strong>⚠️ Privacy & Security Warning:</strong> URL mode fetches page content through public, third-party CORS proxies (api.allorigins.win, corsproxy.io). Do not use this mode for private, sensitive, internal, or credentials-protected page content. Instead, use the private-content paths: the <strong>Paste HTML</strong> tab (which runs entirely locally) or the local site crawler.
+            </div>
             <p className="hint">
               Fetched through a public CORS proxy — works for many sites, but
               if it fails, use Paste HTML.
@@ -642,7 +648,7 @@ export default function App() {
             />
           </label>
           <div className="row">
-            <button className="primary" onClick={copyBlocks}>
+            <button className="primary" onClick={copyBlocks} aria-live="polite">
               {copied ? "Copied ✓" : "Copy to clipboard"}
             </button>
             <button onClick={addToBundle}>Add page to WXR bundle</button>
@@ -660,7 +666,7 @@ export default function App() {
             </div>
           )}
 
-          <button className="ghost small" onClick={() => setShowImages((v) => !v)}>
+          <button className="ghost small" onClick={() => setShowImages((v) => !v)} aria-expanded={showImages}>
             {showImages ? "▾" : "▸"} Asset Manifest / Audit ({result.images.length})
           </button>
           {showImages && result.images.length > 0 && (
@@ -726,89 +732,130 @@ export default function App() {
         </section>
       )}
 
-      {bundle.length > 0 && (
+      {(bundle.length > 0 || lastClearedBundle) && (
         <section className="panel">
-          <h2>WXR bundle ({bundle.length} page{bundle.length === 1 ? "" : "s"})</h2>
-          <ul className="bundle-list">
-            {bundle.map((p, i) => (
-              <li key={`${p.link}-${i}`}>
-                <span>
-                  {p.title}{" "}
-                  <span className="muted">
-                    ({p.images.length} image{p.images.length === 1 ? "" : "s"}
-                    {p.targetTemplate ? ` · ${p.targetTemplate}` : ""})
-                  </span>
-                </span>
-                <button
-                  className="ghost small"
-                  aria-label={`Remove "${p.title}" from bundle`}
-                  onClick={() =>
-                    setBundle((prev) => prev.filter((_, j) => j !== i))
-                  }
-                >
-                  Remove
+          {saveFailed && (
+            <p className="warn-box" style={{ marginBottom: "1rem" }}>
+              ⚠️ Warning: Your bundle could not be saved to browser storage (quota exceeded or storage disabled).
+              The in-memory bundle is still fully functional, but changes will be lost if you refresh or close this tab.
+            </p>
+          )}
+
+          {bundle.length > 0 ? (
+            <>
+              <h2>WXR bundle ({bundle.length} page{bundle.length === 1 ? "" : "s"})</h2>
+              <ul className="bundle-list">
+                {bundle.map((p, i) => (
+                  <li key={`${p.link}-${i}`}>
+                    <span>
+                      {p.title}{" "}
+                      <span className="muted">
+                        ({p.images.length} image{p.images.length === 1 ? "" : "s"}
+                        {p.targetTemplate ? ` · ${getTemplateDisplayName(p.targetTemplate)}` : ""})
+                      </span>
+                    </span>
+                    <button
+                      className="ghost small"
+                      aria-label={`Remove "${p.title}" from bundle`}
+                      onClick={() => {
+                        setLastClearedBundle(null);
+                        setBundle((prev) => prev.filter((_, j) => j !== i));
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="row wrap">
+                <label>
+                  Author login
+                  <input
+                    type="text"
+                    value={author}
+                    onChange={(e) => setAuthor(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Post type
+                  <select
+                    value={postType}
+                    onChange={(e) => setPostType(e.target.value as "page" | "post")}
+                  >
+                    <option value="page">page</option>
+                    <option value="post">post</option>
+                  </select>
+                </label>
+                <label>
+                  Status
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as "draft" | "publish")}
+                  >
+                    <option value="draft">draft</option>
+                    <option value="publish">publish</option>
+                  </select>
+                </label>
+                <label className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={sideload}
+                    onChange={(e) => setSideload(e.target.checked)}
+                  />
+                  Sideload images
+                </label>
+              </div>
+              <div className="row">
+                <button className="primary" onClick={downloadWxr}>
+                  Download WXR
                 </button>
-              </li>
-            ))}
-          </ul>
-          <div className="row wrap">
-            <label>
-              Author login
-              <input
-                type="text"
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-              />
-            </label>
-            <label>
-              Post type
-              <select
-                value={postType}
-                onChange={(e) => setPostType(e.target.value as "page" | "post")}
+                <button
+                  className="ghost"
+                  onClick={() => {
+                    if (window.confirm("Are you sure you want to clear the entire bundle?")) {
+                      setLastClearedBundle(bundle);
+                      setBundle([]);
+                    }
+                  }}
+                >
+                  Clear bundle
+                </button>
+                {lastClearedBundle && (
+                  <button
+                    className="ghost"
+                    onClick={() => {
+                      if (lastClearedBundle) {
+                        setBundle(lastClearedBundle);
+                        setLastClearedBundle(null);
+                      }
+                    }}
+                  >
+                    Undo clear
+                  </button>
+                )}
+              </div>
+              <p className="hint">
+                In WordPress: Tools → Import → WordPress, upload this file, assign
+                an author, and check “Download and import file attachments” so
+                images are copied into your media library.
+              </p>
+            </>
+          ) : (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span>Bundle cleared.</span>
+              <button
+                className="ghost"
+                onClick={() => {
+                  if (lastClearedBundle) {
+                    setBundle(lastClearedBundle);
+                    setLastClearedBundle(null);
+                  }
+                }}
               >
-                <option value="page">page</option>
-                <option value="post">post</option>
-              </select>
-            </label>
-            <label>
-              Status
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as "draft" | "publish")}
-              >
-                <option value="draft">draft</option>
-                <option value="publish">publish</option>
-              </select>
-            </label>
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={sideload}
-                onChange={(e) => setSideload(e.target.checked)}
-              />
-              Sideload images
-            </label>
-          </div>
-          <div className="row">
-            <button className="primary" onClick={downloadWxr}>
-              Download WXR
-            </button>
-            <button
-              className="ghost"
-              onClick={() => {
-                if (window.confirm("Are you sure you want to clear the entire bundle?")) {
-                  setBundle([]);
-                }
-              }}
-            >
-              Clear bundle
-            </button>
-          </div>
-          <p className="hint">
-            In WordPress: Tools → Import → WordPress, upload this file, assign
-            an author, and check “Download and import file attachments” so
-            images are copied into your media library.
-          </p>
+                Undo clear
+              </button>
+            </div>
+          )}
         </section>
       )}
     </div>
