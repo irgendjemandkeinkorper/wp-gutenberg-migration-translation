@@ -8,7 +8,7 @@ const page: BundlePage = {
   contentBlocks: "<!-- wp:paragraph -->\n<p>Hello</p>\n<!-- /wp:paragraph -->",
   images: [{ src: "https://old-site.com/img/team photo.jpg", alt: "The team" }],
   sourceHtml: "<main><p>Hello</p></main>",
-  targetTemplate: "Albatross",
+  targetTemplate: "albatross",
 };
 
 describe("buildWxr", () => {
@@ -54,7 +54,7 @@ describe("buildWxr", () => {
     expect(xml).toContain("<![CDATA[<main><p>Hello</p></main>]]>");
     expect(xml).toContain("<![CDATA[_blockify_source_url]]>");
     expect(xml).toContain("<![CDATA[_blockify_target_template]]>");
-    expect(xml).toContain("<![CDATA[Albatross]]>");
+    expect(xml).toContain("<![CDATA[albatross]]>");
   });
 
   it("deduplicates fetchable attachments and skips relative image URLs", () => {

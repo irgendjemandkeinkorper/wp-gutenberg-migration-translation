@@ -266,7 +266,11 @@ function isolateTokens(body: HTMLElement): void {
       }
     }
     flush();
-    child.replaceWith(...pieces);
+    const frag = doc.createDocumentFragment();
+    for (const piece of pieces) {
+      frag.appendChild(piece);
+    }
+    child.replaceWith(frag);
   }
 
   for (const child of Array.from(body.children)) {
