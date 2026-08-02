@@ -37,16 +37,15 @@ The pipeline keeps the LLM on judgment and off mechanics (the design proven in
    included for more reliable WordPress imports.
 7. **Migration QA** — unsupported interactive content (embeds, media players,
    and forms) becomes a visible `MIGRATION PLACEHOLDER` instead of disappearing.
-   The exact original HTML, source URL, selected GolfNow template, and
+   The exact original HTML, source URL, selected GolfNow template stable ID, and
    placeholder manifest are retained as `_blockify_*` post metadata in WXR.
 
 ## Usage
 
-1. Open the app, add your [Gemini API key](https://aistudio.google.com/apikey)
-   in Settings (stored in `localStorage` only).
+1. Open the app, configure your connection mode in Settings: choose Private Pilot Mode and enter your [Gemini API key](https://aistudio.google.com/apikey) (held strictly in browser memory), or choose Production Proxy Mode to route requests securely.
 2. Paste a page's HTML (View Page Source), or try Fetch URL.
-3. Select the target design from the current
-   [GolfNow template library](https://golfnowbusiness.com/template-library/).
+3. Select the target template for QA metadata from the current
+   [GolfNow template library](https://golfnowbusiness.com/template-library/). Note that template selection does not affect the conversion output or block generation; it is purely recorded in WXR metadata for QA tracking and verification purposes.
 4. Convert, review the blocks and any manual-migration placeholders, then either copy-paste into the block editor's
    Code editor view or add the page to the WXR bundle.
 5. Download the WXR and import it: WP admin → Tools → Import → WordPress,
@@ -80,6 +79,99 @@ instead of duplicating them.
 - **Conversion cache**: successful LLM cleanups are cached in localStorage,
   keyed on model + prompt + extracted content, so re-converting an unchanged
   page never repeats the Gemini call (last 40 pages kept).
+
+## Deployment Architecture & Security Boundaries
+
+Blockify is designed with a strict security boundary that separates local private testing from secure production hosting. Understanding these deployment modes is critical before entering or configuring credentials.
+
+### Supported Deployment Modes
+
+#### 1. Private Pilot Mode (Direct-Browser)
+* **Goal**: Local development, individual testing, or private team pilots.
+* **Security Mechanics**: The operator inputs their personal Google Gemini API key directly into the settings panel. This key is held **strictly in browser memory (React state)** and is never written to `localStorage`, cookies, or persistent storage. It will be completely cleared if the browser tab is reloaded or closed.
+* **Risks**: Exposing keys on frontends or prompting public users to enter their keys is highly discouraged. Direct-browser key entries are **unsafe for public production deployment** because credentials can easily be leaked or misused.
+
+#### 2. Production Proxy Mode (Secure Server-Side Key)
+* **Goal**: Safe public production hosting.
+* **Security Mechanics**: The frontend application does not accept or hold any Gemini API keys. Instead, it is configured with a **Proxy Endpoint URL**. All clean/normalization LLM requests are routed through this self-hosted proxy backend, which securely appends the actual production API key, implements backend rate-limiting, and hides credentials completely from frontend clients.
+* **Configuration**: Specify the Proxy URL and optional Proxy Access Token in settings. Non-sensitive config like the Proxy URL is stored in `localStorage` for convenience, while the Proxy Access Token is kept strictly in browser memory.
+
+---
+
+### The Provider-Proxy Contract
+
+For production deployment, your self-hosted backend proxy must conform to the standard Gemini API REST interface so that the Google Gen AI SDK can interact with it seamlessly.
+
+#### 1. Upstream Endpoint Mapping
+The proxy must listen for standard POST requests on the following path and forward them securely to the Google API:
+* **Client Request Path**: `/v1/models/{model}:generateContent`
+* **Upstream Target**: `https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key=SECURE_API_KEY_HERE`
+
+The backend proxy is responsible for appending the `key` query parameter using the secure, server-side secret key, and stripping any frontend-supplied mock key.
+
+#### 2. Request / Response Payloads
+* **Request Format**: Standard JSON `application/json`
+  ```json
+  {
+    "contents": {
+      "role": "user",
+      "parts": [
+        {
+          "text": "..."
+        }
+      ]
+    },
+    "systemInstruction": {
+      "parts": [
+        {
+          "text": "..."
+        }
+      ]
+    },
+    "generationConfig": {
+      "temperature": 0
+    }
+  }
+  ```
+* **Response Format**: Standard JSON `application/json`
+  ```json
+  {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Cleaned HTML result..."
+            }
+          ]
+        }
+      }
+    ]
+  }
+  ```
+
+#### 3. Client Authorization (Optional)
+If your proxy requires client authentication, the frontend sends the Proxy Access Token as a standard `Authorization: Bearer <TOKEN>` header. Your proxy must validate this token before forwarding the request to Google.
+
+---
+
+### Release & Operator Checklist
+
+Before deploying Blockify publicly or upgrading your pilot, check off the following security and architecture items:
+
+- [ ] **No Client Keys**: Verify that no production API keys are hardcoded in the source code or stored in `localStorage`.
+- [ ] **Legacy Key Eviction**: Confirm that legacy `localStorage.getItem("blockify.apiKey")` calls are deleted and any existing keys are evicted on page mount (handled automatically by the React app).
+- [ ] **CORS Policy Enforcement**: Ensure your production proxy server explicitly restricts `Access-Control-Allow-Origin` headers to your trusted frontend domains (e.g., your GitHub Pages domain). Do not use wildcard `*` origins in production.
+- [ ] **No Raw Payload Logging**: Configure proxy logging so that it records metadata (timestamp, model, status) but **never** logs the raw HTML contents, source URLs, or authorization tokens.
+- [ ] **Key Rotation Schedule**: Put in place a regular rotation schedule (e.g., every 90 days) for both Google Gemini API keys and Proxy Access Tokens.
+- [ ] **Rate Limiting**: Enforce strict server-side rate limits on the proxy (e.g., max 5 requests per minute per IP) to prevent abuse and budget exhaustion.
+### Privacy & Reliability
+
+When migrating content, keep the following security and privacy boundaries in mind:
+
+- **Fetch URL (Browser Mode):** Uses third-party public CORS proxies (`corsproxy.io` and `api.allorigins.win`) to fetch page source. Avoid this mode for sensitive, paywalled, or internal intranet pages, as your request and content pass through these public services.
+- **Paste HTML (Recommended Private Path):** Pasting the source HTML directly is fully private. All extraction, tokenization, and cleaning (if Skip LLM is checked) occur locally in your browser. (LLM requests only send the cleaned text to Gemini if enabled).
+- **Local Site Crawler:** Running `scripts/crawl.mjs` runs locally on your machine. It makes direct requests from your Node process, avoiding third-party proxies, making it the secure and reliable path for private or bulk content.
 
 ## Development
 
@@ -116,6 +208,8 @@ When introducing new models or changing model statuses:
 
 ## Limitations
 
+- **WXR Bundle Storage Limit (`localStorage`):** Since everything runs fully client-side, the WXR bundle is saved in the browser's `localStorage` (typically limited to 5MB by standard browsers). If your bundle contains many converted pages or large page sources, it may exceed this quota. If this happens, Blockify will display a non-blocking warning informing you that changes cannot be persisted across reloads. The active in-memory bundle remains fully functional and intact, allowing you to safely download the WXR file before refreshing. For very large migrations, it is recommended to download your intermediate WXR files periodically or migrate in smaller batches.
+- **Idempotent Duplicate URLs Handling:** To keep the bundle state predictable and prevent duplicate entries, re-adding a page with an already existing source URL (either manually or via batch conversion) will replace/update the existing entry in place rather than appending a duplicate.
 - Embeds and forms require manual rebuilding; visible migration placeholders
   retain their source details. Columns and galleries are not inferred.
 - Cross-origin URL fetch depends on public CORS proxies; paste HTML when it

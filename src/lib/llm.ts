@@ -159,18 +159,33 @@ export async function cleanHtml(opts: {
   html: string;
   violationNote?: string;
   provider?: string;
+  proxyUrl?: string;
+  proxyToken?: string;
 }): Promise<string> {
   const providerId = opts.provider ?? "google";
   validateProviderModel(providerId, opts.model);
+  const initOpts: Record<string, any> = {};
+  if (opts.proxyUrl) {
+    // Under Production Proxy Mode, route requests through the self-hosted proxy.
+    initOpts.apiKey = opts.apiKey || "PROXY_MANAGED_KEY";
+    initOpts.httpOptions = {
+      baseUrl: opts.proxyUrl,
+      headers: opts.proxyToken
+        ? { "Authorization": `Bearer ${opts.proxyToken}` }
+        : undefined,
+    };
+  } else {
+    // Under Private Pilot Mode, direct-browser key is used.
+    initOpts.apiKey = opts.apiKey;
+  }
+  const ai = new GoogleGenAI(initOpts as any);
+
+  const user =
+    `Article title (for context; do NOT include it in the body): ${opts.title}\n\n` +
+    `Extracted HTML to clean:\n\n${opts.html}` +
+    (opts.violationNote ? `\n\n${opts.violationNote}` : "");
 
   try {
-    const ai = new GoogleGenAI({ apiKey: opts.apiKey });
-
-    let user =
-      `Article title (for context; do NOT include it in the body): ${opts.title}\n\n` +
-      `Extracted HTML to clean:\n\n${opts.html}`;
-    if (opts.violationNote) user += `\n\n${opts.violationNote}`;
-
     const resp = await ai.models.generateContent({
       model: opts.model,
       contents: user,
