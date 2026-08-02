@@ -700,6 +700,7 @@ export default function App() {
             </p>
             <input
               type="file"
+              aria-label="Upload crawl pages.json file"
               accept=".json,application/json"
               disabled={batchBusy}
               onChange={(e) => {
@@ -947,7 +948,7 @@ export default function App() {
         </section>
       )}
 
-      {error && <section className="panel error-box">{error}</section>}
+      {error && <section className="panel error-box" role="alert">{error}</section>}
 
       {result && (
         <section className="panel">
