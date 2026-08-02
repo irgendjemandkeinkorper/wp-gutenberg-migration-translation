@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { downloadFile, loadBundle, saveBundle } from "./lib/bundle";
+import { downloadFile, loadBundle, saveBundle, addOrReplaceBundleEntry } from "./lib/bundle";
 import { fetchPage } from "./lib/fetchPage";
 import { DEFAULT_MODEL, FAST_MODEL } from "./lib/llm";
 import { convertPage } from "./lib/pipeline";
@@ -73,6 +73,8 @@ export default function App() {
   const [batchBusy, setBatchBusy] = useState(false);
 
   const [bundle, setBundle] = useState<BundlePage[]>(loadBundle);
+  const [lastClearedBundle, setLastClearedBundle] = useState<BundlePage[] | null>(null);
+  const [saveFailed, setSaveFailed] = useState(false);
   const [author, setAuthor] = useState("admin");
   const [postType, setPostType] = useState<"page" | "post">("page");
   const [status, setStatus] = useState<"draft" | "publish">("draft");
@@ -81,7 +83,10 @@ export default function App() {
     () => normalizeTemplateId(localStorage.getItem("blockify.targetTemplate") ?? ""),
   );
 
-  useEffect(() => saveBundle(bundle), [bundle]);
+  useEffect(() => {
+    const success = saveBundle(bundle);
+    setSaveFailed(!success);
+  }, [bundle]);
   useEffect(() => localStorage.setItem("blockify.apiKey", apiKey), [apiKey]);
   useEffect(() => localStorage.setItem("blockify.model", model), [model]);
   useEffect(
@@ -196,6 +201,7 @@ export default function App() {
       setError("Add your Gemini API key in Settings first (or enable Skip LLM).");
       return;
     }
+    setLastClearedBundle(null);
     setBatchBusy(true);
     setError("");
     const update = (i: number, s: BatchState) =>
@@ -226,15 +232,7 @@ export default function App() {
           targetTemplate,
           placeholders: res.placeholders,
         };
-        // Replace an existing bundle entry for the same URL so re-running a
-        // batch stays idempotent.
-        setBundle((prev) => {
-          const at = prev.findIndex((b) => b.link === page.url);
-          if (at < 0) return [...prev, entry];
-          const next = [...prev];
-          next[at] = entry;
-          return next;
-        });
+        setBundle((prev) => addOrReplaceBundleEntry(prev, entry));
         update(i, {
           status: "done",
           note: res.warnings.length
@@ -263,20 +261,19 @@ export default function App() {
     const pageTitle = title.trim() || "Untitled";
     const link =
       result.sourceUrl || `https://example.com/${slugify(pageTitle)}`;
-    setBundle((prev) => [
-      ...prev,
-      {
-        title: pageTitle,
-        link,
-        contentBlocks: result.blocks,
-        images: result.images
-          .filter((asset) => asset.type === "image")
-          .map(({ src, alt }) => ({ src, alt })),
-        sourceHtml: result.sourceHtml,
-        targetTemplate,
-        placeholders: result.placeholders,
-      },
-    ]);
+    const entry: BundlePage = {
+      title: pageTitle,
+      link,
+      contentBlocks: result.blocks,
+      images: result.images
+        .filter((asset) => asset.type === "image")
+        .map(({ src, alt }) => ({ src, alt })),
+      sourceHtml: result.sourceHtml,
+      targetTemplate,
+      placeholders: result.placeholders,
+    };
+    setLastClearedBundle(null);
+    setBundle((prev) => addOrReplaceBundleEntry(prev, entry));
   }
 
   function downloadWxr() {
@@ -638,89 +635,130 @@ export default function App() {
         </section>
       )}
 
-      {bundle.length > 0 && (
+      {(bundle.length > 0 || lastClearedBundle) && (
         <section className="panel">
-          <h2>WXR bundle ({bundle.length} page{bundle.length === 1 ? "" : "s"})</h2>
-          <ul className="bundle-list">
-            {bundle.map((p, i) => (
-              <li key={`${p.link}-${i}`}>
-                <span>
-                  {p.title}{" "}
-                  <span className="muted">
-                    ({p.images.length} image{p.images.length === 1 ? "" : "s"}
-                    {p.targetTemplate ? ` · ${getTemplateDisplayName(p.targetTemplate)}` : ""})
-                  </span>
-                </span>
-                <button
-                  className="ghost small"
-                  aria-label={`Remove "${p.title}" from bundle`}
-                  onClick={() =>
-                    setBundle((prev) => prev.filter((_, j) => j !== i))
-                  }
-                >
-                  Remove
+          {saveFailed && (
+            <p className="warn-box" style={{ marginBottom: "1rem" }}>
+              ⚠️ Warning: Your bundle could not be saved to browser storage (quota exceeded or storage disabled).
+              The in-memory bundle is still fully functional, but changes will be lost if you refresh or close this tab.
+            </p>
+          )}
+
+          {bundle.length > 0 ? (
+            <>
+              <h2>WXR bundle ({bundle.length} page{bundle.length === 1 ? "" : "s"})</h2>
+              <ul className="bundle-list">
+                {bundle.map((p, i) => (
+                  <li key={`${p.link}-${i}`}>
+                    <span>
+                      {p.title}{" "}
+                      <span className="muted">
+                        ({p.images.length} image{p.images.length === 1 ? "" : "s"}
+                        {p.targetTemplate ? ` · ${getTemplateDisplayName(p.targetTemplate)}` : ""})
+                      </span>
+                    </span>
+                    <button
+                      className="ghost small"
+                      aria-label={`Remove "${p.title}" from bundle`}
+                      onClick={() => {
+                        setLastClearedBundle(null);
+                        setBundle((prev) => prev.filter((_, j) => j !== i));
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="row wrap">
+                <label>
+                  Author login
+                  <input
+                    type="text"
+                    value={author}
+                    onChange={(e) => setAuthor(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Post type
+                  <select
+                    value={postType}
+                    onChange={(e) => setPostType(e.target.value as "page" | "post")}
+                  >
+                    <option value="page">page</option>
+                    <option value="post">post</option>
+                  </select>
+                </label>
+                <label>
+                  Status
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as "draft" | "publish")}
+                  >
+                    <option value="draft">draft</option>
+                    <option value="publish">publish</option>
+                  </select>
+                </label>
+                <label className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={sideload}
+                    onChange={(e) => setSideload(e.target.checked)}
+                  />
+                  Sideload images
+                </label>
+              </div>
+              <div className="row">
+                <button className="primary" onClick={downloadWxr}>
+                  Download WXR
                 </button>
-              </li>
-            ))}
-          </ul>
-          <div className="row wrap">
-            <label>
-              Author login
-              <input
-                type="text"
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-              />
-            </label>
-            <label>
-              Post type
-              <select
-                value={postType}
-                onChange={(e) => setPostType(e.target.value as "page" | "post")}
+                <button
+                  className="ghost"
+                  onClick={() => {
+                    if (window.confirm("Are you sure you want to clear the entire bundle?")) {
+                      setLastClearedBundle(bundle);
+                      setBundle([]);
+                    }
+                  }}
+                >
+                  Clear bundle
+                </button>
+                {lastClearedBundle && (
+                  <button
+                    className="ghost"
+                    onClick={() => {
+                      if (lastClearedBundle) {
+                        setBundle(lastClearedBundle);
+                        setLastClearedBundle(null);
+                      }
+                    }}
+                  >
+                    Undo clear
+                  </button>
+                )}
+              </div>
+              <p className="hint">
+                In WordPress: Tools → Import → WordPress, upload this file, assign
+                an author, and check “Download and import file attachments” so
+                images are copied into your media library.
+              </p>
+            </>
+          ) : (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span>Bundle cleared.</span>
+              <button
+                className="ghost"
+                onClick={() => {
+                  if (lastClearedBundle) {
+                    setBundle(lastClearedBundle);
+                    setLastClearedBundle(null);
+                  }
+                }}
               >
-                <option value="page">page</option>
-                <option value="post">post</option>
-              </select>
-            </label>
-            <label>
-              Status
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as "draft" | "publish")}
-              >
-                <option value="draft">draft</option>
-                <option value="publish">publish</option>
-              </select>
-            </label>
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={sideload}
-                onChange={(e) => setSideload(e.target.checked)}
-              />
-              Sideload images
-            </label>
-          </div>
-          <div className="row">
-            <button className="primary" onClick={downloadWxr}>
-              Download WXR
-            </button>
-            <button
-              className="ghost"
-              onClick={() => {
-                if (window.confirm("Are you sure you want to clear the entire bundle?")) {
-                  setBundle([]);
-                }
-              }}
-            >
-              Clear bundle
-            </button>
-          </div>
-          <p className="hint">
-            In WordPress: Tools → Import → WordPress, upload this file, assign
-            an author, and check “Download and import file attachments” so
-            images are copied into your media library.
-          </p>
+                Undo clear
+              </button>
+            </div>
+          )}
         </section>
       )}
     </div>
