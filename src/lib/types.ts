@@ -54,6 +54,10 @@ export interface BundlePage {
   sourceHtml?: string;
   targetTemplate?: string;
   placeholders?: MigrationPlaceholder[];
+  id?: string | number;
+  parentUrl?: string;
+  parentId?: string | number;
+  menuOrder?: number;
 }
 
 export type StepStatus = "pending" | "active" | "done" | "warn" | "error";
@@ -61,5 +65,12 @@ export type StepStatus = "pending" | "active" | "done" | "warn" | "error";
 export interface StepUpdate {
   step: string;
   status: StepStatus;
+  note?: string;
+}
+
+export type BatchPageStatus = "pending" | "converting" | "done" | "error" | "cancelled";
+
+export interface BatchPageState {
+  status: BatchPageStatus;
   note?: string;
 }
