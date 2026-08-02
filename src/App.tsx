@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { downloadFile, loadBundle, saveBundle, addOrReplaceBundleEntry } from "./lib/bundle";
 import { fetchPage } from "./lib/fetchPage";
-import { DEFAULT_MODEL, FAST_MODEL } from "./lib/llm";
+import { DEFAULT_MODEL, PROVIDER_CATALOG } from "./lib/llm";
 import { convertPage } from "./lib/pipeline";
 import { buildWxr, slugify } from "./lib/wxr";
 import type {
@@ -53,6 +53,11 @@ export default function App() {
       return stored === "proxy" ? "proxy" : "pilot";
     },
   );
+  const [provider, setProvider] = useState(() => {
+    const stored = localStorage.getItem("blockify.provider");
+    const exists = PROVIDER_CATALOG.some((p) => p.id === stored);
+    return exists ? stored! : "google";
+  });
   const [proxyUrl, setProxyUrl] = useState(
     () => localStorage.getItem("blockify.proxyUrl") ?? "",
   );
@@ -61,11 +66,15 @@ export default function App() {
   // Sensitive credentials (apiKey, proxyToken) are kept strictly in memory (React state).
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState(() => {
-    // Snap stale saved IDs (e.g. retired gemini-2.5-*) back to a live model.
     const stored = localStorage.getItem("blockify.model");
-    return stored === DEFAULT_MODEL || stored === FAST_MODEL
-      ? stored
-      : DEFAULT_MODEL;
+    const currentProvider = localStorage.getItem("blockify.provider") ?? "google";
+    const prov = PROVIDER_CATALOG.find((p) => p.id === currentProvider);
+    const modelObj = prov?.models.find((m) => m.id === stored);
+    if (modelObj && modelObj.status === "supported") {
+      return stored!;
+    }
+    const defaultModel = prov?.models.find((m) => m.status === "supported")?.id || DEFAULT_MODEL;
+    return defaultModel;
   });
   const [skipLlm, setSkipLlm] = useState(
     () => localStorage.getItem("blockify.skipLlm") === "1",
@@ -109,6 +118,7 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("blockify.proxyUrl", proxyUrl);
   }, [proxyUrl]);
+  useEffect(() => localStorage.setItem("blockify.provider", provider), [provider]);
   useEffect(() => localStorage.setItem("blockify.model", model), [model]);
   useEffect(
     () => localStorage.setItem("blockify.skipLlm", skipLlm ? "1" : "0"),
@@ -165,6 +175,7 @@ export default function App() {
           url,
           selector: selector.trim() || undefined,
           apiKey,
+          provider,
           model,
           skipLlm,
           proxyUrl: connectionMode === "proxy" ? proxyUrl.trim() : undefined,
@@ -254,6 +265,7 @@ export default function App() {
             url: page.url,
             selector: selector.trim() || undefined,
             apiKey,
+            provider,
             model,
             skipLlm,
             proxyUrl: connectionMode === "proxy" ? proxyUrl.trim() : undefined,
@@ -451,10 +463,33 @@ export default function App() {
           )}
 
           <label>
+            Provider
+            <select
+              value={provider}
+              onChange={(e) => {
+                const nextProv = e.target.value;
+                setProvider(nextProv);
+                const provObj = PROVIDER_CATALOG.find((p) => p.id === nextProv);
+                const defaultModel =
+                  provObj?.models.find((m) => m.status === "supported")?.id || "";
+                setModel(defaultModel);
+              }}
+            >
+              {PROVIDER_CATALOG.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
             Model
             <select value={model} onChange={(e) => setModel(e.target.value)} aria-label="Model select">
-              <option value={DEFAULT_MODEL}>{DEFAULT_MODEL} (recommended)</option>
-              <option value={FAST_MODEL}>{FAST_MODEL} (fastest, cheapest)</option>
+              {PROVIDER_CATALOG.find((p) => p.id === provider)?.models.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name} {m.status !== "supported" ? `(${m.status})` : ""}
+                </option>
+              ))}
             </select>
           </label>
         </section>

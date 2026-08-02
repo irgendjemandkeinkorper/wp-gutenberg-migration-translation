@@ -5,6 +5,131 @@ import { GoogleGenAI } from "@google/genai";
 export const DEFAULT_MODEL = "gemini-3.6-flash";
 export const FAST_MODEL = "gemini-3.5-flash-lite";
 
+export interface ModelInfo {
+  id: string;
+  name: string;
+  status: "supported" | "stale" | "unsupported";
+  lastVerified: string; // e.g., "2025-02-21"
+  documentationUrl?: string;
+}
+
+export interface ProviderInfo {
+  id: string;
+  name: string;
+  baseUrl: string;
+  models: ModelInfo[];
+}
+
+export const PROVIDER_CATALOG: ProviderInfo[] = [
+  {
+    id: "google",
+    name: "Google Gemini",
+    baseUrl: "https://generativelanguage.googleapis.com",
+    models: [
+      {
+        id: "gemini-3.6-flash",
+        name: "Gemini 3.6 Flash (Recommended)",
+        status: "supported",
+        lastVerified: "2025-02-21",
+        documentationUrl: "https://ai.google.dev/gemini-api/docs/models/gemini",
+      },
+      {
+        id: "gemini-3.5-flash-lite",
+        name: "Gemini 3.5 Flash Lite (Fast & Cheap)",
+        status: "supported",
+        lastVerified: "2025-02-21",
+        documentationUrl: "https://ai.google.dev/gemini-api/docs/models/gemini",
+      },
+      {
+        id: "gemini-2.5-flash",
+        name: "Gemini 2.5 Flash",
+        status: "stale",
+        lastVerified: "2025-02-21",
+        documentationUrl: "https://ai.google.dev/gemini-api/docs/models/gemini",
+      },
+      {
+        id: "gemini-2.5-pro",
+        name: "Gemini 2.5 Pro",
+        status: "unsupported",
+        lastVerified: "2025-02-21",
+        documentationUrl: "https://ai.google.dev/gemini-api/docs/models/gemini",
+      },
+    ],
+  },
+];
+
+export function validateProviderModel(providerId: string, modelId: string): void {
+  const provider = PROVIDER_CATALOG.find((p) => p.id === providerId);
+  if (!provider) {
+    throw new Error(`Unknown provider "${providerId}". Please select a valid provider.`);
+  }
+
+  const model = provider.models.find((m) => m.id === modelId);
+  if (!model) {
+    throw new Error(
+      `Unknown model "${modelId}" for provider "${provider.name}". Please select a valid model.`
+    );
+  }
+
+  if (model.status !== "supported") {
+    throw new Error(
+      `Model "${model.name}" is marked as ${model.status} (last verified: ${model.lastVerified}). ` +
+        `Please select a supported model (e.g., gemini-3.6-flash).`
+    );
+  }
+}
+
+export function sanitizeErrorMessage(message: string): string {
+  let cleaned = message.replace(/AIzaSy[a-zA-Z0-9_-]+/g, "[REDACTED_API_KEY]");
+  cleaned = cleaned.replace(/key=[a-zA-Z0-9_-]+/gi, "key=[REDACTED]");
+  cleaned = cleaned.replace(/Bearer\s+[a-zA-Z0-9_.-]+/gi, "Bearer [REDACTED]");
+  return cleaned;
+}
+
+export function parseAndCleanProviderError(error: any, providerId: string): Error {
+  const provider = PROVIDER_CATALOG.find((p) => p.id === providerId);
+  const providerName = provider?.name ?? providerId;
+
+  const rawMessage =
+    error instanceof Error
+      ? error.message
+      : error && typeof error.message === "string"
+      ? error.message
+      : String(error);
+  const cleanedMessage = sanitizeErrorMessage(rawMessage);
+
+  let statusCode: number | undefined;
+  if (error && typeof error.status === "number") {
+    statusCode = error.status;
+  } else if (error && typeof error.statusCode === "number") {
+    statusCode = error.statusCode;
+  } else {
+    const match = cleanedMessage.match(/\b(400|401|403|404|429|500|503)\b/);
+    if (match) {
+      statusCode = parseInt(match[1], 10);
+    }
+  }
+
+  let guidance = "Please check your network connection and configuration settings.";
+  if (statusCode === 401 || statusCode === 403) {
+    guidance = "Your API key appears to be invalid or unauthorized. Please verify your API key in Settings.";
+  } else if (statusCode === 404) {
+    guidance = "The requested model was not found or has been retired by the provider. Please select a supported model in Settings.";
+  } else if (statusCode === 429) {
+    guidance = "Rate limit exceeded. Please wait a moment before trying again, or check your quota.";
+  } else if (statusCode !== undefined && statusCode >= 500) {
+    guidance = "The provider is currently experiencing internal server issues. Please try again later.";
+  }
+
+  const finalMessage = `Provider Error (${providerName}): ${cleanedMessage} (Status: ${statusCode ?? "unknown"}). Recovery guidance: ${guidance}`;
+
+  const cleanedError = new Error(finalMessage);
+  if (error instanceof Error && error.stack) {
+    cleanedError.stack = sanitizeErrorMessage(error.stack);
+  }
+  return cleanedError;
+}
+
 export const WHITELIST =
   "h2, h3, h4, p, ul, ol, li, blockquote, pre, code, table, thead, " +
   "tbody, tr, th, td, strong, em, a, br, hr, sup, sub";
@@ -27,34 +152,27 @@ Rules:
 const FENCE_OPEN_RE = /^```[a-zA-Z]*\n/;
 const FENCE_CLOSE_RE = /\n```\s*$/;
 
-export function sanitizeErrorMessage(msg: string): string {
-  if (!msg) return "";
-  let clean = msg;
-  // Sanitize Google API keys
-  clean = clean.replace(/AIzaSy[a-zA-Z0-9_-]+/g, "[REDACTED_API_KEY]");
-  // Sanitize query params like key=...
-  clean = clean.replace(/(\?|&)key=[^&]+/g, "$1key=[REDACTED]");
-  // Sanitize Bearer tokens
-  clean = clean.replace(/Bearer\s+[a-zA-Z0-9\-\._~]+/g, "Bearer [REDACTED]");
-  return clean;
-}
-
 export async function cleanHtml(opts: {
   apiKey: string;
   model: string;
   title: string;
   html: string;
   violationNote?: string;
+  provider?: string;
   proxyUrl?: string;
   proxyToken?: string;
 }): Promise<string> {
+  const providerId = opts.provider ?? "google";
+  validateProviderModel(providerId, opts.model);
   const initOpts: Record<string, any> = {};
   if (opts.proxyUrl) {
     // Under Production Proxy Mode, route requests through the self-hosted proxy.
     initOpts.apiKey = opts.apiKey || "PROXY_MANAGED_KEY";
     initOpts.httpOptions = {
       baseUrl: opts.proxyUrl,
-      headers: opts.proxyToken ? { "Authorization": `Bearer ${opts.proxyToken}` } : undefined,
+      headers: opts.proxyToken
+        ? { "Authorization": `Bearer ${opts.proxyToken}` }
+        : undefined,
     };
   } else {
     // Under Private Pilot Mode, direct-browser key is used.
@@ -62,10 +180,10 @@ export async function cleanHtml(opts: {
   }
   const ai = new GoogleGenAI(initOpts as any);
 
-  let user =
+  const user =
     `Article title (for context; do NOT include it in the body): ${opts.title}\n\n` +
-    `Extracted HTML to clean:\n\n${opts.html}`;
-  if (opts.violationNote) user += `\n\n${opts.violationNote}`;
+    `Extracted HTML to clean:\n\n${opts.html}` +
+    (opts.violationNote ? `\n\n${opts.violationNote}` : "");
 
   try {
     const resp = await ai.models.generateContent({
@@ -79,8 +197,7 @@ export async function cleanHtml(opts: {
 
     const text = resp.text ?? "";
     return text.replace(FENCE_OPEN_RE, "").replace(FENCE_CLOSE_RE, "").trim();
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    throw new Error(sanitizeErrorMessage(msg));
+  } catch (error) {
+    throw parseAndCleanProviderError(error, providerId);
   }
 }

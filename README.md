@@ -185,6 +185,27 @@ npm run build  # typecheck + production build
 Deploys to GitHub Pages automatically on push to `main`
 (`.github/workflows/deploy.yml`).
 
+## AI Provider & Model Catalog
+
+To prevent runtime conversion failures due to stale, retired, or malformed model IDs, the application maintains a canonical model catalog in `src/lib/llm.ts`.
+
+### Model Catalog Structure
+Every selectable model in the application is defined inside the `PROVIDER_CATALOG` configuration with:
+- **`id`**: The exact technical model identifier passed to the provider API.
+- **`name`**: The user-friendly name displayed in Settings.
+- **`status`**: Current compatibility status (`supported`, `stale`, or `unsupported`). Unsupported or stale selections fail validation prior to conversion to prevent wasting API calls.
+- **`lastVerified`**: The date on which the model's availability and API schema were last verified.
+- **`documentationUrl`**: Link to the provider's official model list documentation.
+
+### Verifying Catalog Updates
+When introducing new models or changing model statuses:
+1. **Validation Checks**: Update `PROVIDER_CATALOG` in `src/lib/llm.ts` to include the model details, setting the appropriate status and updating the `lastVerified` timestamp.
+2. **Settings UI Auto-Population**: The Settings dropdown dynamically reads from `PROVIDER_CATALOG`, ensuring model selection lists are automatically synchronized without code duplication.
+3. **Contract Tests**: Run `npm run test` to execute unit tests in `src/test/provider.test.ts`. These verify:
+   - Proper validation of supported vs. stale/unsupported selections.
+   - Robust credential/API key sanitization in provider errors.
+   - Exact HTTP endpoint paths, headers, and payload structures matching the API's contract.
+
 ## Limitations
 
 - **WXR Bundle Storage Limit (`localStorage`):** Since everything runs fully client-side, the WXR bundle is saved in the browser's `localStorage` (typically limited to 5MB by standard browsers). If your bundle contains many converted pages or large page sources, it may exceed this quota. If this happens, Blockify will display a non-blocking warning informing you that changes cannot be persisted across reloads. The active in-memory bundle remains fully functional and intact, allowing you to safely download the WXR file before refreshing. For very large migrations, it is recommended to download your intermediate WXR files periodically or migrate in smaller batches.
