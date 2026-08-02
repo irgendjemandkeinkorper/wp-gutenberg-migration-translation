@@ -71,6 +71,14 @@ describe("Batch Conversion App Integration Tests", () => {
       (batchTab as HTMLButtonElement).click();
     });
 
+    // Batch conversion tests mock the pipeline, so skip the LLM call and avoid
+    // requiring a client-side API key in Private Pilot Mode.
+    const skipLlm = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    expect(skipLlm).toBeDefined();
+    await act(async () => {
+      skipLlm.click();
+    });
+
     // Simulate uploading pages.json
     const fileContent = JSON.stringify({
       pages: [

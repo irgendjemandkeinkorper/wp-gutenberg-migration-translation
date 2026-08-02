@@ -8,7 +8,7 @@ const page: BundlePage = {
   contentBlocks: "<!-- wp:paragraph -->\n<p>Hello</p>\n<!-- /wp:paragraph -->",
   images: [{ src: "https://old-site.com/img/team photo.jpg", alt: "The team" }],
   sourceHtml: "<main><p>Hello</p></main>",
-  targetTemplate: "Albatross",
+  targetTemplate: "albatross",
 };
 
 describe("buildWxr", () => {
@@ -54,7 +54,7 @@ describe("buildWxr", () => {
     expect(xml).toContain("<![CDATA[<main><p>Hello</p></main>]]>");
     expect(xml).toContain("<![CDATA[_blockify_source_url]]>");
     expect(xml).toContain("<![CDATA[_blockify_target_template]]>");
-    expect(xml).toContain("<![CDATA[Albatross]]>");
+    expect(xml).toContain("<![CDATA[albatross]]>");
   });
 
   it("deduplicates fetchable attachments and skips relative image URLs", () => {
@@ -76,6 +76,210 @@ describe("buildWxr", () => {
       parseInt(m[1], 10),
     );
     expect(ids).toEqual([1, 2, 3, 4]);
+  });
+
+  it("resolves correct post_parent values for a parent and two children", () => {
+    const parentPage: BundlePage = {
+      id: "parent-1",
+      title: "Parent Page",
+      link: "https://old-site.com/parent",
+      contentBlocks: "",
+      images: [],
+    };
+    const child1: BundlePage = {
+      parentId: "parent-1",
+      title: "Child Page 1",
+      link: "https://old-site.com/parent/child-1",
+      contentBlocks: "",
+      images: [],
+    };
+    const child2: BundlePage = {
+      parentUrl: "https://old-site.com/parent",
+      title: "Child Page 2",
+      link: "https://old-site.com/parent/child-2",
+      contentBlocks: "",
+      images: [],
+    };
+
+    const xml = buildWxr([parentPage, child1, child2], {
+      author: "admin",
+      postType: "page",
+      status: "draft",
+    });
+
+    const items = [...xml.matchAll(/<item>\s*<title>(.*?)<\/title>.*?<wp:post_id>(\d+)<\/wp:post_id>.*?<wp:post_parent>(\d+)<\/wp:post_parent>/gs)];
+    expect(items).toHaveLength(3);
+
+    expect(items[0][1]).toBe("Parent Page");
+    expect(items[0][2]).toBe("1");
+    expect(items[0][3]).toBe("0");
+
+    expect(items[1][1]).toBe("Child Page 1");
+    expect(items[1][2]).toBe("2");
+    expect(items[1][3]).toBe("1");
+
+    expect(items[2][1]).toBe("Child Page 2");
+    expect(items[2][2]).toBe("3");
+    expect(items[2][3]).toBe("1");
+  });
+
+  it("preserves declared menu order", () => {
+    const pageWithOrder: BundlePage = {
+      title: "Ordered Page",
+      link: "https://old-site.com/ordered",
+      contentBlocks: "",
+      images: [],
+      menuOrder: 42,
+    };
+    const xml = buildWxr([pageWithOrder], {
+      author: "admin",
+      postType: "page",
+      status: "draft",
+    });
+    expect(xml).toContain("<wp:menu_order>42</wp:menu_order>");
+  });
+
+  it("throws a preflight error when a declared parent is missing", () => {
+    const orphan: BundlePage = {
+      parentId: "non-existent-parent",
+      title: "Orphan Page",
+      link: "https://old-site.com/orphan",
+      contentBlocks: "",
+      images: [],
+    };
+    expect(() => buildWxr([orphan], {
+      author: "admin",
+      postType: "page",
+      status: "draft",
+    })).toThrowError(/Parent page not found in bundle for page "Orphan Page"/);
+  });
+
+  it("leaves existing flat bundles unchanged with parent 0 and order 0", () => {
+    const flatPage: BundlePage = {
+      title: "Flat Page",
+      link: "https://old-site.com/flat",
+      contentBlocks: "",
+      images: [],
+    };
+    const xml = buildWxr([flatPage], {
+      author: "admin",
+      postType: "page",
+      status: "draft",
+    });
+    expect(xml).toContain("<wp:post_parent>0</wp:post_parent>");
+    expect(xml).toContain("<wp:menu_order>0</wp:menu_order>");
+  });
+
+  it("resolves multi-level hierarchy (parent -> child -> grandchild)", () => {
+    const gparent: BundlePage = {
+      id: "gp",
+      title: "Grandparent",
+      link: "https://old-site.com/gp",
+      contentBlocks: "",
+      images: [],
+    };
+    const parent: BundlePage = {
+      id: "p",
+      parentId: "gp",
+      title: "Parent",
+      link: "https://old-site.com/gp/p",
+      contentBlocks: "",
+      images: [],
+    };
+    const child: BundlePage = {
+      parentId: "p",
+      title: "Child",
+      link: "https://old-site.com/gp/p/c",
+      contentBlocks: "",
+      images: [],
+    };
+
+    const xml = buildWxr([gparent, parent, child], {
+      author: "admin",
+      postType: "page",
+      status: "draft",
+    });
+
+    const items = [...xml.matchAll(/<item>\s*<title>(.*?)<\/title>.*?<wp:post_id>(\d+)<\/wp:post_id>.*?<wp:post_parent>(\d+)<\/wp:post_parent>/gs)];
+    expect(items).toHaveLength(3);
+
+    expect(items[0][1]).toBe("Grandparent");
+    expect(items[0][2]).toBe("1");
+    expect(items[0][3]).toBe("0");
+
+    expect(items[1][1]).toBe("Parent");
+    expect(items[1][2]).toBe("2");
+    expect(items[1][3]).toBe("1");
+
+    expect(items[2][1]).toBe("Child");
+    expect(items[2][2]).toBe("3");
+    expect(items[2][3]).toBe("2");
+  });
+
+  it("infers parent-child hierarchy from URL paths when explicitly configured", () => {
+    const parent: BundlePage = {
+      title: "Parent Path Page",
+      link: "https://old-site.com/about",
+      contentBlocks: "",
+      images: [],
+    };
+    const child: BundlePage = {
+      title: "Child Path Page",
+      link: "https://old-site.com/about/team/",
+      contentBlocks: "",
+      images: [],
+    };
+
+    const defaultXml = buildWxr([parent, child], {
+      author: "admin",
+      postType: "page",
+      status: "draft",
+    });
+    const defaultItems = [...defaultXml.matchAll(/<item>\s*<title>(.*?)<\/title>.*?<wp:post_id>(\d+)<\/wp:post_id>.*?<wp:post_parent>(\d+)<\/wp:post_parent>/gs)];
+    expect(defaultItems[1][3]).toBe("0");
+
+    const inferredXml = buildWxr([parent, child], {
+      author: "admin",
+      postType: "page",
+      status: "draft",
+      inferHierarchyFromPaths: true,
+    });
+    const inferredItems = [...inferredXml.matchAll(/<item>\s*<title>(.*?)<\/title>.*?<wp:post_id>(\d+)<\/wp:post_id>.*?<wp:post_parent>(\d+)<\/wp:post_parent>/gs)];
+    expect(inferredItems[1][3]).toBe("1");
+  });
+
+  it("handles duplicate URLs deterministically by referencing the first matching parent", () => {
+    const parent1: BundlePage = {
+      id: "parent-first",
+      title: "First Parent",
+      link: "https://old-site.com/dup",
+      contentBlocks: "",
+      images: [],
+    };
+    const parent2: BundlePage = {
+      id: "parent-second",
+      title: "Second Parent",
+      link: "https://old-site.com/dup",
+      contentBlocks: "",
+      images: [],
+    };
+    const child: BundlePage = {
+      parentUrl: "https://old-site.com/dup",
+      title: "Child Page",
+      link: "https://old-site.com/dup/child",
+      contentBlocks: "",
+      images: [],
+    };
+
+    const xml = buildWxr([parent1, parent2, child], {
+      author: "admin",
+      postType: "page",
+      status: "draft",
+    });
+
+    const items = [...xml.matchAll(/<item>\s*<title>(.*?)<\/title>.*?<wp:post_id>(\d+)<\/wp:post_id>.*?<wp:post_parent>(\d+)<\/wp:post_parent>/gs)];
+    expect(items[2][1]).toBe("Child Page");
+    expect(items[2][3]).toBe("1");
   });
 });
 

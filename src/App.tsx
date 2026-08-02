@@ -9,9 +9,10 @@ import {
   saveBatchStatus,
   loadBatchFileName,
   saveBatchFileName,
+  addOrReplaceBundleEntry,
 } from "./lib/bundle";
 import { fetchPage } from "./lib/fetchPage";
-import { DEFAULT_MODEL, FAST_MODEL } from "./lib/llm";
+import { DEFAULT_MODEL, PROVIDER_CATALOG } from "./lib/llm";
 import { convertPage } from "./lib/pipeline";
 import { buildWxr, slugify } from "./lib/wxr";
 import type {
@@ -21,12 +22,13 @@ import type {
   StepUpdate,
   BatchPageState,
 } from "./lib/types";
+import {
+  TEMPLATE_REGISTRY,
+  getTemplateDisplayName,
+  normalizeTemplateId,
+} from "./lib/templates";
 
 const STEP_ORDER = ["Fetch", "Extract", "Images", "Clean (LLM)", "Validate", "Blocks"];
-const GOLFNOW_TEMPLATES = [
-  "Albatross", "Aspen", "Austin", "Dogwood", "Eagleton", "Indigo", "Mulberry",
-  "Pine", "Quantum", "Redmond", "Sequoia", "Sunrise", "Sunstone", "Willow",
-];
 
 interface StepState {
   status: StepStatus;
@@ -37,7 +39,12 @@ interface CrawledPage {
   url: string;
   title: string;
   html?: string;
+  id?: string | number;
+  parentUrl?: string;
+  parentId?: string | number;
+  menuOrder?: number;
 }
+
 
 export default function App() {
   const [tab, setTab] = useState<"paste" | "fetch" | "batch">("paste");
@@ -47,15 +54,39 @@ export default function App() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  const [apiKey, setApiKey] = useState(
-    () => localStorage.getItem("blockify.apiKey") ?? "",
+  // Clear any legacy apiKey on load to prevent leaks.
+  useEffect(() => {
+    localStorage.removeItem("blockify.apiKey");
+  }, []);
+
+  const [connectionMode, setConnectionMode] = useState<"pilot" | "proxy">(
+    () => {
+      const stored = localStorage.getItem("blockify.connectionMode");
+      return stored === "proxy" ? "proxy" : "pilot";
+    },
   );
+  const [provider, setProvider] = useState(() => {
+    const stored = localStorage.getItem("blockify.provider");
+    const exists = PROVIDER_CATALOG.some((p) => p.id === stored);
+    return exists ? stored! : "google";
+  });
+  const [proxyUrl, setProxyUrl] = useState(
+    () => localStorage.getItem("blockify.proxyUrl") ?? "",
+  );
+  const [proxyToken, setProxyToken] = useState("");
+
+  // Sensitive credentials (apiKey, proxyToken) are kept strictly in memory (React state).
+  const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState(() => {
-    // Snap stale saved IDs (e.g. retired gemini-2.5-*) back to a live model.
     const stored = localStorage.getItem("blockify.model");
-    return stored === DEFAULT_MODEL || stored === FAST_MODEL
-      ? stored
-      : DEFAULT_MODEL;
+    const currentProvider = localStorage.getItem("blockify.provider") ?? "google";
+    const prov = PROVIDER_CATALOG.find((p) => p.id === currentProvider);
+    const modelObj = prov?.models.find((m) => m.id === stored);
+    if (modelObj && modelObj.status === "supported") {
+      return stored!;
+    }
+    const defaultModel = prov?.models.find((m) => m.status === "supported")?.id || DEFAULT_MODEL;
+    return defaultModel;
   });
   const [skipLlm, setSkipLlm] = useState(
     () => localStorage.getItem("blockify.skipLlm") === "1",
@@ -67,6 +98,7 @@ export default function App() {
   const [result, setResult] = useState<PageResult | null>(null);
   const [title, setTitle] = useState("");
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
   const [showIntermediate, setShowIntermediate] = useState(false);
   const [showImages, setShowImages] = useState(false);
 
@@ -79,16 +111,27 @@ export default function App() {
   const cancelRef = useRef(false);
 
   const [bundle, setBundle] = useState<BundlePage[]>(loadBundle);
+  const [lastClearedBundle, setLastClearedBundle] = useState<BundlePage[] | null>(null);
+  const [saveFailed, setSaveFailed] = useState(false);
   const [author, setAuthor] = useState("admin");
   const [postType, setPostType] = useState<"page" | "post">("page");
   const [status, setStatus] = useState<"draft" | "publish">("draft");
   const [sideload, setSideload] = useState(true);
   const [targetTemplate, setTargetTemplate] = useState(
-    () => localStorage.getItem("blockify.targetTemplate") ?? "",
+    () => normalizeTemplateId(localStorage.getItem("blockify.targetTemplate") ?? ""),
   );
 
-  useEffect(() => saveBundle(bundle), [bundle]);
-  useEffect(() => localStorage.setItem("blockify.apiKey", apiKey), [apiKey]);
+  useEffect(() => {
+    const success = saveBundle(bundle);
+    setSaveFailed(!success);
+  }, [bundle]);
+  useEffect(() => {
+    localStorage.setItem("blockify.connectionMode", connectionMode);
+  }, [connectionMode]);
+  useEffect(() => {
+    localStorage.setItem("blockify.proxyUrl", proxyUrl);
+  }, [proxyUrl]);
+  useEffect(() => localStorage.setItem("blockify.provider", provider), [provider]);
   useEffect(() => localStorage.setItem("blockify.model", model), [model]);
   useEffect(
     () => localStorage.setItem("blockify.skipLlm", skipLlm ? "1" : "0"),
@@ -158,15 +201,23 @@ export default function App() {
   }
 
   async function convert() {
-    if (!apiKey && !skipLlm) {
-      setShowSettings(true);
-      setError("Add your Gemini API key in Settings first.");
-      return;
+    if (!skipLlm) {
+      if (connectionMode === "pilot" && !apiKey) {
+        setShowSettings(true);
+        setError("Add your Gemini API key in Settings first under Private Pilot Mode.");
+        return;
+      }
+      if (connectionMode === "proxy" && !proxyUrl.trim()) {
+        setShowSettings(true);
+        setError("Configure your Proxy Endpoint URL in Settings first under Production Proxy Mode.");
+        return;
+      }
     }
     setBusy(true);
     setError("");
     setResult(null);
     setCopied(false);
+    setCopyError(null);
     setSteps(new Map());
     try {
       let rawHtml = pastedHtml;
@@ -185,8 +236,11 @@ export default function App() {
           url,
           selector: selector.trim() || undefined,
           apiKey,
+          provider,
           model,
           skipLlm,
+          proxyUrl: connectionMode === "proxy" ? proxyUrl.trim() : undefined,
+          proxyToken: connectionMode === "proxy" ? proxyToken.trim() : undefined,
         },
         onStep,
       );
@@ -224,14 +278,18 @@ export default function App() {
       ) {
         throw new Error("expected { pages: [{ url, html }, …] }");
       }
-      const mappedPages: CrawledPage[] = pages.map((p) => ({
-        url: (p as CrawledPage).url,
-        title:
-          typeof (p as CrawledPage).title === "string"
-            ? (p as CrawledPage).title
-            : "",
-        html: (p as CrawledPage).html,
-      }));
+      const mappedPages: CrawledPage[] = pages.map((p) => {
+        const cp = p as CrawledPage;
+        return {
+          url: cp.url,
+          title: typeof cp.title === "string" ? cp.title : "",
+          html: cp.html,
+          id: cp.id,
+          parentUrl: typeof cp.parentUrl === "string" ? cp.parentUrl : undefined,
+          parentId: cp.parentId,
+          menuOrder: typeof cp.menuOrder === "number" ? cp.menuOrder : undefined,
+        };
+      });
 
       setBatch(mappedPages);
       setBatchFileName(file.name);
@@ -265,11 +323,19 @@ export default function App() {
   }
 
   async function runBatch(resumeOnly: boolean) {
-    if (!apiKey && !skipLlm) {
-      setShowSettings(true);
-      setError("Add your Gemini API key in Settings first (or enable Skip LLM).");
-      return;
+    if (!skipLlm) {
+      if (connectionMode === "pilot" && !apiKey) {
+        setShowSettings(true);
+        setError("Add your Gemini API key in Settings first (or enable Skip LLM) under Private Pilot Mode.");
+        return;
+      }
+      if (connectionMode === "proxy" && !proxyUrl.trim()) {
+        setShowSettings(true);
+        setError("Configure your Proxy Endpoint URL in Settings first (or enable Skip LLM) under Production Proxy Mode.");
+        return;
+      }
     }
+    setLastClearedBundle(null);
     setBatchBusy(true);
     setError("");
     cancelRef.current = false;
@@ -344,8 +410,11 @@ export default function App() {
             url: page.url,
             selector: selector.trim() || undefined,
             apiKey,
+            provider,
             model,
             skipLlm,
+            proxyUrl: connectionMode === "proxy" ? proxyUrl.trim() : undefined,
+            proxyToken: connectionMode === "proxy" ? proxyToken.trim() : undefined,
           },
           () => {},
         );
@@ -359,16 +428,12 @@ export default function App() {
           sourceHtml: res.sourceHtml,
           targetTemplate,
           placeholders: res.placeholders,
+          id: page.id,
+          parentUrl: page.parentUrl,
+          parentId: page.parentId,
+          menuOrder: page.menuOrder,
         };
-        // Replace an existing bundle entry for the same URL so re-running a
-        // batch stays idempotent.
-        setBundle((prev) => {
-          const at = prev.findIndex((b) => b.link === page.url);
-          if (at < 0) return [...prev, entry];
-          const next = [...prev];
-          next[at] = entry;
-          return next;
-        });
+        setBundle((prev) => addOrReplaceBundleEntry(prev, entry));
         update(i, {
           status: "done",
           note: res.warnings.length
@@ -387,9 +452,39 @@ export default function App() {
 
   async function copyBlocks() {
     if (!result) return;
-    await navigator.clipboard.writeText(result.blocks);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopyError(null);
+    setCopied(false);
+    let success = false;
+    try {
+      if (typeof navigator === "undefined" || !navigator.clipboard || !navigator.clipboard.writeText) {
+        throw new Error("Clipboard API not available");
+      }
+      await navigator.clipboard.writeText(result.blocks);
+      success = true;
+    } catch (e) {
+      const codeView = document.getElementById("result-code-view");
+      if (codeView) {
+        try {
+          const range = document.createRange();
+          range.selectNodeContents(codeView);
+          const sel = window.getSelection();
+          if (sel) {
+            sel.removeAllRanges();
+            sel.addRange(range);
+          }
+        } catch (selErr) {
+          // Ignore selection failures in environments with limited DOM support
+        }
+        (codeView as HTMLElement).focus();
+      }
+      setCopyError(
+        "Could not copy automatically. The text below has been selected. Please press Ctrl+C or Cmd+C to copy manually."
+      );
+    }
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   }
 
   function addToBundle() {
@@ -397,30 +492,33 @@ export default function App() {
     const pageTitle = title.trim() || "Untitled";
     const link =
       result.sourceUrl || `https://example.com/${slugify(pageTitle)}`;
-    setBundle((prev) => [
-      ...prev,
-      {
-        title: pageTitle,
-        link,
-        contentBlocks: result.blocks,
-        images: result.images
-          .filter((asset) => asset.type === "image")
-          .map(({ src, alt }) => ({ src, alt })),
-        sourceHtml: result.sourceHtml,
-        targetTemplate,
-        placeholders: result.placeholders,
-      },
-    ]);
+    const entry: BundlePage = {
+      title: pageTitle,
+      link,
+      contentBlocks: result.blocks,
+      images: result.images
+        .filter((asset) => asset.type === "image")
+        .map(({ src, alt }) => ({ src, alt })),
+      sourceHtml: result.sourceHtml,
+      targetTemplate,
+      placeholders: result.placeholders,
+    };
+    setLastClearedBundle(null);
+    setBundle((prev) => addOrReplaceBundleEntry(prev, entry));
   }
 
   function downloadWxr() {
-    const xml = buildWxr(bundle, {
-      author: author.trim() || "admin",
-      postType,
-      status,
-      emitAttachments: sideload,
-    });
-    downloadFile("export.wxr", xml, "application/xml");
+    try {
+      const xml = buildWxr(bundle, {
+        author: author.trim() || "admin",
+        postType,
+        status,
+        emitAttachments: sideload,
+      });
+      downloadFile("export.wxr", xml, "application/xml");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
   }
 
   const visibleSteps = STEP_ORDER.filter(
@@ -441,33 +539,112 @@ export default function App() {
           className="ghost"
           onClick={() => setShowSettings((v) => !v)}
           aria-expanded={showSettings}
+          aria-label="Toggle settings"
         >
           ⚙ Settings
         </button>
       </header>
 
+      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
+        {skipLlm ? (
+          <span className="badge" style={{ backgroundColor: "var(--code-bg)", color: "var(--muted)", border: "1px solid var(--border)", padding: "0.25rem 0.75rem", fontSize: "0.8rem", fontWeight: "600" }}>
+            ⚡ Connection Mode: Deterministic (No LLM API Calls)
+          </span>
+        ) : connectionMode === "proxy" ? (
+          <span className="badge" style={{ backgroundColor: "var(--accent)", color: "var(--accent-text)", padding: "0.25rem 0.75rem", fontSize: "0.8rem", fontWeight: "600" }}>
+            🔒 Connection Mode: Production Proxy (Secure)
+          </span>
+        ) : (
+          <span className="badge" style={{ backgroundColor: "var(--warn-bg)", color: "var(--warn-text)", padding: "0.25rem 0.75rem", fontSize: "0.8rem", fontWeight: "600" }}>
+            ⚠️ Connection Mode: Private Pilot (Direct-Browser - Unsafe for Public Production)
+          </span>
+        )}
+      </div>
+
       {showSettings && (
         <section className="panel settings">
           <label>
-            Gemini API key
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="AIza…  (stored only in this browser)"
-            />
+            API Connection / Deployment Mode
+            <select value={connectionMode} onChange={(e) => setConnectionMode(e.target.value as "pilot" | "proxy")}>
+              <option value="pilot">Private Pilot (Direct-Browser - Client Key)</option>
+              <option value="proxy">Production Proxy Mode (Server Key)</option>
+            </select>
+          </label>
+
+          {connectionMode === "pilot" ? (
+            <>
+              <label>
+                Gemini API key
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="AIza…  (held only in browser memory)"
+                  aria-label="Gemini API Key"
+                />
+              </label>
+              <p className="warn-box" style={{ marginTop: "10px", marginBottom: "15px" }}>
+                ⚠️ <strong>Private Pilot Mode Notice:</strong> Direct-browser mode sends API requests directly from this browser using client-side keys. The API key you enter is held <strong>strictly in browser memory (session state)</strong> and will be cleared if you close or reload the tab. It is <strong>never</strong> saved to persistent storage like localStorage. This mode is restricted to local testing and private pilots. Direct-browser key input is unsafe for public production deployments as frontend credentials cannot be fully protected.
+              </p>
+            </>
+          ) : (
+            <>
+              <label>
+                Proxy Endpoint URL
+                <input
+                  type="url"
+                  value={proxyUrl}
+                  onChange={(e) => setProxyUrl(e.target.value)}
+                  placeholder="https://api.yourproxy.com"
+                  aria-label="Proxy Endpoint URL"
+                />
+              </label>
+              <label>
+                Proxy Access Token (Optional)
+                <input
+                  type="password"
+                  value={proxyToken}
+                  onChange={(e) => setProxyToken(e.target.value)}
+                  placeholder="Bearer or authorization token for your proxy"
+                  aria-label="Proxy Access Token (Optional)"
+                />
+              </label>
+              <p className="warn-box" style={{ marginTop: "10px", marginBottom: "15px", backgroundColor: "var(--code-bg)", color: "var(--text)", borderColor: "var(--border)" }}>
+                🔒 <strong>Production Proxy Mode Notice:</strong> This mode uses a secure, production-ready architecture. Requests are routed through a backend proxy server, which safely handles API keys on the server side. No Gemini API key is written to or held by the client browser. Ensure your proxy respects the required API request shape and CORS policies.
+              </p>
+            </>
+          )}
+
+          <label>
+            Provider
+            <select
+              value={provider}
+              onChange={(e) => {
+                const nextProv = e.target.value;
+                setProvider(nextProv);
+                const provObj = PROVIDER_CATALOG.find((p) => p.id === nextProv);
+                const defaultModel =
+                  provObj?.models.find((m) => m.status === "supported")?.id || "";
+                setModel(defaultModel);
+              }}
+            >
+              {PROVIDER_CATALOG.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             Model
-            <select value={model} onChange={(e) => setModel(e.target.value)}>
-              <option value={DEFAULT_MODEL}>{DEFAULT_MODEL} (recommended)</option>
-              <option value={FAST_MODEL}>{FAST_MODEL} (fastest, cheapest)</option>
+            <select value={model} onChange={(e) => setModel(e.target.value)} aria-label="Model select">
+              {PROVIDER_CATALOG.find((p) => p.id === provider)?.models.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name} {m.status !== "supported" ? `(${m.status})` : ""}
+                </option>
+              ))}
             </select>
           </label>
-          <p className="hint">
-            The key is kept in localStorage and sent only to
-            generativelanguage.googleapis.com.
-          </p>
         </section>
       )}
 
@@ -497,14 +674,18 @@ export default function App() {
         </div>
 
         <label>
-          Target GolfNow template
+          Target template for QA metadata
           <select value={targetTemplate} onChange={(e) => setTargetTemplate(e.target.value)}>
             <option value="">Not selected</option>
-            {GOLFNOW_TEMPLATES.map((name) => <option key={name} value={name}>{name}</option>)}
+            {TEMPLATE_REGISTRY.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.displayName} {t.status === "metadata-only" ? "(Metadata-only)" : ""}
+              </option>
+            ))}
           </select>
         </label>
         <p className="hint">
-          Saved with every imported page for implementation and QA. Review the{" "}
+          Saved in WXR metadata for QA tracking and labeling. Target template selection does NOT affect block generation or conversion output. Review the{" "}
           <a href="https://golfnowbusiness.com/template-library/" target="_blank" rel="noreferrer">template library</a>.
         </p>
 
@@ -532,7 +713,6 @@ export default function App() {
                   {batchFileName}: {batch.length} page
                   {batch.length === 1 ? "" : "s"} loaded.
                 </p>
-
                 {!batchHtmlLoaded && (
                   <p className="warn-box" style={{ marginTop: "10px" }}>
                     HTML content is not loaded in browser memory. Please re-upload <strong>{batchFileName || "pages.json"}</strong> to run or resume the batch.
@@ -603,6 +783,11 @@ export default function App() {
                   <ul className="bundle-list">
                     {batch.map((p, i) => {
                       const s = batchStatus.get(i) || { status: "pending" };
+                      const metaParts: string[] = [];
+                      if (p.parentId !== undefined) metaParts.push(`parentId: ${p.parentId}`);
+                      if (p.parentUrl !== undefined) metaParts.push(`parentUrl: ${p.parentUrl}`);
+                      if (p.menuOrder !== undefined) metaParts.push(`order: ${p.menuOrder}`);
+                      const metaStr = metaParts.length ? ` [${metaParts.join(", ")}]` : "";
                       return (
                         <li key={`${p.url}-${i}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <div style={{ flex: 1, minWidth: 0, marginRight: "10px" }}>
@@ -617,7 +802,7 @@ export default function App() {
                               {s.status === "cancelled" && "🛑 "}
                               {s.status === "converting" && "⏳ "}
                               {s.status === "pending" && "○ "}
-                              <strong>{p.title || p.url}</strong>
+                              <strong>{p.title || p.url}{metaStr}</strong>
                             </span>
                             <div className="hint" style={{ margin: "2px 0 0", wordBreak: "break-all" }}>{p.url}</div>
                             {s.note && (
@@ -661,6 +846,7 @@ export default function App() {
               here.
             </p>
             <textarea
+              aria-label="HTML source code to convert"
               value={pastedHtml}
               onChange={(e) => setPastedHtml(e.target.value)}
               placeholder="<html>…</html>"
@@ -687,6 +873,9 @@ export default function App() {
                 placeholder="https://example.com/about"
               />
             </label>
+            <div className="warn-box" style={{ marginTop: "10px", marginBottom: "10px" }}>
+              <strong>⚠️ Privacy & Security Warning:</strong> URL mode fetches page content through public, third-party CORS proxies (api.allorigins.win, corsproxy.io). Do not use this mode for private, sensitive, internal, or credentials-protected page content. Instead, use the private-content paths: the <strong>Paste HTML</strong> tab (which runs entirely locally) or the local site crawler.
+            </div>
             <p className="hint">
               Fetched through a public CORS proxy — works for many sites, but
               if it fails, use Paste HTML.
@@ -777,16 +966,23 @@ export default function App() {
             />
           </label>
           <div className="row">
-            <button className="primary" onClick={copyBlocks}>
+            <button className="primary" onClick={copyBlocks} aria-live="polite">
               {copied ? "Copied ✓" : "Copy to clipboard"}
             </button>
             <button onClick={addToBundle}>Add page to WXR bundle</button>
           </div>
+          {copyError && (
+            <p className="warn-box" role="alert">
+              {copyError}
+            </p>
+          )}
           <p className="hint">
             To paste directly: WordPress block editor → ⋮ menu → Code editor →
             paste.
           </p>
-          <pre className="code-view">{result.blocks}</pre>
+          <pre id="result-code-view" className="code-view" tabIndex={0}>
+            {result.blocks}
+          </pre>
 
           {result.placeholders.length > 0 && (
             <div className="warn-box">
@@ -795,7 +991,7 @@ export default function App() {
             </div>
           )}
 
-          <button className="ghost small" onClick={() => setShowImages((v) => !v)}>
+          <button className="ghost small" onClick={() => setShowImages((v) => !v)} aria-expanded={showImages}>
             {showImages ? "▾" : "▸"} Asset Manifest / Audit ({result.images.length})
           </button>
           {showImages && result.images.length > 0 && (
@@ -861,89 +1057,138 @@ export default function App() {
         </section>
       )}
 
-      {bundle.length > 0 && (
+      {(bundle.length > 0 || lastClearedBundle) && (
         <section className="panel">
-          <h2>WXR bundle ({bundle.length} page{bundle.length === 1 ? "" : "s"})</h2>
-          <ul className="bundle-list">
-            {bundle.map((p, i) => (
-              <li key={`${p.link}-${i}`}>
-                <span>
-                  {p.title}{" "}
-                  <span className="muted">
-                    ({p.images.length} image{p.images.length === 1 ? "" : "s"}
-                    {p.targetTemplate ? ` · ${p.targetTemplate}` : ""})
-                  </span>
-                </span>
-                <button
-                  className="ghost small"
-                  aria-label={`Remove "${p.title}" from bundle`}
-                  onClick={() =>
-                    setBundle((prev) => prev.filter((_, j) => j !== i))
-                  }
-                >
-                  Remove
+          {saveFailed && (
+            <p className="warn-box" style={{ marginBottom: "1rem" }}>
+              ⚠️ Warning: Your bundle could not be saved to browser storage (quota exceeded or storage disabled).
+              The in-memory bundle is still fully functional, but changes will be lost if you refresh or close this tab.
+            </p>
+          )}
+
+          {bundle.length > 0 ? (
+            <>
+              <h2>WXR bundle ({bundle.length} page{bundle.length === 1 ? "" : "s"})</h2>
+              <ul className="bundle-list">
+                {bundle.map((p, i) => {
+                  const metaParts: string[] = [];
+                  if (p.parentId !== undefined) metaParts.push(`parentId: ${p.parentId}`);
+                  if (p.parentUrl !== undefined) metaParts.push(`parentUrl: ${p.parentUrl}`);
+                  if (p.menuOrder !== undefined) metaParts.push(`order: ${p.menuOrder}`);
+                  const metaStr = metaParts.length ? ` · ${metaParts.join(", ")}` : "";
+                  return (
+                    <li key={`${p.link}-${i}`}>
+                      <span>
+                        {p.title}{" "}
+                        <span className="muted">
+                          ({p.images.length} image{p.images.length === 1 ? "" : "s"}
+                          {p.targetTemplate ? ` · ${getTemplateDisplayName(p.targetTemplate)}` : ""}
+                          {metaStr})
+                        </span>
+                      </span>
+                      <button
+                        className="ghost small"
+                        aria-label={`Remove "${p.title}" from bundle`}
+                        onClick={() => {
+                          setLastClearedBundle(null);
+                          setBundle((prev) => prev.filter((_, j) => j !== i));
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="row wrap">
+                <label>
+                  Author login
+                  <input
+                    type="text"
+                    value={author}
+                    onChange={(e) => setAuthor(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Post type
+                  <select
+                    value={postType}
+                    onChange={(e) => setPostType(e.target.value as "page" | "post")}
+                  >
+                    <option value="page">page</option>
+                    <option value="post">post</option>
+                  </select>
+                </label>
+                <label>
+                  Status
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as "draft" | "publish")}
+                  >
+                    <option value="draft">draft</option>
+                    <option value="publish">publish</option>
+                  </select>
+                </label>
+                <label className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={sideload}
+                    onChange={(e) => setSideload(e.target.checked)}
+                  />
+                  Sideload images
+                </label>
+              </div>
+              <div className="row">
+                <button className="primary" onClick={downloadWxr}>
+                  Download WXR
                 </button>
-              </li>
-            ))}
-          </ul>
-          <div className="row wrap">
-            <label>
-              Author login
-              <input
-                type="text"
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-              />
-            </label>
-            <label>
-              Post type
-              <select
-                value={postType}
-                onChange={(e) => setPostType(e.target.value as "page" | "post")}
+                <button
+                  className="ghost"
+                  onClick={() => {
+                    if (window.confirm("Are you sure you want to clear the entire bundle?")) {
+                      setLastClearedBundle(bundle);
+                      setBundle([]);
+                    }
+                  }}
+                >
+                  Clear bundle
+                </button>
+                {lastClearedBundle && (
+                  <button
+                    className="ghost"
+                    onClick={() => {
+                      if (lastClearedBundle) {
+                        setBundle(lastClearedBundle);
+                        setLastClearedBundle(null);
+                      }
+                    }}
+                  >
+                    Undo clear
+                  </button>
+                )}
+              </div>
+              <p className="hint">
+                In WordPress: Tools → Import → WordPress, upload this file, assign
+                an author, and check “Download and import file attachments” so
+                images are copied into your media library.
+              </p>
+            </>
+          ) : (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span>Bundle cleared.</span>
+              <button
+                className="ghost"
+                onClick={() => {
+                  if (lastClearedBundle) {
+                    setBundle(lastClearedBundle);
+                    setLastClearedBundle(null);
+                  }
+                }}
               >
-                <option value="page">page</option>
-                <option value="post">post</option>
-              </select>
-            </label>
-            <label>
-              Status
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as "draft" | "publish")}
-              >
-                <option value="draft">draft</option>
-                <option value="publish">publish</option>
-              </select>
-            </label>
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                checked={sideload}
-                onChange={(e) => setSideload(e.target.checked)}
-              />
-              Sideload images
-            </label>
-          </div>
-          <div className="row">
-            <button className="primary" onClick={downloadWxr}>
-              Download WXR
-            </button>
-            <button
-              className="ghost"
-              onClick={() => {
-                if (window.confirm("Are you sure you want to clear the entire bundle?")) {
-                  setBundle([]);
-                }
-              }}
-            >
-              Clear bundle
-            </button>
-          </div>
-          <p className="hint">
-            In WordPress: Tools → Import → WordPress, upload this file, assign
-            an author, and check “Download and import file attachments” so
-            images are copied into your media library.
-          </p>
+                Undo clear
+              </button>
+            </div>
+          )}
         </section>
       )}
     </div>

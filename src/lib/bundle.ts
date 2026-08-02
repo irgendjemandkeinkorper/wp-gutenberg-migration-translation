@@ -75,12 +75,25 @@ export function loadBundle(): BundlePage[] {
   }
 }
 
-export function saveBundle(pages: BundlePage[]): void {
+export function saveBundle(pages: BundlePage[]): boolean {
   try {
     localStorage.setItem(KEY, JSON.stringify(pages));
+    return true;
   } catch {
     // storage full or unavailable — the in-memory bundle still works
+    return false;
   }
+}
+
+export function addOrReplaceBundleEntry(
+  prev: BundlePage[],
+  entry: BundlePage,
+): BundlePage[] {
+  const at = prev.findIndex((b) => b.link === entry.link);
+  if (at < 0) return [...prev, entry];
+  const next = [...prev];
+  next[at] = entry;
+  return next;
 }
 
 export function downloadFile(
