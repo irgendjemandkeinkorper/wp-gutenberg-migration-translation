@@ -37,7 +37,7 @@ The pipeline keeps the LLM on judgment and off mechanics (the design proven in
    included for more reliable WordPress imports.
 7. **Migration QA** — unsupported interactive content (embeds, media players,
    and forms) becomes a visible `MIGRATION PLACEHOLDER` instead of disappearing.
-   The exact original HTML, source URL, selected GolfNow template, and
+   The exact original HTML, source URL, selected GolfNow template stable ID, and
    placeholder manifest are retained as `_blockify_*` post metadata in WXR.
 
 ## Usage
@@ -45,8 +45,8 @@ The pipeline keeps the LLM on judgment and off mechanics (the design proven in
 1. Open the app, add your [Gemini API key](https://aistudio.google.com/apikey)
    in Settings (stored in `localStorage` only).
 2. Paste a page's HTML (View Page Source), or try Fetch URL.
-3. Select the target design from the current
-   [GolfNow template library](https://golfnowbusiness.com/template-library/).
+3. Select the target template for QA metadata from the current
+   [GolfNow template library](https://golfnowbusiness.com/template-library/). Note that template selection does not affect the conversion output or block generation; it is purely recorded in WXR metadata for QA tracking and verification purposes.
 4. Convert, review the blocks and any manual-migration placeholders, then either copy-paste into the block editor's
    Code editor view or add the page to the WXR bundle.
 5. Download the WXR and import it: WP admin → Tools → Import → WordPress,
@@ -103,6 +103,8 @@ Deploys to GitHub Pages automatically on push to `main`
 
 ## Limitations
 
+- **WXR Bundle Storage Limit (`localStorage`):** Since everything runs fully client-side, the WXR bundle is saved in the browser's `localStorage` (typically limited to 5MB by standard browsers). If your bundle contains many converted pages or large page sources, it may exceed this quota. If this happens, Blockify will display a non-blocking warning informing you that changes cannot be persisted across reloads. The active in-memory bundle remains fully functional and intact, allowing you to safely download the WXR file before refreshing. For very large migrations, it is recommended to download your intermediate WXR files periodically or migrate in smaller batches.
+- **Idempotent Duplicate URLs Handling:** To keep the bundle state predictable and prevent duplicate entries, re-adding a page with an already existing source URL (either manually or via batch conversion) will replace/update the existing entry in place rather than appending a duplicate.
 - Embeds and forms require manual rebuilding; visible migration placeholders
   retain their source details. Columns and galleries are not inferred.
 - Cross-origin URL fetch depends on public CORS proxies; paste HTML when it

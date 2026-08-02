@@ -5,3 +5,7 @@
 ## 2026-07-31 - [DOM Spread Syntax Limit and Slowness]
 **Learning:** Using the spread operator to pass child nodes into DOM manipulation functions like `el.replaceWith(...Array.from(el.childNodes))` is very slow and can easily trigger `Maximum call stack size exceeded` errors if an element has many children (e.g. from pasted large HTML fragments).
 **Action:** Avoid spread syntax for large lists of DOM nodes. Use `DocumentFragment` insertion or a standard `while(el.firstChild) { parent.insertBefore(el.firstChild, el); }` loop.
+
+## 2024-08-02 - TreeWalker NodeFilter Crash in JSDOM
+**Learning:** Replacing deep DOM cloning and `querySelectorAll` with a `TreeWalker` significantly speeds up text extraction (up to ~35x faster). However, accessing `NodeFilter` as a global variable (e.g., `NodeFilter.SHOW_ELEMENT`) throws a `ReferenceError` when tests run inside JSDOM or Node.js environments.
+**Action:** Always use raw integer bitmasks (e.g., `5` for `SHOW_ELEMENT | SHOW_TEXT` and `1, 2, 3` for ACCEPT, REJECT, SKIP) instead of relying on global `NodeFilter` constants in cross-environment library code, or retrieve them safely via `document.defaultView`.

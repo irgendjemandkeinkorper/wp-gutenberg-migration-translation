@@ -6,5 +6,8 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "jsdom",
+    exclude: process.env.UI_TEST
+      ? ["**/node_modules/**", "**/dist/**"]
+      : ["**/node_modules/**", "**/dist/**", "**/*.ui.test.tsx"],
   },
 });
