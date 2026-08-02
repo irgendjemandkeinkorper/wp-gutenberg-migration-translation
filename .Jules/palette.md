@@ -1,3 +1,6 @@
 ## 2024-05-18 - Prevent Accidental Data Loss & Add Screen Reader Context
 **Learning:** Destructive actions that clear all user data (like "Clear bundle") without confirmation can lead to significant frustration if clicked accidentally. Additionally, repeated generic action buttons (like "Remove") inside lists need contextual ARIA labels because screen readers will read them out of context (e.g., hearing "Remove" multiple times without knowing *what* is being removed).
 **Action:** Always wrap bulk-destructive actions in a confirmation dialog (e.g., `window.confirm`). When rendering identical action buttons in a list, inject the item's title or identifying information into an `aria-label` to provide context for assistive technologies.
+## 2024-05-18 - Missing Screen Reader Context & Feedback
+**Learning:** Textareas, file inputs, and error alert sections lack implicit labels and roles in some contexts, making them confusing or invisible to screen readers unless explicitly described with aria labels or alert roles.
+**Action:** Use `aria-label` on bare `<textarea>` or `<input type="file">` elements that do not have associated `<label>` tags. Apply `role="alert"` on dynamically rendered error or warning message containers to ensure immediate announcement to assistive technologies.

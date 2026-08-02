@@ -381,6 +381,7 @@ export default function App() {
             </p>
             <input
               type="file"
+              aria-label="Upload crawl pages.json file"
               accept=".json,application/json"
               onChange={(e) => {
                 const f = e.target.files?.[0];
@@ -422,6 +423,7 @@ export default function App() {
               here.
             </p>
             <textarea
+              aria-label="HTML to convert"
               value={pastedHtml}
               onChange={(e) => setPastedHtml(e.target.value)}
               placeholder="<html>…</html>"
@@ -529,7 +531,7 @@ export default function App() {
         </section>
       )}
 
-      {error && <section className="panel error-box">{error}</section>}
+      {error && <section className="panel error-box" role="alert">{error}</section>}
 
       {result && (
         <section className="panel">
