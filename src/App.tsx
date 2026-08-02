@@ -451,6 +451,9 @@ export default function App() {
                 placeholder="https://example.com/about"
               />
             </label>
+            <div className="warn-box" style={{ marginTop: "10px", marginBottom: "10px" }}>
+              <strong>⚠️ Privacy & Security Warning:</strong> URL mode fetches page content through public, third-party CORS proxies (api.allorigins.win, corsproxy.io). Do not use this mode for private, sensitive, internal, or credentials-protected page content. Instead, use the private-content paths: the <strong>Paste HTML</strong> tab (which runs entirely locally) or the local site crawler.
+            </div>
             <p className="hint">
               Fetched through a public CORS proxy — works for many sites, but
               if it fails, use Paste HTML.
