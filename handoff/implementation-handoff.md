@@ -6,11 +6,11 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 
 ## Current baseline
 
-- Local HEAD: latest commit titled `Add deterministic Gutenberg compilers` (use `git log -1 --oneline` for the exact hash).
-- Latest implementation wave: C3 core, C4 media/gallery, and C5 safe-content compilers.
-- Branch: `main`, locally ahead of `origin/main` by 6 commits and behind by 21 commits before this handoff refresh.
+- Local HEAD: latest commit titled `Add compiler round trips and workspace recovery controls` (use `git log -1 --oneline` for the exact hash).
+- Latest implementation wave: C6 compiler round trips, E3 checkpoints/recovery, and E4 selective retry.
+- Branch: `main`, locally ahead of `origin/main` by 8 commits and behind by 21 commits before this handoff refresh.
 - The handoff source files are committed with this implementation wave. A clean worktree after commit is expected.
-- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all seven local commits after this handoff refresh before synchronizing.
+- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all nine local commits after this handoff refresh before synchronizing.
 - No implementation PR has been pushed and no branch-protection change has been made.
 
 ## Implemented in c810d94
@@ -37,10 +37,13 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 - C3 core compiler under `src/lib/compiler/core.ts`: deterministic paragraphs, headings, inline marks/links, nested lists, quotes, code, tables, findings, and source-path mapping.
 - C4 media compiler under `src/lib/compiler/media.ts`: deterministic image/gallery blocks, media identity rewrites, metadata, and unresolved-media placeholders.
 - C5 safe-content compiler under `src/lib/compiler/safe-content.ts`: explicit host/protocol/tag/attribute allowlists, unsafe-content stripping, and stable exception placeholders.
+- C6 local round-trip verifier under `src/lib/compiler/roundtrip.ts`: balanced Gutenberg delimiters, JSON attributes, stable block trees, malformed markup, and unsafe HTML checks.
+- E3 checkpoint store under `src/lib/workspace/checkpoint.ts`: atomic durable state, safe pause/resume, recovery of interrupted items, integrity hashes, and audit events.
+- E4 selective retry under `src/lib/workspace/retry.ts`: dependency-aware stage invalidation and affected-entity-scoped retry plans with audit records.
 
 ## Current verification evidence
 
-- `npm test -- --reporter=dot` — 22 test files, 124 tests passed.
+- `npm test -- --reporter=dot` — 25 test files, 132 tests passed.
 - `npm run build` — TypeScript and Vite production build passed.
 - `git diff --check` — passed.
 - `node integration/wordpress-harness/run.mjs --dry-run` — passed.
@@ -60,7 +63,7 @@ The live WordPress harness has not run because Docker Desktop/WSL integration is
 
 ## GitHub issue state
 
-Manifest coverage is 44 IDs total. The current tracked issue state is nine closed from implementation evidence and 35 open; some closed IDs are setup/contract issues outside the current wave.
+Manifest coverage is 44 IDs total. The current tracked issue state is ten closed from implementation evidence and 34 open; some closed IDs are setup/contract issues outside the current wave.
 
 Closed with implementation evidence:
 
@@ -75,12 +78,15 @@ Closed with implementation evidence:
 - [#79](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/79) — safe embed and unknown-node compilation.
 - [#80](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/80) — image and gallery compilation.
 - [#81](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/81) — core text/list/quote/code/table compilation.
+- [#88](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/88) — selective retry and dependency invalidation.
 
 Implemented but intentionally still open:
 
 - [#11](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/11) — harness needs a live Docker/WordPress run.
 - [#55](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/55) — needs an actual PR check run and branch protection requiring `CI / Validate`.
 - [#78](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/78) — blocked at the human-decision gate pending authoritative target capability data.
+- [#89](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/89) — implementation exists; actual forced-kill process integration remains to be run.
+- [#92](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/92) — local round-trip verifier exists; live WordPress parser validation remains to be run.
 
 The original backlog setup report and complete A1–H5 mapping are in [`github-backlog-setup-report.md`](./github-backlog-setup-report.md). The source requirements remain [`blockify-human-grade-migration-prd.md`](./blockify-human-grade-migration-prd.md) and [`blockify-github-issue-manifest.json`](./blockify-github-issue-manifest.json).
 
@@ -88,10 +94,10 @@ The original backlog setup report and complete A1–H5 mapping are in [`github-b
 
 Work in three disjoint scopes:
 
-1. Implement C6/#92 parser round-trip and deterministic compiler tests across C3/C4/C5.
-2. Implement E3/#89 checkpoint/pause/resume recovery and E4/#88 selective retry/invalidation against E2.
+1. Run the live WordPress parser/harness validation for C6/#92, E3/#89, A1/#11, B3/#10, and A2/#71 when Docker/WordPress is available.
+2. Implement E5/#106 portable workspace export/import after B5 and the E3/E4 contracts are available.
 3. Resolve D1/#78 by supplying an authenticated designated WordPress installation or authoritative GolfNow theme/plugin exports. Do not invent profiles.
-4. Run the live WordPress harness to close A1/#11, B3/#10, and A2/#71; create a real PR and verify branch protection before closing CI #55.
+4. Implement F1/#72 and G1/#75 in disjoint scopes; create a real PR and verify branch protection before closing CI #55.
 
 Do not start C2, E2, or downstream consumers until their contract artifacts are reviewed. Do not start D2/D6 without authoritative GolfNow target data.
 
@@ -109,5 +115,5 @@ Do not start C2, E2, or downstream consumers until their contract artifacts are 
 - Preserve existing user changes and all local implementation commits.
 - Keep each agent’s write set disjoint and return changed files, tests, risks, and open questions.
 - Do not close an issue based only on intent or local unit tests when its acceptance requires external WordPress, PR, authoritative target, or pilot evidence.
-- The local branch remains behind `origin/main` by 21 commits and ahead by seven local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
-- GitHub comments were posted for E2/#77, C2/#82, C3/#81, C4/#80, C5/#79, and the D1/#78 blocker. #77, #79, #80, #81, and #82 are closed; #78 remains open.
+- The local branch remains behind `origin/main` by 21 commits and ahead by nine local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
+- GitHub comments were posted for E2/#77, C2/#82, C3/#81, C4/#80, C5/#79, E3/#89, E4/#88, C6/#92, and the D1/#78 blocker. #77, #79, #80, #81, #82, and #88 are closed; #78, #89, and #92 remain open.
