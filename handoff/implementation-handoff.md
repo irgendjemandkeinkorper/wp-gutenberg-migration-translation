@@ -6,11 +6,11 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 
 ## Current baseline
 
-- Local HEAD: latest commit titled `Preserve gallery and slideshow IR collections` (use `git log -1 --oneline` for the exact hash).
-- Latest implementation wave: G5 gallery/slideshow semantic collection preservation.
-- Branch: `main`, locally ahead of `origin/main` by 24 commits and behind by 21 commits before this handoff refresh.
+- Local HEAD: latest commit titled `Document WXR migration metadata schema` (use `git log -1 --oneline` for the exact hash).
+- Latest implementation wave: G4 reliability corpus plus WXR migration-metadata schema documentation.
+- Branch: `main`, locally ahead of `origin/main` by 27 commits and behind by 21 commits before this handoff refresh.
 - The handoff source files are committed with this implementation wave. A clean worktree after commit is expected.
-- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all twenty-five local commits after this handoff refresh before synchronizing.
+- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all twenty-eight local commits after this handoff refresh before synchronizing.
 - No implementation PR has been pushed and no branch-protection change has been made.
 
 ## Implemented in c810d94
@@ -52,10 +52,12 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 - F4 risk scoring under `src/lib/qa/risk.ts`: deterministic severity/confidence/evidence scores and QA queue filters.
 - A3/A4 reconciliation under `src/lib/qa/reconciliation.ts`: page identity/text/placeholder evidence and attachment source/count evidence; live imported data is still required for closure.
 - G5 gallery/slideshow preservation in `src/lib/ir/emitter.ts`: collection detection and ordered first-class gallery asset children.
+- G4 reliability corpus under `integration/reliability/` and `src/test/reliability-fixtures.test.ts`: hosted-builder, static-layout, malformed-nesting, encoding, and repeated-chrome fixtures with explicit asset/exception assertions.
+- WXR metadata contract under `docs/wxr-format.md`: canonical `_blockify_*` postmeta and placeholder-manifest schema cross-linked from reconciliation documentation.
 
 ## Current verification evidence
 
-- `npm test -- --reporter=dot` — 34 test files, 153 tests passed.
+- `npm test -- --reporter=dot` — 35 test files, 159 tests passed.
 - `npm run verify` — production build plus full test suite passed with fixture-server subprocess permissions.
 - `npm run check:bundle` — largest JavaScript asset 577,547 bytes under the 650,000-byte budget.
 - `npm audit --audit-level=high` — 0 vulnerabilities.
@@ -78,7 +80,7 @@ The live WordPress harness has not run because Docker Desktop/WSL integration is
 
 ## GitHub issue state
 
-Manifest coverage is 44 IDs total. Twenty are closed by this implementation, B4/#12 was already closed, and 23 manifest issues remain open. Additional repository-hygiene issues #43–#46 and #57–#60 are now closed outside the 44-item PRD mapping.
+Manifest coverage is 44 IDs total. Twenty-one are closed by this implementation, B4/#12 was already closed, and 22 manifest issues remain open. Additional repository-hygiene issues #43–#46, #57–#60, and #62 are now closed outside the 44-item PRD mapping.
 
 Closed with implementation evidence:
 
@@ -104,6 +106,7 @@ Closed with implementation evidence:
 - [#106](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/106) — portable workspace export/import.
 - [#93](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/93) — migration risk scoring and QA queue.
 - [#83](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/83) — gallery/slideshow semantic collections.
+- [#84](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/84) — hosted-builder and malformed legacy-static reliability fixtures.
 
 Implemented but intentionally still open:
 
@@ -140,5 +143,5 @@ Do not start C2, E2, or downstream consumers until their contract artifacts are 
 - Preserve existing user changes and all local implementation commits.
 - Keep each agent’s write set disjoint and return changed files, tests, risks, and open questions.
 - Do not close an issue based only on intent or local unit tests when its acceptance requires external WordPress, PR, authoritative target, or pilot evidence.
-- The local branch remains behind `origin/main` by 21 commits and ahead by twenty-five local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
-- GitHub comments were posted for the 20 implemented PRD issues, A3/#104, A4/#70, the CI/repository-hygiene issues #43–#46/#57–#60, and the D1/#78, E3/#89, C6/#92, and CI/#55 evidence gaps. #70, #78, #89, #92, #104, #55, and #56 remain open; #12 was already closed before this work.
+- The local branch remains behind `origin/main` by 21 commits and ahead by twenty-eight local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
+- GitHub comments were posted for the 21 implemented PRD issues, G4/#84, WXR schema/#62, A3/#104, A4/#70, the CI/repository-hygiene issues #43–#46/#57–#60, and the D1/#78, E3/#89, C6/#92, and CI/#55 evidence gaps. #70, #78, #89, #92, #104, #55, and #56 remain open; #12 was already closed before this work.
