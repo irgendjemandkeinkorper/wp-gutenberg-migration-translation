@@ -180,7 +180,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     });
 
     expect(container.textContent).toContain(
-      "Add your Gemini API key in Settings first."
+      "Add your Gemini API key in Settings first under Private Pilot Mode."
     );
 
     // Provide an API key
@@ -188,8 +188,8 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
       setInputValue(apiKeyInput, "AIza_mock_key_123");
     });
 
-    // Key should persist in localStorage
-    expect(localStorage.getItem("blockify.apiKey")).toBe("AIza_mock_key_123");
+    // Key is only held in memory in Direct-Browser Mode. The old test checks for localStorage persistence which was removed for security.
+    expect(apiKeyInput.value).toBe("AIza_mock_key_123");
   });
 
   it("asserts step progress and warning and unsupported-content states", async () => {
@@ -442,7 +442,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     });
 
     const convertAllBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent === "Convert all & add to bundle"
+      (btn) => btn.textContent === "Start Batch" || btn.textContent?.includes("Resume Batch")
     ) as HTMLButtonElement;
     expect(convertAllBtn).not.toBeNull();
 

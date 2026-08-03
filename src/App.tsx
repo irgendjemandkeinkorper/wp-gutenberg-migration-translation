@@ -715,7 +715,7 @@ export default function App() {
                   {batch.length === 1 ? "" : "s"} loaded.
                 </p>
                 {!batchHtmlLoaded && (
-                  <p className="warn-box" style={{ marginTop: "10px" }}>
+                  <p className="warn-box" role="alert" style={{ marginTop: "10px" }}>
                     HTML content is not loaded in browser memory. Please re-upload <strong>{batchFileName || "pages.json"}</strong> to run or resume the batch.
                   </p>
                 )}
@@ -954,7 +954,7 @@ export default function App() {
         <section className="panel">
           <h2>Result</h2>
           {result.warnings.map((w) => (
-            <p key={w} className="warn-box">
+            <p key={w} className="warn-box" role="alert">
               {w}
             </p>
           ))}
@@ -986,7 +986,7 @@ export default function App() {
           </pre>
 
           {result.placeholders.length > 0 && (
-            <div className="warn-box">
+            <div className="warn-box" role="alert">
               <strong>Manual migration needed</strong>
               <ul>{result.placeholders.map((p) => <li key={p.index}>{p.label}</li>)}</ul>
             </div>
@@ -1061,7 +1061,7 @@ export default function App() {
       {(bundle.length > 0 || lastClearedBundle) && (
         <section className="panel">
           {saveFailed && (
-            <p className="warn-box" style={{ marginBottom: "1rem" }}>
+            <p className="warn-box" role="alert" style={{ marginBottom: "1rem" }}>
               ⚠️ Warning: Your bundle could not be saved to browser storage (quota exceeded or storage disabled).
               The in-memory bundle is still fully functional, but changes will be lost if you refresh or close this tab.
             </p>

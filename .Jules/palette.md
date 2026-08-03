@@ -23,3 +23,6 @@
 ## 2026-08-01 - Adding Accessible Interactions to Interactive UI Elements
 **Learning:** Interactive states and actions (like toggles and clipboard copying) often rely on visual cues (text changes, icons) which exclude screen reader users. Adding ARIA state attributes (`aria-expanded`, `aria-live`) drastically improves their experience without altering the visual design.
 **Action:** Audit interactive elements (buttons, inputs) for visual state changes and add corresponding ARIA attributes to communicate these states explicitly.
+## 2024-05-18 - Missing Screen Reader Context & Feedback (Updated)
+**Learning:** Textareas, file inputs, and error/warning alert sections lack implicit labels and roles in some contexts, making them confusing or invisible to screen readers unless explicitly described with aria labels or alert roles. Dynamically rendered warnings often do not trigger screen reader announcements unless properly marked.
+**Action:** Use `aria-label` on bare `<textarea>` or `<input type="file">` elements that do not have associated `<label>` tags. Apply `role="alert"` on dynamically rendered error or warning message containers to ensure immediate announcement to assistive technologies.
