@@ -6,11 +6,11 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 
 ## Current baseline
 
-- Local HEAD: latest commit titled `Add link rewriting and exception lifecycle` (use `git log -1 --oneline` for the exact hash).
-- Latest implementation wave: F2 authoritative link rewriting and F3 exception lifecycle.
-- Branch: `main`, locally ahead of `origin/main` by 12 commits and behind by 21 commits before this handoff refresh.
+- Local HEAD: latest commit titled `Add WordPress Drupal and Joomla source adapters` (use `git log -1 --oneline` for the exact hash).
+- Latest implementation wave: G2 WordPress and G3 Drupal/Joomla source adapters.
+- Branch: `main`, locally ahead of `origin/main` by 16 commits and behind by 21 commits before this handoff refresh.
 - The handoff source files are committed with this implementation wave. A clean worktree after commit is expected.
-- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all thirteen local commits after this handoff refresh before synchronizing.
+- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all seventeen local commits after this handoff refresh before synchronizing.
 - No implementation PR has been pushed and no branch-protection change has been made.
 
 ## Implemented in c810d94
@@ -44,10 +44,12 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 - G1 bounded source adapters under `src/lib/adapters/interface.ts`: CMS detection evidence, generic fallback, conflict diagnostics, extraction hints, and IR boundary validation.
 - F2 link rewriter under `src/lib/links/rewriter.ts`: destination-record rewrites, fragment/anchor verification, and explicit unresolved-link findings.
 - F3 exception lifecycle under `src/lib/exceptions/lifecycle.ts`: one-to-one placeholder identity, audited resolution, and release blocking.
+- G2 WordPress adapter under `src/lib/adapters/wordpress.ts`: bounded detection, content-root/boilerplate/media hints, and serialized-block evidence.
+- G3 Drupal/Joomla adapters under `src/lib/adapters/cms.ts`: bounded detection and extraction hints with generic fallback.
 
 ## Current verification evidence
 
-- `npm test -- --reporter=dot` — 29 test files, 141 tests passed.
+- `npm test -- --reporter=dot` — 30 test files, 144 tests passed.
 - `npm run build` — TypeScript and Vite production build passed.
 - `git diff --check` — passed.
 - `node integration/wordpress-harness/run.mjs --dry-run` — passed.
@@ -67,7 +69,7 @@ The live WordPress harness has not run because Docker Desktop/WSL integration is
 
 ## GitHub issue state
 
-Manifest coverage is 44 IDs total. The current tracked issue state is fourteen closed from implementation evidence and 30 open; some closed IDs are setup/contract issues outside the current wave.
+Manifest coverage is 44 IDs total. The current tracked issue state is sixteen closed from implementation evidence and 28 open; some closed IDs are setup/contract issues outside the current wave.
 
 Closed with implementation evidence:
 
@@ -87,6 +89,8 @@ Closed with implementation evidence:
 - [#75](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/75) — bounded source-adapter interface and CMS evidence.
 - [#76](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/76) — authoritative internal-link rewriting.
 - [#87](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/87) — migration-exception lifecycle.
+- [#85](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/85) — Drupal and Joomla source adapters.
+- [#86](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/86) — WordPress source adapter.
 
 Implemented but intentionally still open:
 
@@ -102,10 +106,10 @@ The original backlog setup report and complete A1–H5 mapping are in [`github-b
 
 Work in three disjoint scopes:
 
-1. Implement G2/#86 WordPress source adapter and G3/#85 Drupal/Joomla adapters against G1/C2 in disjoint scopes.
-2. Implement E5/#106 portable workspace export/import after B5 and the E3/E4 contracts are available.
-3. Run live WordPress validation for C6/#92, E3/#89, A1/#11, B3/#10, and A2/#71; resolve D1/#78 only with authoritative target data.
-4. Continue remaining adapter/compiler QA and release-readiness issues in manifest dependency order.
+1. Implement E5/#106 portable workspace export/import after B5 and the E3/E4 contracts are available.
+2. Run live WordPress validation for C6/#92, E3/#89, A1/#11, B3/#10, and A2/#71; resolve D1/#78 only with authoritative target data.
+3. Continue remaining adapter/compiler QA and release-readiness issues in manifest dependency order.
+4. Create a real PR and verify branch protection before closing CI #55.
 
 Do not start C2, E2, or downstream consumers until their contract artifacts are reviewed. Do not start D2/D6 without authoritative GolfNow target data.
 
@@ -123,5 +127,5 @@ Do not start C2, E2, or downstream consumers until their contract artifacts are 
 - Preserve existing user changes and all local implementation commits.
 - Keep each agent’s write set disjoint and return changed files, tests, risks, and open questions.
 - Do not close an issue based only on intent or local unit tests when its acceptance requires external WordPress, PR, authoritative target, or pilot evidence.
-- The local branch remains behind `origin/main` by 21 commits and ahead by thirteen local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
-- GitHub comments were posted for E2/#77, C2/#82, C3/#81, C4/#80, C5/#79, E3/#89, E4/#88, C6/#92, F1/#72, G1/#75, F2/#76, F3/#87, and the D1/#78 blocker. #72, #75, #76, #77, #79, #80, #81, #82, #87, and #88 are closed; #78, #89, and #92 remain open.
+- The local branch remains behind `origin/main` by 21 commits and ahead by seventeen local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
+- GitHub comments were posted for E2/#77, C2/#82, C3/#81, C4/#80, C5/#79, E3/#89, E4/#88, C6/#92, F1/#72, G1/#75, F2/#76, F3/#87, G2/#86, G3/#85, and the D1/#78 blocker. #72, #75, #76, #77, #79, #80, #81, #82, #85, #86, #87, and #88 are closed; #78, #89, and #92 remain open.
