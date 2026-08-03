@@ -18,9 +18,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "verify": "npm run build && npm test -- --reporter=dot",
+    "verify": "npm run build && npm test -- --reporter=dot && npm run test:checkpoint",
     "check:bundle": "node scripts/check-bundle-size.mjs",
     "lint": "eslint src",
+    "test:checkpoint": "node integration/workspace/checkpoint-integration.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "crawl": "node scripts/crawl.mjs"

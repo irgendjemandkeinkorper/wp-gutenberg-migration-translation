@@ -54,9 +54,11 @@ export class CheckpointError extends Error {
 export class CheckpointStore {
   private readonly path: string;
   private readonly now: () => string;
+  private readonly options: CheckpointStoreOptions;
   private snapshot: CheckpointSnapshot | null = null;
 
-  constructor(private readonly options: CheckpointStoreOptions) {
+  constructor(options: CheckpointStoreOptions) {
+    this.options = options;
     this.path = join(options.directory, `${options.runId}.checkpoint.json`);
     this.now = options.now ?? (() => new Date().toISOString());
   }
