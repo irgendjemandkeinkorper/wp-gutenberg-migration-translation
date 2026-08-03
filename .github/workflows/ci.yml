@@ -18,5 +18,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx tsc -b
-      - run: npm test
+      - run: npm run verify
+      - run: npm run check:bundle
+      - run: npm audit --audit-level=high

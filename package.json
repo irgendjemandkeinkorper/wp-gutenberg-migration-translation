@@ -2,6 +2,15 @@
   "name": "wp-gutenberg-migration-translation",
   "private": true,
   "version": "0.1.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation.git"
+  },
+  "bugs": {
+    "url": "https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues"
+  },
+  "homepage": "https://irgendjemandkeinkorper.github.io/wp-gutenberg-migration-translation/",
   "type": "module",
   "engines": {
     "node": ">=22 <23"
@@ -9,6 +18,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "verify": "npm run build && npm test -- --reporter=dot",
+    "check:bundle": "node scripts/check-bundle-size.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "crawl": "node scripts/crawl.mjs"
