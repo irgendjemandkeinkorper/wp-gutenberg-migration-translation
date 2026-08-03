@@ -57,6 +57,22 @@ describe("buildWxr", () => {
     expect(xml).toContain("<![CDATA[Albatross]]>");
   });
 
+  it("stores the documented placeholder manifest as JSON post metadata", () => {
+    const xml = buildWxr([{
+      ...page,
+      placeholders: [{
+        index: 0,
+        kind: "iframe",
+        source: "https://booking.example.test/tee-times",
+        label: "MIGRATION PLACEHOLDER 1: iframe — https://booking.example.test/tee-times",
+      }],
+    }], { author: "admin", postType: "page", status: "draft" });
+    expect(xml).toContain("<![CDATA[_blockify_migration_placeholders]]>");
+    expect(xml).toContain(
+      '<![CDATA[[{"index":0,"kind":"iframe","source":"https://booking.example.test/tee-times","label":"MIGRATION PLACEHOLDER 1: iframe — https://booking.example.test/tee-times"}]]]>',
+    );
+  });
+
   it("deduplicates fetchable attachments and skips relative image URLs", () => {
     const xml = buildWxr([{ ...page, images: [page.images[0], page.images[0], { src: "/relative.jpg", alt: "relative" }] }], {
       author: "admin", postType: "page", status: "draft", emitAttachments: true,
