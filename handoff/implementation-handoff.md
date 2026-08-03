@@ -6,8 +6,8 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 
 ## Current baseline
 
-- Local HEAD: latest commit titled `Add portable source and workspace packages` (use `git log -1 --oneline` for the exact hash).
-- Latest implementation wave: B5 source-evidence package and E5 portable workspace package.
+- Local HEAD: latest commit titled `Harden CI release hygiene and repository metadata` (use `git log -1 --oneline` for the exact hash).
+- Latest implementation wave: shared CI verification, bundle/audit gates, and repository hygiene.
 - Branch: `main`, locally ahead of `origin/main` by 18 commits and behind by 21 commits before this handoff refresh.
 - The handoff source files are committed with this implementation wave. A clean worktree after commit is expected.
 - Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all nineteen local commits after this handoff refresh before synchronizing.
@@ -48,10 +48,14 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 - G3 Drupal/Joomla adapters under `src/lib/adapters/cms.ts`: bounded detection and extraction hints with generic fallback.
 - B5 source-evidence package under `src/lib/acquisition/source-package.ts`: redacted acquisition records, decoded/raw content, hashes, URL index, and offline snapshot reconstruction.
 - E5 workspace package under `src/lib/workspace/package.ts`: manifest/blob/log export, hash/path verification, offline import, and wrapper-schema upgrade.
+- CI/repository hygiene: shared `npm run verify`, bundle budget/audit gates, Dependabot, CONTRIBUTING.md, SECURITY.md, MIT license metadata, and generated-artifact ignore/removal.
 
 ## Current verification evidence
 
 - `npm test -- --reporter=dot` — 32 test files, 148 tests passed.
+- `npm run verify` — production build plus full test suite passed with fixture-server subprocess permissions.
+- `npm run check:bundle` — largest JavaScript asset 577,547 bytes under the 650,000-byte budget.
+- `npm audit --audit-level=high` — 0 vulnerabilities.
 - `npm run build` — TypeScript and Vite production build passed.
 - `git diff --check` — passed.
 - `node integration/wordpress-harness/run.mjs --dry-run` — passed.
@@ -71,7 +75,7 @@ The live WordPress harness has not run because Docker Desktop/WSL integration is
 
 ## GitHub issue state
 
-Manifest coverage is 44 IDs total. The current tracked issue state is eighteen closed from implementation evidence and 26 open; some closed IDs are setup/contract issues outside the current wave.
+Manifest coverage is 44 IDs total. Eighteen are closed by this implementation, B4/#12 was already closed, and 25 manifest issues remain open. Additional repository-hygiene issues #43–#46 and #57–#60 are now closed outside the 44-item PRD mapping.
 
 Closed with implementation evidence:
 
@@ -111,7 +115,7 @@ The original backlog setup report and complete A1–H5 mapping are in [`github-b
 Work in three disjoint scopes:
 
 1. Run live WordPress validation for C6/#92, E3/#89, A1/#11, B3/#10, and A2/#71; resolve D1/#78 only with authoritative target data.
-2. Complete remaining CI/release-readiness issues (#55/#56/#59/#60/#57) through a real PR and protected-main verification.
+2. Complete remaining CI gates #55/#56 through a real PR and protected-main verification.
 3. Continue remaining adapter/compiler QA and release-readiness issues in manifest dependency order.
 4. Preserve this handoff and inspect the 21-commit remote divergence before any synchronization.
 
@@ -132,4 +136,4 @@ Do not start C2, E2, or downstream consumers until their contract artifacts are 
 - Keep each agent’s write set disjoint and return changed files, tests, risks, and open questions.
 - Do not close an issue based only on intent or local unit tests when its acceptance requires external WordPress, PR, authoritative target, or pilot evidence.
 - The local branch remains behind `origin/main` by 21 commits and ahead by nineteen local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
-- GitHub comments were posted for E2/#77, C2/#82, C3/#81, C4/#80, C5/#79, E3/#89, E4/#88, C6/#92, F1/#72, G1/#75, F2/#76, F3/#87, G2/#86, G3/#85, B5/#105, E5/#106, and the D1/#78 blocker. #72, #75, #76, #77, #79, #80, #81, #82, #85, #86, #87, #88, #105, and #106 are closed; #78, #89, and #92 remain open.
+- GitHub comments were posted for the 18 implemented PRD issues, the CI/repository-hygiene issues #43–#46/#57–#60, and the D1/#78, E3/#89, C6/#92, and CI/#55 evidence gaps. #78, #89, #92, #55, and #56 remain open; #12 was already closed before this work.
