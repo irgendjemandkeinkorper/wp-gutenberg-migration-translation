@@ -6,11 +6,11 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 
 ## Current baseline
 
-- Local HEAD: latest commit titled `Harden CI release hygiene and repository metadata` (use `git log -1 --oneline` for the exact hash).
-- Latest implementation wave: shared CI verification, bundle/audit gates, and repository hygiene.
-- Branch: `main`, locally ahead of `origin/main` by 18 commits and behind by 21 commits before this handoff refresh.
+- Local HEAD: latest commit titled `Add deterministic migration risk scoring` (use `git log -1 --oneline` for the exact hash).
+- Latest implementation wave: F4 migration risk scoring and QA queue filters.
+- Branch: `main`, locally ahead of `origin/main` by 20 commits and behind by 21 commits before this handoff refresh.
 - The handoff source files are committed with this implementation wave. A clean worktree after commit is expected.
-- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all nineteen local commits after this handoff refresh before synchronizing.
+- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all twenty-one local commits after this handoff refresh before synchronizing.
 - No implementation PR has been pushed and no branch-protection change has been made.
 
 ## Implemented in c810d94
@@ -49,10 +49,11 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 - B5 source-evidence package under `src/lib/acquisition/source-package.ts`: redacted acquisition records, decoded/raw content, hashes, URL index, and offline snapshot reconstruction.
 - E5 workspace package under `src/lib/workspace/package.ts`: manifest/blob/log export, hash/path verification, offline import, and wrapper-schema upgrade.
 - CI/repository hygiene: shared `npm run verify`, bundle budget/audit gates, Dependabot, CONTRIBUTING.md, SECURITY.md, MIT license metadata, and generated-artifact ignore/removal.
+- F4 risk scoring under `src/lib/qa/risk.ts`: deterministic severity/confidence/evidence scores and QA queue filters.
 
 ## Current verification evidence
 
-- `npm test -- --reporter=dot` — 32 test files, 148 tests passed.
+- `npm test -- --reporter=dot` — 33 test files, 150 tests passed.
 - `npm run verify` — production build plus full test suite passed with fixture-server subprocess permissions.
 - `npm run check:bundle` — largest JavaScript asset 577,547 bytes under the 650,000-byte budget.
 - `npm audit --audit-level=high` — 0 vulnerabilities.
@@ -75,7 +76,7 @@ The live WordPress harness has not run because Docker Desktop/WSL integration is
 
 ## GitHub issue state
 
-Manifest coverage is 44 IDs total. Eighteen are closed by this implementation, B4/#12 was already closed, and 25 manifest issues remain open. Additional repository-hygiene issues #43–#46 and #57–#60 are now closed outside the 44-item PRD mapping.
+Manifest coverage is 44 IDs total. Nineteen are closed by this implementation, B4/#12 was already closed, and 24 manifest issues remain open. Additional repository-hygiene issues #43–#46 and #57–#60 are now closed outside the 44-item PRD mapping.
 
 Closed with implementation evidence:
 
@@ -99,6 +100,7 @@ Closed with implementation evidence:
 - [#86](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/86) — WordPress source adapter.
 - [#105](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/105) — portable raw-HTML/source-evidence package.
 - [#106](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/106) — portable workspace export/import.
+- [#93](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/93) — migration risk scoring and QA queue.
 
 Implemented but intentionally still open:
 
@@ -135,5 +137,5 @@ Do not start C2, E2, or downstream consumers until their contract artifacts are 
 - Preserve existing user changes and all local implementation commits.
 - Keep each agent’s write set disjoint and return changed files, tests, risks, and open questions.
 - Do not close an issue based only on intent or local unit tests when its acceptance requires external WordPress, PR, authoritative target, or pilot evidence.
-- The local branch remains behind `origin/main` by 21 commits and ahead by nineteen local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
-- GitHub comments were posted for the 18 implemented PRD issues, the CI/repository-hygiene issues #43–#46/#57–#60, and the D1/#78, E3/#89, C6/#92, and CI/#55 evidence gaps. #78, #89, #92, #55, and #56 remain open; #12 was already closed before this work.
+- The local branch remains behind `origin/main` by 21 commits and ahead by twenty-one local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
+- GitHub comments were posted for the 19 implemented PRD issues, the CI/repository-hygiene issues #43–#46/#57–#60, and the D1/#78, E3/#89, C6/#92, and CI/#55 evidence gaps. #78, #89, #92, #55, and #56 remain open; #12 was already closed before this work.
