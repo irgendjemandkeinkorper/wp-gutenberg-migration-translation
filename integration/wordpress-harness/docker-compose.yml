@@ -1,0 +1,60 @@
+services:
+  db:
+    image: ${BLOCKIFY_DB_IMAGE:-mariadb:10.11.11}
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: blockify-harness-db-password
+      MARIADB_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "healthcheck.sh --connect --innodb_initialized"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+
+  wordpress:
+    image: ${BLOCKIFY_WORDPRESS_IMAGE:-wordpress:6.8.2-php8.3-apache}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${BLOCKIFY_WP_PORT:-18080}:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: blockify-harness-db-password
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_TABLE_PREFIX: wp_
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', 'http://127.0.0.1:${BLOCKIFY_WP_PORT:-18080}');
+        define('WP_SITEURL', 'http://127.0.0.1:${BLOCKIFY_WP_PORT:-18080}');
+        define('WP_DEBUG', true);
+        define('WP_DEBUG_LOG', true);
+        define('WP_DEBUG_DISPLAY', false);
+        define('DISALLOW_FILE_EDIT', true);
+    volumes:
+      - wordpress_data:/var/www/html
+
+  wpcli:
+    image: ${BLOCKIFY_WPCLI_IMAGE:-wordpress:cli-2.11.0-php8.3}
+    depends_on:
+      wordpress:
+        condition: service_started
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: blockify-harness-db-password
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_TABLE_PREFIX: wp_
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./fixtures:/fixtures:ro
+    user: "33:33"
+    working_dir: /var/www/html
+    entrypoint: ["wp"]
+
+volumes:
+  db_data:
+  wordpress_data:

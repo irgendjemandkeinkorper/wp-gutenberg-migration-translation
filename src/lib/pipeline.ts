@@ -11,12 +11,16 @@ import {
 } from "./validate";
 import type { PageResult, StepUpdate } from "./types";
 import type { LlmProvider } from "./llm";
+import type { ArchivedPageSnapshot } from "./acquisition/contract";
+import { archivedSnapshotSource } from "./acquisition/contract";
 
 const MAX_RETRIES = 2;
 
 export interface ConvertInput {
-  rawHtml: string;
+  rawHtml?: string;
   url?: string;
+  /** A previously archived page. Supplying this never performs source I/O. */
+  archivedSnapshot?: ArchivedPageSnapshot;
   selector?: string;
   apiKey: string;
   model: string;
@@ -30,10 +34,16 @@ export async function convertPage(
   onStep: (u: StepUpdate) => void,
 ): Promise<PageResult> {
   const warnings: string[] = [];
+  const archiveSource = input.archivedSnapshot
+    ? archivedSnapshotSource(input.archivedSnapshot)
+    : undefined;
+  const rawHtml = archiveSource?.decodedHtml ?? input.rawHtml ?? "";
+  const sourceUrl = archiveSource?.finalUrl ?? input.url;
+  if (!rawHtml.trim()) throw new Error("No source HTML was provided.");
 
   onStep({ step: "Extract", status: "active" });
-  const extracted = extractContent(input.rawHtml, {
-    url: input.url,
+  const extracted = extractContent(rawHtml, {
+    url: sourceUrl,
     selector: input.selector,
   });
   if (!extracted.html.trim()) throw new Error("No content could be extracted.");
@@ -44,7 +54,7 @@ export async function convertPage(
   });
 
   onStep({ step: "Images", status: "active" });
-  const tokenized = tokenizeImages(extracted.html, input.url);
+  const tokenized = tokenizeImages(extracted.html, sourceUrl);
   const placeholders = tokenized.images
     .filter((asset) => asset.type !== "image")
     .map((asset) => ({
@@ -95,7 +105,7 @@ export async function convertPage(
       lostPositions = cached.lostPositions;
     } else {
       ({ html: validatedHtml, lostPositions } = await cleanWithRetries(
-        input,
+      input,
         extracted.title,
         tokenized.html,
         expected,
@@ -133,10 +143,10 @@ export async function convertPage(
 
   return {
     title: extracted.title,
-    sourceUrl: input.url ?? "",
+    sourceUrl: sourceUrl ?? "",
     blocks,
     intermediateHtml: validatedHtml,
-    sourceHtml: input.rawHtml,
+    sourceHtml: rawHtml,
     placeholders,
     images: tokenized.images,
     lostPositions,
