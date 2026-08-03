@@ -120,6 +120,11 @@ describe("semantic IR emitter", () => {
     expect(document.root.children.every((node) => node.source.htmlExcerpt.excerpt)).toBe(true);
     expect(document.root.children[1].children[0].kind).toBe("rich-text-span");
     expect(document.root.children[1].children[0].text).toBe("bold");
+    expect(document.root.children[0].extensions.sourceTag).toBe("h2");
+    expect(document.root.children[6].extensions.sourceTag).toBe("img");
+    expect(document.root.children[5].extensions.rows).toEqual([
+      { cells: [{ text: "Cell", header: false }] },
+    ]);
     expect(document.root.auditEvents.map((event) => event.code)).toContain("boilerplate-exclusion");
   });
 

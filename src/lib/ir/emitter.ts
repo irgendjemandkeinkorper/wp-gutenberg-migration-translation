@@ -354,6 +354,7 @@ function emitElementNode(element: Element, path: string, context: EmitContext): 
     text,
     attributes: attrs,
     children,
+    extensions: extensionsForElement(element, kind),
     auditEvents: [event("extracted", `element-${kind}`, `Mapped <${element.tagName.toLowerCase()}> to ${kind}.`, context.auditAt)],
   });
 }
@@ -380,6 +381,7 @@ function emitAssetNode(
     attributes: sortedStringMap(asset.asset.attributes),
     children: [],
     assetRefs: [reference],
+    extensions: { sourceTag: asset.asset.tagName.toLowerCase() },
     auditEvents: [event(
       "extracted",
       "asset-token-resolved",
@@ -568,6 +570,21 @@ function attributesFor(element: Element): Record<string, string> {
   return sortedStringMap(Object.fromEntries(
     Array.from(element.attributes).map((attribute) => [attribute.name, attribute.value]),
   ));
+}
+
+function extensionsForElement(element: Element, kind: NodeKind): JsonObject {
+  const extensions: JsonObject = { sourceTag: element.tagName.toLowerCase() };
+  if (kind === "table") {
+    extensions.rows = Array.from(element.querySelectorAll("tr")).map((row) => ({
+      cells: Array.from(row.children)
+        .filter((cell) => ["td", "th"].includes(cell.tagName.toLowerCase()))
+        .map((cell) => ({
+          text: cell.textContent ?? "",
+          header: cell.tagName.toLowerCase() === "th",
+        })),
+    }));
+  }
+  return extensions;
 }
 
 function sortedStringMap(input: Record<string, string>): Record<string, string> {
