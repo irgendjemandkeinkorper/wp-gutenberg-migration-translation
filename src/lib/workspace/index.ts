@@ -1004,3 +1004,6 @@ export function parseWorkspaceManifest(serialized: string, options: ParseManifes
   assertValidWorkspaceManifest(parsed);
   return parsed;
 }
+
+export * from "./checkpoint";
+export * from "./retry";
