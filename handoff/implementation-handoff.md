@@ -6,11 +6,11 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 
 ## Current baseline
 
-- Local HEAD: latest commit titled `Add compiler round trips and workspace recovery controls` (use `git log -1 --oneline` for the exact hash).
-- Latest implementation wave: C6 compiler round trips, E3 checkpoints/recovery, and E4 selective retry.
-- Branch: `main`, locally ahead of `origin/main` by 8 commits and behind by 21 commits before this handoff refresh.
+- Local HEAD: latest commit titled `Add URL mapping and source adapter contracts` (use `git log -1 --oneline` for the exact hash).
+- Latest implementation wave: F1 canonical URL mapping and G1 bounded source-adapter contracts.
+- Branch: `main`, locally ahead of `origin/main` by 10 commits and behind by 21 commits before this handoff refresh.
 - The handoff source files are committed with this implementation wave. A clean worktree after commit is expected.
-- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all nine local commits after this handoff refresh before synchronizing.
+- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all eleven local commits after this handoff refresh before synchronizing.
 - No implementation PR has been pushed and no branch-protection change has been made.
 
 ## Implemented in c810d94
@@ -40,10 +40,12 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 - C6 local round-trip verifier under `src/lib/compiler/roundtrip.ts`: balanced Gutenberg delimiters, JSON attributes, stable block trees, malformed markup, and unsafe HTML checks.
 - E3 checkpoint store under `src/lib/workspace/checkpoint.ts`: atomic durable state, safe pause/resume, recovery of interrupted items, integrity hashes, and audit events.
 - E4 selective retry under `src/lib/workspace/retry.ts`: dependency-aware stage invalidation and affected-entity-scoped retry plans with audit records.
+- F1 canonical URL mapping under `src/lib/links/url-map.ts`: deterministic requested/target records, fragments, downloads, protocol destinations, and redirect findings.
+- G1 bounded source adapters under `src/lib/adapters/interface.ts`: CMS detection evidence, generic fallback, conflict diagnostics, extraction hints, and IR boundary validation.
 
 ## Current verification evidence
 
-- `npm test -- --reporter=dot` — 25 test files, 132 tests passed.
+- `npm test -- --reporter=dot` — 27 test files, 137 tests passed.
 - `npm run build` — TypeScript and Vite production build passed.
 - `git diff --check` — passed.
 - `node integration/wordpress-harness/run.mjs --dry-run` — passed.
@@ -79,6 +81,8 @@ Closed with implementation evidence:
 - [#80](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/80) — image and gallery compilation.
 - [#81](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/81) — core text/list/quote/code/table compilation.
 - [#88](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/88) — selective retry and dependency invalidation.
+- [#72](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/72) — canonical URL and redirect map.
+- [#75](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/75) — bounded source-adapter interface and CMS evidence.
 
 Implemented but intentionally still open:
 
@@ -94,10 +98,10 @@ The original backlog setup report and complete A1–H5 mapping are in [`github-b
 
 Work in three disjoint scopes:
 
-1. Run the live WordPress parser/harness validation for C6/#92, E3/#89, A1/#11, B3/#10, and A2/#71 when Docker/WordPress is available.
-2. Implement E5/#106 portable workspace export/import after B5 and the E3/E4 contracts are available.
-3. Resolve D1/#78 by supplying an authenticated designated WordPress installation or authoritative GolfNow theme/plugin exports. Do not invent profiles.
-4. Implement F1/#72 and G1/#75 in disjoint scopes; create a real PR and verify branch protection before closing CI #55.
+1. Implement G2/#86 WordPress source adapter and G3/#85 Drupal/Joomla adapters against G1/C2 in disjoint scopes.
+2. Implement F2/#76 link rewriting and F3/#87 exception lifecycle against F1/E2/C5.
+3. Implement E5/#106 portable workspace export/import after B5 and the E3/E4 contracts are available.
+4. Run live WordPress validation for C6/#92, E3/#89, A1/#11, B3/#10, and A2/#71; resolve D1/#78 only with authoritative target data.
 
 Do not start C2, E2, or downstream consumers until their contract artifacts are reviewed. Do not start D2/D6 without authoritative GolfNow target data.
 
@@ -115,5 +119,5 @@ Do not start C2, E2, or downstream consumers until their contract artifacts are 
 - Preserve existing user changes and all local implementation commits.
 - Keep each agent’s write set disjoint and return changed files, tests, risks, and open questions.
 - Do not close an issue based only on intent or local unit tests when its acceptance requires external WordPress, PR, authoritative target, or pilot evidence.
-- The local branch remains behind `origin/main` by 21 commits and ahead by nine local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
-- GitHub comments were posted for E2/#77, C2/#82, C3/#81, C4/#80, C5/#79, E3/#89, E4/#88, C6/#92, and the D1/#78 blocker. #77, #79, #80, #81, #82, and #88 are closed; #78, #89, and #92 remain open.
+- The local branch remains behind `origin/main` by 21 commits and ahead by eleven local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
+- GitHub comments were posted for E2/#77, C2/#82, C3/#81, C4/#80, C5/#79, E3/#89, E4/#88, C6/#92, F1/#72, G1/#75, and the D1/#78 blocker. #72, #75, #77, #79, #80, #81, #82, and #88 are closed; #78, #89, and #92 remain open.
