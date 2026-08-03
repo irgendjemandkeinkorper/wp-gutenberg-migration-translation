@@ -9,6 +9,7 @@ import {
 } from "./lib/llm";
 import { convertPage } from "./lib/pipeline";
 import { buildWxr, slugify } from "./lib/wxr";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import type { LlmProvider } from "./lib/llm";
 import type {
   BundlePage,
@@ -715,6 +716,7 @@ export default function App() {
       )}
 
       {result && (
+        <ErrorBoundary onReset={() => setResult(null)}>
         <section className="panel result-panel">
           <div className="panel-heading">
             <div>
@@ -830,6 +832,7 @@ export default function App() {
             <pre className="code-view">{result.sourceHtml}</pre>
           </details>
         </section>
+        </ErrorBoundary>
       )}
 
       {bundle.length > 0 && (
