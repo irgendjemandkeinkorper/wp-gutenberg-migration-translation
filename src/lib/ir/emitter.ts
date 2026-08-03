@@ -329,8 +329,9 @@ function emitElementNode(element: Element, path: string, context: EmitContext): 
     );
   }
 
+  const kind = isGalleryElement(element) ? "gallery" : nodeKindForTag(element.tagName.toLowerCase());
   const containedTokens = tokenIndices(element.textContent ?? "");
-  if (containedTokens.length) {
+  if (containedTokens.length && kind !== "gallery") {
     throw new SemanticIrEmissionError(
       "asset-token-not-isolated",
       `Asset token(s) ${containedTokens.join(", ")} are not isolated in ${path}.`,
@@ -338,7 +339,6 @@ function emitElementNode(element: Element, path: string, context: EmitContext): 
     );
   }
 
-  const kind = nodeKindForTag(element.tagName.toLowerCase());
   const sourceExcerpt = element.outerHTML;
   const source = evidenceFor(context.snapshot, path, sourceExcerpt, element.tagName.toLowerCase());
   const attrs = attributesFor(element);
@@ -522,6 +522,14 @@ function nodeKindForTag(tag: string): NodeKind {
     default:
       return "unknown";
   }
+}
+
+function isGalleryElement(element: Element): boolean {
+  const className = element.getAttribute("class") ?? "";
+  const role = element.getAttribute("role") ?? "";
+  return /(?:^|[\s_-])(?:gallery|slideshow|carousel)(?:$|[\s_-])/i.test(className) ||
+    /(?:^|[\s_-])wp-block-gallery(?:$|[\s_-])/i.test(className) ||
+    (role === "list" && element.querySelector("img, [data-gallery-item], [data-slide]") !== null);
 }
 
 function assetKind(asset: AssetRef): Exclude<NodeKind, "document" | "unknown"> {

@@ -185,4 +185,16 @@ describe("semantic IR emitter", () => {
       page: page('<p><img src="https://example.test/un-tokenized.jpg"></p>', []),
     })).toThrowError(/was not represented by an asset token/);
   });
+
+  it("preserves ordered gallery/slideshow collections as first-class IR", () => {
+    const second = { ...image(), index: 1, src: "https://cdn.example.test/images/card.jpg" };
+    const document = emitSemanticIr({
+      snapshot: snapshot(),
+      page: page('<div class="gallery"><span>⟦ASSET_0⟧</span><span>⟦ASSET_1⟧</span></div>', [image(), second]),
+    });
+    expect(document.root.children).toHaveLength(1);
+    expect(document.root.children[0].kind).toBe("gallery");
+    expect(document.root.children[0].children.map((child) => child.kind)).toEqual(["image", "image"]);
+    expect(document.root.children[0].children.map((child) => child.assetRefs[0]?.ordinal)).toEqual([0, 1]);
+  });
 });
