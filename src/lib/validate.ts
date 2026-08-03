@@ -205,12 +205,15 @@ function enforceWhitelist(body: HTMLElement): void {
 }
 
 function isSafeHref(href: string): boolean {
-  const trimmed = href.trim().toLowerCase();
-  // Strip control characters to prevent bypasses like java\nscript:
-  const noControlChars = trimmed.replace(/[\x00-\x1F\x7F]/g, "");
-  if (noControlChars.startsWith("javascript:")) return false;
-  if (noControlChars.startsWith("vbscript:")) return false;
-  if (noControlChars.startsWith("data:")) return false;
+  // Strip control characters and whitespace which browsers ignore when parsing protocols
+  const normalized = href.replace(/[\x00-\x20\x7F-\x9F]/g, "").toLowerCase();
+  if (
+    normalized.startsWith("javascript:") ||
+    normalized.startsWith("vbscript:") ||
+    normalized.startsWith("data:")
+  ) {
+    return false;
+  }
   return true;
 }
 

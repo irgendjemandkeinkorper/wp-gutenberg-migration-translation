@@ -19,3 +19,7 @@
 **Vulnerability:** The raw error message from the Gemini API or LLM SDK could leak the API key if thrown during a network failure or validation error, and is then surfaced directly to the user interface via `String(e)`.
 **Learning:** External API errors often reflect request payloads or sensitive identifiers. They must be sanitized before being caught and stored in application state that is rendered to the DOM.
 **Prevention:** Catch errors where the API SDK is invoked (`src/lib/llm.ts`) and sanitize the error message (e.g., removing `AIzaSy...`) before rethrowing it.
+## 2025-02-23 - XSS Filter Bypass via Whitespace in Href
+**Vulnerability:** Cross-Site Scripting (XSS) bypass in `isSafeUrl` and `isSafeHref` validation functions.
+**Learning:** Browsers ignore spaces and other whitespace characters within the protocol part of a URL (e.g., `java script:alert(1)` is executed as `javascript:alert(1)`). Previous XSS protection stripped control characters but failed to strip regular whitespace characters, allowing attackers to bypass the protocol checks.
+**Prevention:** In addition to control characters, always strip all whitespace characters (e.g., `[\x00-\x20\x7F-\x9F]`) from URLs before validating their protocols to prevent whitespace-based protocol bypass attacks.
