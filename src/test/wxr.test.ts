@@ -75,7 +75,8 @@ describe("buildWxr", () => {
     const ids = [...xml.matchAll(/<wp:post_id>(\d+)<\/wp:post_id>/g)].map((m) =>
       parseInt(m[1], 10),
     );
-    expect(ids).toEqual([1, 2, 3, 4]);
+    // One shared media record produces one attachment across both pages.
+    expect(ids).toEqual([1, 2, 3]);
   });
 });
 

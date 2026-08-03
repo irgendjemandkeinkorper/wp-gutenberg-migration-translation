@@ -2,8 +2,8 @@
 
 This harness provisions an isolated WordPress and MariaDB pair, installs the
 official `wordpress-importer` plugin, imports a checked-in WXR fixture, checks
-the homepage/REST API and imported page state, then removes the containers and
-volumes on success.
+the homepage/REST API and imported page state, runs the post-import Gutenberg
+verifier, then removes the containers and volumes on success.
 
 ## One command
 
@@ -19,7 +19,8 @@ pinned WordPress/MariaDB images, the WordPress CLI image, and the official
 WordPress Importer package.
 
 The fixture is local and deterministic; no source website is contacted. A
-successful run prints the local URL and removes its temporary Docker project.
+successful run enumerates every fixture page by `_blockify_migration_id`,
+reports block names and nesting paths, and removes its temporary Docker project.
 
 ## Diagnostics and fixtures
 
@@ -35,6 +36,22 @@ retention:
 ```sh
 node integration/wordpress-harness/run.mjs --fixture known-bad
 ```
+
+The `known-malformed` fixture is valid WXR with deliberately malformed
+Gutenberg delimiters and root-level HTML. It should import successfully and
+then fail the Gutenberg gate with a retained JSON verification report:
+
+```sh
+node integration/wordpress-harness/run.mjs --fixture known-malformed
+```
+
+The verifier reports each page's stable migration ID, block names, nesting
+paths, parser failures, invalid/unregistered blocks, recovered blocks, and
+unexpected freeform HTML. Any one of those diagnostics fails the run. Its
+markup scanner and fixture tests run without Docker; a live run additionally
+uses WordPress `parse_blocks()` and the registered block-type registry.
+The server-side probe intentionally emits hashes and structural diagnostics,
+not post content, so retained artifacts keep the existing redaction behavior.
 
 Failed runs retain sanitized logs, `docker compose ps`, service logs, plugin
 state, the WordPress home option, and page state under

@@ -1,4 +1,13 @@
 import type { BundlePage } from "./types";
+import {
+  buildMediaRegistry,
+  MediaPreflightError,
+  rewriteMediaReferences,
+  validateMediaRegistry,
+  type MediaFinding,
+  type MediaRegistry,
+  type MediaRegistryRecord,
+} from "./media/registry";
 
 /**
  * Build a WordPress eXtended RSS (WXR 1.2) document from converted pages.
@@ -17,32 +26,70 @@ export interface WxrOptions {
   status: "draft" | "publish";
   siteTitle?: string;
   emitAttachments?: boolean;
+  /** Use a previously acquired bundle registry instead of rebuilding URL-only records. */
+  mediaRegistry?: MediaRegistry;
+  /** Fail before emitting XML when the selected media policy is not satisfied. */
+  strictMedia?: boolean;
+  requireAcquisition?: boolean;
+  requireDestination?: boolean;
 }
 
-export function buildWxr(pages: BundlePage[], opts: WxrOptions): string {
+export interface WxrPackage {
+  xml: string;
+  mediaRegistry: MediaRegistry;
+  findings: MediaFinding[];
+}
+
+/** Build WXR plus the registry/findings needed for post-import reconciliation. */
+export function buildWxrPackage(pages: BundlePage[], opts: WxrOptions): WxrPackage {
   const siteTitle = opts.siteTitle ?? "Imported Content";
+  const mediaRegistry = opts.mediaRegistry ?? buildMediaRegistry(pages).registry;
+  const findings = validateMediaRegistry(mediaRegistry, {
+    requireAcquisition: opts.requireAcquisition,
+    requireDestination: opts.requireDestination,
+  });
+  if (opts.strictMedia && findings.some((finding) => finding.severity === "blocking")) {
+    throw new MediaPreflightError(findings.filter((finding) => finding.severity === "blocking"));
+  }
+
   const now = new Date();
   const pub = now.toUTCString().replace("GMT", "+0000");
   const dateGmt = now.toISOString().slice(0, 19).replace("T", " ");
 
   const items: string[] = [];
+  const pageIds = new Map<BundlePage, number>();
+  const pageMedia = new Map<BundlePage, MediaRegistryRecord[]>();
+  const owners = new Map<string, BundlePage>();
+  for (const page of pages) {
+    const records = mediaRecordsForPage(page, mediaRegistry);
+    pageMedia.set(page, records);
+    for (const record of records) {
+      if (!owners.has(record.recordId)) owners.set(record.recordId, page);
+    }
+  }
+
   let nextId = 1;
   for (const page of pages) {
     const pageId = nextId++;
-    items.push(contentItem(page, pageId, opts, pub, dateGmt));
+    pageIds.set(page, pageId);
+    const rewritten = rewriteMediaReferences(page.contentBlocks, mediaRegistry, {
+      baseUrl: page.link,
+      requireDestination: opts.requireDestination,
+    });
+    findings.push(...rewritten.findings);
+    items.push(contentItem({ ...page, contentBlocks: rewritten.content }, pageId, opts, pub, dateGmt));
     if (opts.emitAttachments) {
-      const seen = new Set<string>();
-      for (const img of page.images) {
-        if (!isRemoteUrl(img.src) || seen.has(img.src)) continue;
-        seen.add(img.src);
+      for (const record of pageMedia.get(page) ?? []) {
+        if (owners.get(record.recordId) !== page) continue;
         items.push(
-          attachmentItem(img.src, img.alt, nextId++, pageId, opts.author, pub, dateGmt),
+          attachmentItem(record, nextId++, pageId, opts.author, pub, dateGmt),
         );
       }
     }
   }
 
-  return `<?xml version="1.0" encoding="UTF-8"?>
+  return {
+    xml: `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"
     xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
     xmlns:content="http://purl.org/rss/1.0/modules/content/"
@@ -63,7 +110,49 @@ export function buildWxr(pages: BundlePage[], opts: WxrOptions): string {
 ${items.join("\n")}
 </channel>
 </rss>
-`;
+`,
+    mediaRegistry,
+    findings: uniqueFindings(findings),
+  };
+}
+
+/** Backward-compatible WXR string API. Use buildWxrPackage for findings. */
+export function buildWxr(pages: BundlePage[], opts: WxrOptions): string {
+  return buildWxrPackage(pages, opts).xml;
+}
+
+export interface WxrReconciliationResult {
+  xml: string;
+  findings: MediaFinding[];
+}
+
+/**
+ * Rewrite page content after the WordPress importer has returned real
+ * attachment identities. This deliberately consumes destination URLs from
+ * the reconciliation response; it never invents an uploads path.
+ */
+export function reconcileWxrContent(
+  wxr: string,
+  registry: MediaRegistry,
+  options: { requireDestination?: boolean } = { requireDestination: true },
+): WxrReconciliationResult {
+  const findings: MediaFinding[] = [];
+  const xml = wxr.replace(/<item>[\s\S]*?<\/item>/g, (item) => {
+    if (/<wp:post_type>attachment<\/wp:post_type>/.test(item)) return item;
+    const pageUrl = item.match(/<link>([\s\S]*?)<\/link>/)?.[1] ?? undefined;
+    return item.replace(
+      /(<content:encoded><!\[CDATA\[)([\s\S]*?)(\]\]><\/content:encoded>)/,
+      (_full, prefix: string, content: string, suffix: string) => {
+        const rewritten = rewriteMediaReferences(content, registry, {
+          baseUrl: pageUrl,
+          requireDestination: options.requireDestination ?? true,
+        });
+        findings.push(...rewritten.findings);
+        return `${prefix}${rewritten.content}${suffix}`;
+      },
+    );
+  });
+  return { xml, findings: uniqueFindings(findings) };
 }
 
 export function slugify(title: string): string {
@@ -150,17 +239,22 @@ function postMeta(key: string, value: string): string {
 }
 
 function attachmentItem(
-  src: string,
-  alt: string,
+  record: MediaRegistryRecord,
   postId: number,
   parentId: number,
   author: string,
   pub: string,
   dateGmt: string,
 ): string {
-  const title = alt.trim() || imgTitle(src);
+  const alt = record.provenance.alt[0]?.value ?? "";
+  const src = record.observedUrls[0] ||
+    record.acquisition?.requestedUrl ||
+    record.acquisition?.finalUrl ||
+    record.sourceUrls[0] ||
+    record.canonicalUrl;
+  const title = record.provenance.title[0]?.value || alt.trim() || record.filename || imgTitle(src);
   const filename = attachmentFilename(src);
-  const mime = imageMime(filename);
+  const mime = record.mime || imageMime(filename);
   return `    <item>
         <title>${escapeXml(title)}</title>
         <link>${escapeXml(src)}</link>
@@ -192,13 +286,66 @@ ${postMeta("_wp_attached_file", filename)}
     </item>`;
 }
 
-function isRemoteUrl(src: string): boolean {
-  try {
-    const protocol = new URL(src).protocol;
-    return protocol === "http:" || protocol === "https:";
-  } catch {
-    return false;
+function mediaRecordsForPage(
+  page: BundlePage,
+  registry: MediaRegistry,
+): MediaRegistryRecord[] {
+  const records: MediaRegistryRecord[] = [];
+  const seen = new Set<string>();
+  for (const image of page.images) {
+    // Preserve the legacy WXR behavior: relative image entries without an
+    // acquisition/source alias are not emitted as importer attachments.
+    if (/^(?:\.\.?\/|\/)/.test(image.src)) continue;
+    const lookup = findRecord(registry, image.src, page.link);
+    if (lookup && !seen.has(lookup.recordId)) {
+      seen.add(lookup.recordId);
+      records.push(lookup);
+    }
   }
+  // Include aliases represented only in contentBlocks (srcset/picture/lazy attrs).
+  const attrPattern = /\s(?:src|data-src|data-lazy-src|data-original|srcset)\s*=\s*(["'])([\s\S]*?)\1/gi;
+  for (const match of page.contentBlocks.matchAll(attrPattern)) {
+    const values = match[2].split(",");
+    for (const value of values) {
+      const source = value.trim().split(/\s+/, 1)[0];
+      const record = findRecord(registry, source, page.link);
+      if (record && !seen.has(record.recordId)) {
+        seen.add(record.recordId);
+        records.push(record);
+      }
+    }
+  }
+  return records;
+}
+
+function findRecord(
+  registry: MediaRegistry,
+  source: string,
+  baseUrl: string,
+): MediaRegistryRecord | null {
+  try {
+    const canonical = new URL(decodeEntities(source), baseUrl);
+    canonical.hash = "";
+    canonical.searchParams.sort();
+    return registry.records.find((record) => record.sourceUrls.includes(canonical.href)) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function decodeEntities(value: string): string {
+  return value.replace(/&amp;/gi, "&").replace(/&quot;/gi, '"').replace(/&#x27;|&#39;/gi, "'");
+}
+
+function uniqueFindings(findings: MediaFinding[]): MediaFinding[] {
+  const result: MediaFinding[] = [];
+  for (const finding of findings) {
+    const key = [finding.code, finding.recordId, finding.pageUrl, finding.sourceUrl, finding.message].join("|");
+    if (!result.some((candidate) => [candidate.code, candidate.recordId, candidate.pageUrl, candidate.sourceUrl, candidate.message].join("|") === key)) {
+      result.push(finding);
+    }
+  }
+  return result;
 }
 
 function attachmentFilename(src: string): string {

@@ -6,6 +6,13 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { createServer } from "node:net";
+import {
+  WORDPRESS_VERIFICATION_EVAL,
+  analyzeBlockMarkup,
+  assertVerificationPass,
+  extractMigrationIdsFromWxr,
+  verifyImportedPages,
+} from "./verification.mjs";
 
 const harnessDir = dirname(fileURLToPath(import.meta.url));
 const repoDir = resolve(harnessDir, "../..");
@@ -14,6 +21,7 @@ const fixturesDir = join(harnessDir, "fixtures");
 const fixtureFiles = {
   "known-good": "known-good.wxr.xml",
   "known-bad": "known-bad.wxr.xml",
+  "known-malformed": "known-malformed.wxr.xml",
 };
 const importerVersion = process.env.BLOCKIFY_IMPORTER_VERSION || "0.8.3";
 const adminPassword = process.env.BLOCKIFY_ADMIN_PASSWORD || "blockify-harness-admin-password";
@@ -24,7 +32,7 @@ function usage() {
   console.log(`Usage: node integration/wordpress-harness/run.mjs [options]
 
 Options:
-  --fixture known-good|known-bad  WXR fixture to import (default: known-good)
+  --fixture known-good|known-bad|known-malformed  WXR fixture to import (default: known-good)
   --dry-run                       Validate the harness without Docker
   --help                          Show this help
 
@@ -59,7 +67,7 @@ function parseArgs(argv) {
     throw new HarnessError(`Unknown argument: ${arg}`);
   }
   if (!Object.hasOwn(fixtureFiles, options.fixture)) {
-    throw new HarnessError(`Unknown fixture '${options.fixture}'. Choose known-good or known-bad.`);
+    throw new HarnessError(`Unknown fixture '${options.fixture}'. Choose known-good, known-bad, or known-malformed.`);
   }
   return options;
 }
@@ -162,6 +170,21 @@ function dryRun(fixtureKey) {
   }
   if (fixtureKey === "known-good" && !fixtureText.includes("blockify-harness-fixture-page")) {
     throw new HarnessError("Known-good fixture is missing its deterministic page slug.");
+  }
+  if (fixtureKey === "known-good") {
+    const analysis = analyzeBlockMarkup(fixtureText.match(/<content:encoded><!\[CDATA\[([\s\S]*?)\]\]><\/content:encoded>/i)?.[1] || "");
+    if (analysis.parserFailures.length || analysis.unexpectedFreeformHtml.length) {
+      throw new HarnessError("Known-good fixture contains malformed block markup or unexpected freeform HTML.");
+    }
+  }
+  if (fixtureKey === "known-malformed") {
+    const analysis = analyzeBlockMarkup(fixtureText.match(/<content:encoded><!\[CDATA\[([\s\S]*?)\]\]><\/content:encoded>/i)?.[1] || "");
+    if (!analysis.parserFailures.length) {
+      throw new HarnessError("Known-malformed fixture does not contain a detectable parser failure.");
+    }
+  }
+  if (!extractMigrationIdsFromWxr(fixtureText).length && fixtureKey !== "known-bad") {
+    throw new HarnessError(`Fixture is missing ${"_blockify_migration_id"} post metadata: ${fixturePath}`);
   }
   console.log(`DRY RUN PASS: ${fixtureKey} fixture ${sha256(fixturePath).slice(0, 16)}…`);
   console.log("Docker is not required for --dry-run.");
@@ -283,12 +306,23 @@ async function main() {
       throw new HarnessError(`Expected one published fixture page, found ${importedPages.length}.`);
     }
 
-    summary.verification = { homepageStatus: home.status, restApiStatus: api.status, importedPages };
+    const pageInspection = requireSuccess(wp(["--quiet", "eval", WORDPRESS_VERIFICATION_EVAL], "inspect imported Gutenberg blocks"), "WordPress Gutenberg inspection");
+    let inspectedPages;
+    try {
+      inspectedPages = JSON.parse(pageInspection.stdout.trim() || "[]");
+    } catch {
+      throw new HarnessError("WordPress returned an unreadable Gutenberg verification response.");
+    }
+    const expectedMigrationIds = extractMigrationIdsFromWxr(readFileSync(fixturePath, "utf8"));
+    const verification = verifyImportedPages({ pages: inspectedPages, expectedMigrationIds });
+    summary.verification = { homepageStatus: home.status, restApiStatus: api.status, importedPages, ...verification };
+    writeFileSync(statePath, `${JSON.stringify(summary, null, 2)}\n`);
+    assertVerificationPass(verification);
     summary.completedAt = new Date().toISOString();
     writeFileSync(statePath, `${JSON.stringify(summary, null, 2)}\n`);
     completed = true;
     console.log(`PASS: imported ${options.fixture} WXR into disposable WordPress at ${url}.`);
-    console.log(`Verified homepage=${home.status}, REST API=${api.status}, page=${importedPages[0].post_name}.`);
+    console.log(`Verified homepage=${home.status}, REST API=${api.status}, pages=${verification.actualMigrationIds.length}, Gutenberg blocks=${verification.pages.reduce((count, page) => count + page.blocks.length, 0)}.`);
   } catch (error) {
     if (started.value) captureFailureState(error);
     throw error;
