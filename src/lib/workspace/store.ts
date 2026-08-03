@@ -370,6 +370,11 @@ export class WorkspaceStore {
     return { hash: row.hash, size: row.size, verified: row.verified === 1, relativePath: row.relative_path, createdAt: row.created_at };
   }
 
+  listBlobs(): BlobInfo[] {
+    const rows = this.database.prepare("SELECT hash, size, verified, relative_path, created_at FROM blobs ORDER BY hash ASC").all() as unknown as BlobRow[];
+    return rows.map((row) => ({ hash: row.hash, size: row.size, verified: row.verified === 1, relativePath: row.relative_path, createdAt: row.created_at }));
+  }
+
   blobPath(hash: string): string {
     return join(this.rootDir, blobRelativePath(hash));
   }
