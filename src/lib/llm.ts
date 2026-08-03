@@ -18,7 +18,93 @@ export interface LlmProviderConfig {
   apiHost: string;
   defaultModel: string;
   models: ProviderModel[];
+  adapter: ProviderAdapter;
 }
+
+export interface ProviderAdapterInput {
+  apiKey: string;
+  model: string;
+  user: string;
+}
+
+interface GeminiProviderRequest {
+  transport: "gemini";
+  apiKey: string;
+  model: string;
+  user: string;
+}
+
+interface HttpProviderRequest {
+  transport: "http";
+  providerName: string;
+  url: string;
+  init: Pick<RequestInit, "headers" | "body">;
+}
+
+type ProviderRequest = GeminiProviderRequest | HttpProviderRequest;
+
+export interface ProviderAdapter {
+  buildRequest(input: ProviderAdapterInput): ProviderRequest;
+  extractResponse(response: unknown): string;
+}
+
+const GEMINI_ADAPTER: ProviderAdapter = {
+  buildRequest: ({ apiKey, model, user }) => ({
+    transport: "gemini",
+    apiKey,
+    model,
+    user,
+  }),
+  extractResponse: (response) => {
+    if (!isRecord(response) || typeof response.text !== "string") return "";
+    return response.text;
+  },
+};
+
+const ANTHROPIC_ADAPTER: ProviderAdapter = {
+  buildRequest: ({ apiKey, model, user }) => ({
+    transport: "http",
+    providerName: "Claude",
+    url: "https://api.anthropic.com/v1/messages",
+    init: {
+      headers: {
+        "anthropic-dangerous-direct-browser-access": "true",
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+        "x-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 32_768,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: user }],
+      }),
+    },
+  }),
+  extractResponse: extractAnthropicText,
+};
+
+const OPENAI_ADAPTER: ProviderAdapter = {
+  buildRequest: ({ apiKey, model, user }) => ({
+    transport: "http",
+    providerName: "OpenAI",
+    url: "https://api.openai.com/v1/responses",
+    init: {
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        instructions: SYSTEM_PROMPT,
+        input: user,
+        max_output_tokens: 32_768,
+        store: false,
+      }),
+    },
+  }),
+  extractResponse: extractOpenAiText,
+};
 
 export const DEFAULT_PROVIDER: LlmProvider = "gemini";
 
@@ -32,6 +118,7 @@ export const LLM_PROVIDERS: LlmProviderConfig[] = [
     keyUrl: "https://aistudio.google.com/apikey",
     apiHost: "generativelanguage.googleapis.com",
     defaultModel: "gemini-3.6-flash",
+    adapter: GEMINI_ADAPTER,
     models: [
       {
         id: "gemini-3.6-flash",
@@ -54,6 +141,7 @@ export const LLM_PROVIDERS: LlmProviderConfig[] = [
     keyUrl: "https://platform.claude.com/settings/keys",
     apiHost: "api.anthropic.com",
     defaultModel: "claude-sonnet-5",
+    adapter: ANTHROPIC_ADAPTER,
     models: [
       {
         id: "claude-sonnet-5",
@@ -81,6 +169,7 @@ export const LLM_PROVIDERS: LlmProviderConfig[] = [
     keyUrl: "https://platform.openai.com/api-keys",
     apiHost: "api.openai.com",
     defaultModel: "gpt-5.6-terra",
+    adapter: OPENAI_ADAPTER,
     models: [
       {
         id: "gpt-5.6-terra",
@@ -151,113 +240,58 @@ export async function cleanHtml(opts: CleanHtmlOptions): Promise<string> {
     `Extracted HTML to clean:\n\n${opts.html}`;
   if (opts.violationNote) user += `\n\n${opts.violationNote}`;
 
-  let text: string;
-  switch (opts.provider) {
-    case "gemini":
-      text = await cleanWithGemini(apiKey, model, user);
-      break;
-    case "anthropic":
-      text = await cleanWithAnthropic(apiKey, model, user);
-      break;
-    case "openai":
-      text = await cleanWithOpenAI(apiKey, model, user);
-      break;
+  const adapter = getProviderConfig(opts.provider).adapter;
+  const request = adapter.buildRequest({ apiKey, model, user });
+  let response: unknown;
+  if (request.transport === "gemini") {
+    const ai = new GoogleGenAI({ apiKey: request.apiKey });
+    response = await ai.models.generateContent({
+      model: request.model,
+      contents: request.user,
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        temperature: 0,
+      },
+    });
+  } else {
+    response = await postJson(request.providerName, request.url, request.init);
   }
 
-  return text.replace(FENCE_OPEN_RE, "").replace(FENCE_CLOSE_RE, "").trim();
+  return adapter
+    .extractResponse(response)
+    .replace(FENCE_OPEN_RE, "")
+    .replace(FENCE_CLOSE_RE, "")
+    .trim();
 }
 
-async function cleanWithGemini(
-  apiKey: string,
-  model: string,
-  user: string,
-): Promise<string> {
-  const ai = new GoogleGenAI({ apiKey });
-  const response = await ai.models.generateContent({
-    model,
-    contents: user,
-    config: {
-      systemInstruction: SYSTEM_PROMPT,
-      temperature: 0,
-    },
-  });
-  return response.text ?? "";
-}
-
-interface AnthropicResponse {
-  content?: Array<{ type?: string; text?: string }>;
-}
-
-async function cleanWithAnthropic(
-  apiKey: string,
-  model: string,
-  user: string,
-): Promise<string> {
-  const response = await postJson<AnthropicResponse>(
-    "Claude",
-    "https://api.anthropic.com/v1/messages",
-    {
-      headers: {
-        "anthropic-dangerous-direct-browser-access": "true",
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 32_768,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: user }],
-      }),
-    },
-  );
-
-  return (response.content ?? [])
+function extractAnthropicText(response: unknown): string {
+  if (!isRecord(response) || !Array.isArray(response.content)) return "";
+  return response.content
+    .filter(isRecord)
     .filter((block) => block.type === "text" && typeof block.text === "string")
-    .map((block) => block.text)
+    .map((block) => block.text as string)
     .join("");
 }
 
-interface OpenAIResponse {
-  output_text?: string;
-  output?: Array<{
-    content?: Array<{ type?: string; text?: string }>;
-  }>;
-}
-
-async function cleanWithOpenAI(
-  apiKey: string,
-  model: string,
-  user: string,
-): Promise<string> {
-  const response = await postJson<OpenAIResponse>(
-    "OpenAI",
-    "https://api.openai.com/v1/responses",
-    {
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        instructions: SYSTEM_PROMPT,
-        input: user,
-        max_output_tokens: 32_768,
-        store: false,
-      }),
-    },
-  );
-
+function extractOpenAiText(response: unknown): string {
+  if (!isRecord(response)) return "";
   if (typeof response.output_text === "string") return response.output_text;
-  return (response.output ?? [])
-    .flatMap((item) => item.content ?? [])
+  if (!Array.isArray(response.output)) return "";
+  return response.output
+    .filter(isRecord)
+    .flatMap((item) => Array.isArray(item.content) ? item.content : [])
+    .filter(isRecord)
     .filter(
       (block) =>
         (block.type === "output_text" || block.type === "text") &&
         typeof block.text === "string",
     )
-    .map((block) => block.text)
+    .map((block) => block.text as string)
     .join("");
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object";
 }
 
 async function postJson<T>(

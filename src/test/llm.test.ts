@@ -31,6 +31,18 @@ describe("LLM providers", () => {
     );
   });
 
+  it("gives every provider the shared request/extraction adapter contract", () => {
+    for (const provider of LLM_PROVIDERS) {
+      expect(typeof provider.adapter.buildRequest).toBe("function");
+      expect(typeof provider.adapter.extractResponse).toBe("function");
+      expect(provider.adapter.buildRequest({
+        apiKey: "adapter-test-key",
+        model: provider.defaultModel,
+        user: "<p>fixture</p>",
+      })).toHaveProperty("transport");
+    }
+  });
+
   it("uses the OpenAI Responses API and extracts output text", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       mockResponse({
