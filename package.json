@@ -20,6 +20,7 @@
     "build": "tsc -b && vite build",
     "verify": "npm run build && npm test -- --reporter=dot",
     "check:bundle": "node scripts/check-bundle-size.mjs",
+    "lint": "eslint src",
     "preview": "vite preview",
     "test": "vitest run",
     "crawl": "node scripts/crawl.mjs"
@@ -35,8 +36,11 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.5.0",
+    "eslint": "^10.8.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "^26.1.0",
     "typescript": "~5.8.3",
+    "typescript-eslint": "^8.66.0",
     "vite": "^6.3.5",
     "vitest": "^3.2.0"
   }
