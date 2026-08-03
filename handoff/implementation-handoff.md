@@ -6,11 +6,11 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 
 ## Current baseline
 
-- Local HEAD: latest commit titled `Add deterministic migration risk scoring` (use `git log -1 --oneline` for the exact hash).
-- Latest implementation wave: F4 migration risk scoring and QA queue filters.
-- Branch: `main`, locally ahead of `origin/main` by 20 commits and behind by 21 commits before this handoff refresh.
+- Local HEAD: latest commit titled `Add deterministic migration reconciliation evidence` (use `git log -1 --oneline` for the exact hash).
+- Latest implementation wave: A3/A4 page, text, placeholder, and attachment reconciliation evidence.
+- Branch: `main`, locally ahead of `origin/main` by 22 commits and behind by 21 commits before this handoff refresh.
 - The handoff source files are committed with this implementation wave. A clean worktree after commit is expected.
-- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all twenty-one local commits after this handoff refresh before synchronizing.
+- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all twenty-three local commits after this handoff refresh before synchronizing.
 - No implementation PR has been pushed and no branch-protection change has been made.
 
 ## Implemented in c810d94
@@ -50,10 +50,11 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 - E5 workspace package under `src/lib/workspace/package.ts`: manifest/blob/log export, hash/path verification, offline import, and wrapper-schema upgrade.
 - CI/repository hygiene: shared `npm run verify`, bundle budget/audit gates, Dependabot, CONTRIBUTING.md, SECURITY.md, MIT license metadata, and generated-artifact ignore/removal.
 - F4 risk scoring under `src/lib/qa/risk.ts`: deterministic severity/confidence/evidence scores and QA queue filters.
+- A3/A4 reconciliation under `src/lib/qa/reconciliation.ts`: page identity/text/placeholder evidence and attachment source/count evidence; live imported data is still required for closure.
 
 ## Current verification evidence
 
-- `npm test -- --reporter=dot` — 33 test files, 150 tests passed.
+- `npm test -- --reporter=dot` — 34 test files, 152 tests passed.
 - `npm run verify` — production build plus full test suite passed with fixture-server subprocess permissions.
 - `npm run check:bundle` — largest JavaScript asset 577,547 bytes under the 650,000-byte budget.
 - `npm audit --audit-level=high` — 0 vulnerabilities.
@@ -116,7 +117,7 @@ The original backlog setup report and complete A1–H5 mapping are in [`github-b
 
 Work in three disjoint scopes:
 
-1. Run live WordPress validation for C6/#92, E3/#89, A1/#11, B3/#10, and A2/#71; resolve D1/#78 only with authoritative target data.
+1. Run live WordPress validation for A3/#104, A4/#70, C6/#92, E3/#89, A1/#11, B3/#10, and A2/#71; resolve D1/#78 only with authoritative target data.
 2. Complete remaining CI gates #55/#56 through a real PR and protected-main verification.
 3. Continue remaining adapter/compiler QA and release-readiness issues in manifest dependency order.
 4. Preserve this handoff and inspect the 21-commit remote divergence before any synchronization.
@@ -137,5 +138,5 @@ Do not start C2, E2, or downstream consumers until their contract artifacts are 
 - Preserve existing user changes and all local implementation commits.
 - Keep each agent’s write set disjoint and return changed files, tests, risks, and open questions.
 - Do not close an issue based only on intent or local unit tests when its acceptance requires external WordPress, PR, authoritative target, or pilot evidence.
-- The local branch remains behind `origin/main` by 21 commits and ahead by twenty-one local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
-- GitHub comments were posted for the 19 implemented PRD issues, the CI/repository-hygiene issues #43–#46/#57–#60, and the D1/#78, E3/#89, C6/#92, and CI/#55 evidence gaps. #78, #89, #92, #55, and #56 remain open; #12 was already closed before this work.
+- The local branch remains behind `origin/main` by 21 commits and ahead by twenty-three local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
+- GitHub comments were posted for the 19 implemented PRD issues, A3/#104, A4/#70, the CI/repository-hygiene issues #43–#46/#57–#60, and the D1/#78, E3/#89, C6/#92, and CI/#55 evidence gaps. #70, #78, #89, #92, #104, #55, and #56 remain open; #12 was already closed before this work.
