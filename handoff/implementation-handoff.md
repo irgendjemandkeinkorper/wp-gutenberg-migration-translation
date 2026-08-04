@@ -6,11 +6,11 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 
 ## Current baseline
 
-- Local HEAD: latest commit titled `Document WXR migration metadata schema` (use `git log -1 --oneline` for the exact hash).
-- Latest implementation wave: G4 reliability corpus plus WXR migration-metadata schema documentation.
-- Branch: `main`, locally ahead of `origin/main` by 27 commits and behind by 21 commits before this handoff refresh.
+- Local HEAD: latest commit titled `Split WordPress integration CI gate` (use `git log -1 --oneline` for the exact hash).
+- Latest implementation wave: checkpoint process recovery, repository quality gates, and split WordPress integration CI.
+- Branch: `main`, locally ahead of `origin/main` by 36 commits and behind by 21 commits before this handoff refresh.
 - The handoff source files are committed with this implementation wave. A clean worktree after commit is expected.
-- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all twenty-eight local commits after this handoff refresh before synchronizing.
+- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all thirty-seven local commits after this handoff refresh before synchronizing.
 - No implementation PR has been pushed and no branch-protection change has been made.
 
 ## Implemented in c810d94
@@ -54,12 +54,17 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 - G5 gallery/slideshow preservation in `src/lib/ir/emitter.ts`: collection detection and ordered first-class gallery asset children.
 - G4 reliability corpus under `integration/reliability/` and `src/test/reliability-fixtures.test.ts`: hosted-builder, static-layout, malformed-nesting, encoding, and repeated-chrome fixtures with explicit asset/exception assertions.
 - WXR metadata contract under `docs/wxr-format.md`: canonical `_blockify_*` postmeta and placeholder-manifest schema cross-linked from reconciliation documentation.
+- E3 process-level recovery under `integration/workspace/`: a forced SIGKILL during a 100-page run, fresh-process recovery, integrity verification, and unique delivery assertions wired into `npm run verify`.
+- Repository quality gates: ESLint flat config and CI lint step, Prettier config/format check, provider-adapter refactor, `useProviderSettings` hook, result-panel error boundary, and their focused tests.
+- Vendor disposition under `docs/vendor-disposition.md`: unreferenced `gn-wp-templates/` tree removed from the working tree; its historical bytes remain in Git history pending any authorized history rewrite.
+- CI/harness orientation: `Validate` and `WordPress integration` are separate named jobs with timeout and failure-artifact upload; `CONTRIBUTING.md` documents agent workflow and harness reproduction.
 
 ## Current verification evidence
 
-- `npm test -- --reporter=dot` — 35 test files, 159 tests passed.
-- `npm run verify` — production build plus full test suite passed with fixture-server subprocess permissions.
-- `npm run check:bundle` — largest JavaScript asset 577,547 bytes under the 650,000-byte budget.
+- `npm test -- --reporter=dot` — 37 test files, 162 tests passed.
+- `npm run verify` — production build, full test suite, and forced-process checkpoint integration passed with fixture-server/subprocess permissions.
+- `npm run lint` and `npm run format:check` — passed.
+- `npm run check:bundle` — largest JavaScript asset remains below the 650,000-byte budget.
 - `npm audit --audit-level=high` — 0 vulnerabilities.
 - `npm run build` — TypeScript and Vite production build passed.
 - `git diff --check` — passed.
@@ -80,7 +85,7 @@ The live WordPress harness has not run because Docker Desktop/WSL integration is
 
 ## GitHub issue state
 
-Manifest coverage is 44 IDs total. Twenty-one are closed by this implementation, B4/#12 was already closed, and 22 manifest issues remain open. Additional repository-hygiene issues #43–#46, #57–#60, and #62 are now closed outside the 44-item PRD mapping.
+Manifest coverage is 44 IDs total. Twenty-two are closed by this implementation, B4/#12 was already closed, and 21 manifest issues remain open. Additional repository and code-quality issues #43–#46, #49–#54, #57–#60, and #62 are now closed outside the 44-item PRD mapping.
 
 Closed with implementation evidence:
 
@@ -107,13 +112,13 @@ Closed with implementation evidence:
 - [#93](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/93) — migration risk scoring and QA queue.
 - [#83](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/83) — gallery/slideshow semantic collections.
 - [#84](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/84) — hosted-builder and malformed legacy-static reliability fixtures.
+- [#89](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/89) — incremental checkpoints, pause/resume, and forced-process recovery.
 
 Implemented but intentionally still open:
 
 - [#11](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/11) — harness needs a live Docker/WordPress run.
 - [#55](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/55) — needs an actual PR check run and branch protection requiring `CI / Validate`.
 - [#78](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/78) — blocked at the human-decision gate pending authoritative target capability data.
-- [#89](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/89) — implementation exists; actual forced-kill process integration remains to be run.
 - [#92](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/92) — local round-trip verifier exists; live WordPress parser validation remains to be run.
 
 The original backlog setup report and complete A1–H5 mapping are in [`github-backlog-setup-report.md`](./github-backlog-setup-report.md). The source requirements remain [`blockify-human-grade-migration-prd.md`](./blockify-human-grade-migration-prd.md) and [`blockify-github-issue-manifest.json`](./blockify-github-issue-manifest.json).
@@ -122,8 +127,8 @@ The original backlog setup report and complete A1–H5 mapping are in [`github-b
 
 Work in three disjoint scopes:
 
-1. Run live WordPress validation for A3/#104, A4/#70, C6/#92, E3/#89, A1/#11, B3/#10, and A2/#71; resolve D1/#78 only with authoritative target data.
-2. Complete remaining CI gates #55/#56 through a real PR and protected-main verification.
+1. Run live WordPress validation for A3/#104, A4/#70, C6/#92, A1/#11, B3/#10, and A2/#71; resolve D1/#78 only with authoritative target data.
+2. Run the new WordPress integration job on a real PR, then complete #55/#56 through protected-main verification.
 3. Continue remaining adapter/compiler QA and release-readiness issues in manifest dependency order.
 4. Preserve this handoff and inspect the 21-commit remote divergence before any synchronization.
 
@@ -143,5 +148,5 @@ Do not start C2, E2, or downstream consumers until their contract artifacts are 
 - Preserve existing user changes and all local implementation commits.
 - Keep each agent’s write set disjoint and return changed files, tests, risks, and open questions.
 - Do not close an issue based only on intent or local unit tests when its acceptance requires external WordPress, PR, authoritative target, or pilot evidence.
-- The local branch remains behind `origin/main` by 21 commits and ahead by twenty-eight local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
-- GitHub comments were posted for the 21 implemented PRD issues, G4/#84, WXR schema/#62, A3/#104, A4/#70, the CI/repository-hygiene issues #43–#46/#57–#60, and the D1/#78, E3/#89, C6/#92, and CI/#55 evidence gaps. #70, #78, #89, #92, #104, #55, and #56 remain open; #12 was already closed before this work.
+- The local branch remains behind `origin/main` by 21 commits and ahead by thirty-seven local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
+- GitHub comments were posted for the 22 implemented PRD issues, G4/#84, E3/#89, WXR schema/#62, CI/#7/#55, A3/#104, A4/#70, and the repository/code-quality issues #43–#54/#57–#60. #70, #78, #92, #104, #55, and #56 remain open; #12 was already closed before this work. #42 remains open only for the unperformed history-size rewrite.
