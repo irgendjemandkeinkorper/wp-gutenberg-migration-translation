@@ -2,9 +2,11 @@
 
 A fully client-side web app that converts content from any non-WordPress web
 page into WordPress **Gutenberg block markup**, and bundles converted pages
-into a **WXR** file for Tools → Import → WordPress. Nothing leaves your
-browser except the optional page fetch (via a public CORS proxy) and the
-Gemini API call.
+into a **WXR** file for Tools → Import → WordPress. Despite the repository
+name, translation between languages is not implemented; the current product
+scope is HTML → Gutenberg → WXR migration. Nothing leaves your
+browser except the optional page fetch (via a public CORS proxy) and requests
+sent directly to the selected AI provider.
 
 Live app: https://irgendjemandkeinkorper.github.io/wp-gutenberg-migration-translation/
 
@@ -18,9 +20,10 @@ The pipeline keeps the LLM on judgment and off mechanics (the design proven in
 2. **Tokenize assets** — images, embeds, media, and forms become block-level
    `⟦ASSET_n⟧` tokens. Their source attributes and excerpts are recorded
    outside the LLM's reach, so it cannot hallucinate or silently discard them.
-3. **Clean (Gemini)** — messy HTML is normalized to a 22-tag whitelist
-   fragment (`h2 h3 h4 p ul ol li blockquote pre code table thead tbody tr th
-   td strong em a br hr sup sub`, `href` only). Boilerplate is dropped.
+3. **Clean (AI)** — choose Google Gemini, Anthropic Claude, or OpenAI. The
+   selected model normalizes messy HTML to a 22-tag whitelist fragment (`h2 h3
+   h4 p ul ol li blockquote pre code table thead tbody tr th td strong em a br
+   hr sup sub`, `href` only). Boilerplate is dropped.
 4. **Validate** — the contract is enforced *in code*: wrapper elements
    unwrapped, off-whitelist tags removed, attributes stripped, token
    drift detected and retried (max 2), then repaired with an explicit
@@ -42,7 +45,11 @@ The pipeline keeps the LLM on judgment and off mechanics (the design proven in
 
 ## Usage
 
-1. Open the app, configure your connection mode in Settings: choose Private Pilot Mode and enter your [Gemini API key](https://aistudio.google.com/apikey) (held strictly in browser memory), or choose Production Proxy Mode to route requests securely.
+1. Open AI settings, choose Private Pilot Mode for direct browser access or
+   Production Proxy Mode for a server-side relay, then select Gemini, Claude,
+   or OpenAI. Direct-mode keys are retained only in `sessionStorage` for the
+   current browser tab; model and provider preferences are stored separately
+   in `localStorage`.
 2. Paste a page's HTML (View Page Source), or try Fetch URL.
 3. Select the target template for QA metadata from the current
    [GolfNow template library](https://golfnowbusiness.com/template-library/). Note that template selection does not affect the conversion output or block generation; it is purely recorded in WXR metadata for QA tracking and verification purposes.
@@ -76,9 +83,17 @@ instead of duplicating them.
   headings preserved. Zero API calls, no key needed. Best for already-clean
   pages (e.g. classic WordPress content) combined with a content CSS
   selector; nothing judges boilerplate in this mode.
-- **Conversion cache**: successful LLM cleanups are cached in localStorage,
-  keyed on model + prompt + extracted content, so re-converting an unchanged
-  page never repeats the Gemini call (last 40 pages kept).
+- **Conversion cache**: successful AI cleanups are cached in localStorage,
+  keyed on provider + model + prompt + extracted content, so re-converting an
+  unchanged page never repeats the provider call (last 40 pages kept).
+
+### API-key safety
+
+This static build supports direct browser calls for private/internal migration
+work. Do not use long-lived organization keys in a public deployment: browser
+users and injected scripts can inspect client-side credentials. Put provider
+requests behind a server-side proxy for production use. OpenAI access requires
+an OpenAI Platform API key; a ChatGPT subscription is separate from API access.
 
 ## Deployment Architecture & Security Boundaries
 

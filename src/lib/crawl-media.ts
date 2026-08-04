@@ -157,18 +157,19 @@ function getPngDimensions(buffer: Buffer): { width: number; height: number } | n
 function getJpegDimensions(buffer: Buffer): { width: number; height: number } | null {
   let i = 2; // skip SOI (0xFFD8)
   while (i < buffer.length) {
-    if (buffer[i] !== 0xFF) {
+    if (buffer[i] !== 0xff) {
       break; // invalid JPEG
     }
     const marker = buffer[i + 1];
-    if (marker === 0xD9 || marker === 0xDA) {
+    if (marker === 0xd9 || marker === 0xda) {
       break; // End of image or Start of Scan
     }
     // SOF markers: 0xC0-0xC3, 0xC5-0xC7, 0xC9-0xCB, 0xCD-0xCF
-    const isSOF = (marker >= 0xC0 && marker <= 0xC3) ||
-                  (marker >= 0xC5 && marker <= 0xC7) ||
-                  (marker >= 0xC9 && marker <= 0xCB) ||
-                  (marker >= 0xCD && marker <= 0xCF);
+    const isSOF =
+      (marker >= 0xc0 && marker <= 0xc3) ||
+      (marker >= 0xc5 && marker <= 0xc7) ||
+      (marker >= 0xc9 && marker <= 0xcb) ||
+      (marker >= 0xcd && marker <= 0xcf);
     if (i + 3 >= buffer.length) break;
     const length = buffer.readUInt16BE(i + 2);
     if (isSOF) {
@@ -199,22 +200,22 @@ function getWebpDimensions(buffer: Buffer): { width: number; height: number } | 
   if (type === "VP8 ") {
     const signatureOffset = 23;
     if (
-      buffer[signatureOffset] === 0x9D &&
+      buffer[signatureOffset] === 0x9d &&
       buffer[signatureOffset + 1] === 0x01 &&
-      buffer[signatureOffset + 2] === 0x2A
+      buffer[signatureOffset + 2] === 0x2a
     ) {
-      const width = buffer.readUInt16LE(26) & 0x3FFF;
-      const height = buffer.readUInt16LE(28) & 0x3FFF;
+      const width = buffer.readUInt16LE(26) & 0x3fff;
+      const height = buffer.readUInt16LE(28) & 0x3fff;
       return { width, height };
     }
   } else if (type === "VP8L") {
-    if (buffer[20] === 0x2F) {
+    if (buffer[20] === 0x2f) {
       const b0 = buffer[21];
       const b1 = buffer[22];
       const b2 = buffer[23];
       const b3 = buffer[24];
-      const width = 1 + (((b1 & 0x3F) << 8) | b0);
-      const height = 1 + (((b3 & 0x0F) << 10) | (b2 << 2) | ((b1 & 0xC0) >> 6));
+      const width = 1 + (((b1 & 0x3f) << 8) | b0);
+      const height = 1 + (((b3 & 0x0f) << 10) | (b2 << 2) | ((b1 & 0xc0) >> 6));
       return { width, height };
     }
   } else if (type === "VP8X") {
@@ -228,10 +229,10 @@ function getWebpDimensions(buffer: Buffer): { width: number; height: number } | 
 export function getImageDimensions(buffer: Buffer): { width: number; height: number } | null {
   try {
     if (buffer.length < 4) return null;
-    if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
+    if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
       return getPngDimensions(buffer);
     }
-    if (buffer[0] === 0xFF && buffer[1] === 0xD8) {
+    if (buffer[0] === 0xff && buffer[1] === 0xd8) {
       return getJpegDimensions(buffer);
     }
     if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46) {
@@ -249,7 +250,7 @@ export function getImageDimensions(buffer: Buffer): { width: number; height: num
 export async function runWithConcurrency<T, R>(
   concurrency: number,
   items: T[],
-  fn: (item: T) => Promise<R>
+  fn: (item: T) => Promise<R>,
 ): Promise<R[]> {
   const results: R[] = [];
   const promises: Promise<void>[] = [];
@@ -280,7 +281,7 @@ async function fetchWithManualRedirects(
   initialUrl: string,
   timeout: number,
   sizeLimit: number,
-  retries: number
+  retries: number,
 ): Promise<{
   buffer: Buffer;
   mimeType: string;
@@ -308,7 +309,7 @@ async function fetchWithManualRedirects(
           const res = await fetch(currentUrl, {
             redirect: "manual",
             signal: controller.signal,
-            headers: { "User-Agent": "BlockifyMediaCrawler/1.0" }
+            headers: { "User-Agent": "BlockifyMediaCrawler/1.0" },
           });
           clearTimeout(timeoutId);
 
@@ -370,7 +371,7 @@ async function fetchWithManualRedirects(
               chunks.push(value);
             }
           }
-          buffer = Buffer.concat(chunks.map(c => Buffer.from(c)));
+          buffer = Buffer.concat(chunks.map((c) => Buffer.from(c)));
         } finally {
           reader.releaseLock();
         }
@@ -395,15 +396,15 @@ async function fetchWithManualRedirects(
           statusCode: response.status,
           statusText: response.statusText,
           headers: headersMap,
-          redirects
-        }
+          redirects,
+        },
       };
     } catch (err: any) {
       attempt++;
       if (attempt > retries) {
         throw err;
       }
-      await new Promise(resolve => setTimeout(resolve, 150 * attempt));
+      await new Promise((resolve) => setTimeout(resolve, 150 * attempt));
     }
   }
 }
@@ -432,7 +433,7 @@ function getExtension(mimeType: string | null, originalUrl: string): string {
 export async function crawlMedia(
   urls: string[],
   outputDir: string,
-  opts: CrawlOptions = {}
+  opts: CrawlOptions = {},
 ): Promise<{
   downloaded: number;
   deduplicated: number;
@@ -527,7 +528,7 @@ export async function crawlMedia(
         dimensions: dims,
         checksum: sha256,
         httpEvidence: download.httpEvidence,
-        failureStatus: null
+        failureStatus: null,
       };
 
       resultsMap.set(url, entry);
@@ -544,23 +545,25 @@ export async function crawlMedia(
         failureStatus = err.message;
       }
 
-      const evidence = err.headers ? {
-        statusCode: err.statusCode,
-        statusText: err.statusText,
-        headers: err.headers,
-        redirects: err.redirects || []
-      } : null;
+      const evidence = err.headers
+        ? {
+            statusCode: err.statusCode,
+            statusText: err.statusText,
+            headers: err.headers,
+            redirects: err.redirects || [],
+          }
+        : null;
 
       const entry: MediaManifestEntry = {
         originalUrl: url,
-        finalUrl: (err.redirects && err.redirects.length > 0) ? err.redirects[err.redirects.length - 1] : null,
+        finalUrl: err.redirects && err.redirects.length > 0 ? err.redirects[err.redirects.length - 1] : null,
         localPath: null,
         mimeType: null,
         byteLength: null,
         dimensions: null,
         checksum: null,
         httpEvidence: evidence,
-        failureStatus
+        failureStatus,
       };
 
       resultsMap.set(url, entry);
@@ -583,7 +586,7 @@ export async function crawlMedia(
 
   const manifest: MediaManifest = {
     version: "1.0.0",
-    media: finalMedia
+    media: finalMedia,
   };
 
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf-8");
@@ -593,6 +596,6 @@ export async function crawlMedia(
     deduplicated: deduplicatedCount,
     skipped: skippedCount,
     failed: failedCount,
-    manifest
+    manifest,
   };
 }

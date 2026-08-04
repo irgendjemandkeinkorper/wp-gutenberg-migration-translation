@@ -19,12 +19,11 @@ describe("serializeBlocks", () => {
   });
 
   it("converts lists with nesting correctly", () => {
-    const input =
-      "<ol><li>A</li><li>B<ul><li>B1</li></ul></li></ol>";
+    const input = "<ol><li>A</li><li>B<ul><li>B1</li></ul></li></ol>";
     const out = serializeBlocks(input, new Map());
     expect(out).toContain('<!-- wp:list {"ordered":true} -->');
     expect(out).toContain("<!-- wp:list-item -->");
-    expect(out).toContain('<!-- wp:list -->'); // nested ul has no ordered:true
+    expect(out).toContain("<!-- wp:list -->"); // nested ul has no ordered:true
   });
 
   it("converts blockquotes into core quotes containing wrapped paragraphs", () => {
@@ -105,6 +104,6 @@ describe("serializeBlocks", () => {
     expect(out).toContain('class="blockify-unsupported-placeholder"');
     expect(out).toContain('data-asset-index="0"');
     expect(out).toContain('data-asset-type="iframe"');
-    expect(out).toContain('iframe');
+    expect(out).toContain("iframe");
   });
 });

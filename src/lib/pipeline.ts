@@ -1,44 +1,44 @@
 import { serializeBlocks } from "./blocks";
 import { cleanCacheKey, readCleanCache, writeCleanCache } from "./cache";
 import { extractContent } from "./extract";
-import { cleanHtml, SYSTEM_PROMPT, validateProviderModel } from "./llm";
+import { cleanHtml, DEFAULT_PROVIDER, SYSTEM_PROMPT } from "./llm";
 import { TOKEN_PREFIX } from "./tokens";
 import { tokenizeImages } from "./tokenize";
-import {
-  describeViolation,
-  repairTokens,
-  validateFragment,
-} from "./validate";
+import { describeViolation, repairTokens, validateFragment } from "./validate";
 import type { PageResult, StepUpdate } from "./types";
+import type { LlmProvider } from "./llm";
+import type { ArchivedPageSnapshot } from "./acquisition/contract";
+import { archivedSnapshotSource } from "./acquisition/contract";
 
 const MAX_RETRIES = 2;
 
 export interface ConvertInput {
-  rawHtml: string;
+  rawHtml?: string;
   url?: string;
+  /** A previously archived page. Supplying this never performs source I/O. */
+  archivedSnapshot?: ArchivedPageSnapshot;
   selector?: string;
   apiKey: string;
   model: string;
-  provider?: string;
-  /** Deterministic mode: enforce the whitelist in code only, no Gemini call. */
-  skipLlm?: boolean;
+  provider?: LlmProvider;
+  /** Optional provider-compatible relay base URL for production deployments. */
   proxyUrl?: string;
+  /** Ephemeral relay credential. Callers must not persist this value. */
   proxyToken?: string;
+  /** Deterministic mode: enforce the whitelist in code only, no AI call. */
+  skipLlm?: boolean;
 }
 
-export async function convertPage(
-  input: ConvertInput,
-  onStep: (u: StepUpdate) => void,
-): Promise<PageResult> {
-  if (!input.skipLlm) {
-    validateProviderModel(input.provider ?? "google", input.model);
-  }
-
+export async function convertPage(input: ConvertInput, onStep: (u: StepUpdate) => void): Promise<PageResult> {
   const warnings: string[] = [];
+  const archiveSource = input.archivedSnapshot ? archivedSnapshotSource(input.archivedSnapshot) : undefined;
+  const rawHtml = archiveSource?.decodedHtml ?? input.rawHtml ?? "";
+  const sourceUrl = archiveSource?.finalUrl ?? input.url;
+  if (!rawHtml.trim()) throw new Error("No source HTML was provided.");
 
   onStep({ step: "Extract", status: "active" });
-  const extracted = extractContent(input.rawHtml, {
-    url: input.url,
+  const extracted = extractContent(rawHtml, {
+    url: sourceUrl,
     selector: input.selector,
   });
   if (!extracted.html.trim()) throw new Error("No content could be extracted.");
@@ -49,16 +49,14 @@ export async function convertPage(
   });
 
   onStep({ step: "Images", status: "active" });
-  const tokenized = tokenizeImages(extracted.html, input.url);
+  const tokenized = tokenizeImages(extracted.html, sourceUrl);
   const placeholders = tokenized.images
     .filter((asset) => asset.type !== "image")
     .map((asset) => ({
       index: asset.index,
       kind: asset.type,
       source: asset.src,
-      label:
-        `MIGRATION PLACEHOLDER ${asset.index + 1}: ${asset.type}` +
-        (asset.src ? ` — ${asset.src}` : ""),
+      label: `MIGRATION PLACEHOLDER ${asset.index + 1}: ${asset.type}` + (asset.src ? ` — ${asset.src}` : ""),
     }));
   onStep({
     step: "Images",
@@ -75,10 +73,7 @@ export async function convertPage(
   if (input.skipLlm) {
     onStep({ step: "Clean (LLM)", status: "done", note: "skipped — no API call" });
     onStep({ step: "Validate", status: "active" });
-    ({ html: validatedHtml, lostPositions } = enforceTokens(
-      tokenized.html,
-      expected,
-    ));
+    ({ html: validatedHtml, lostPositions } = enforceTokens(tokenized.html, expected));
     onStep({
       step: "Validate",
       status: lostPositions.length ? "warn" : "done",
@@ -86,7 +81,7 @@ export async function convertPage(
     });
   } else {
     // The prompt is part of the key so editing it invalidates old entries.
-    const cacheKey = cleanCacheKey(input.model, SYSTEM_PROMPT, tokenized.html);
+    const cacheKey = cleanCacheKey(input.provider ?? DEFAULT_PROVIDER, input.model, SYSTEM_PROMPT, tokenized.html);
     const cached = readCleanCache(cacheKey);
     if (cached) {
       onStep({ step: "Clean (LLM)", status: "done", note: "cached — no API call" });
@@ -125,18 +120,17 @@ export async function convertPage(
   if (!blocks.trim()) throw new Error("Empty output after block conversion.");
   if (blocks.includes(TOKEN_PREFIX)) {
     throw new Error(
-      "Internal error: an asset token leaked into the final markup. " +
-        "Please report this page's HTML as a bug.",
+      "Internal error: an asset token leaked into the final markup. " + "Please report this page's HTML as a bug.",
     );
   }
   onStep({ step: "Blocks", status: "done" });
 
   return {
     title: extracted.title,
-    sourceUrl: input.url ?? "",
+    sourceUrl: sourceUrl ?? "",
     blocks,
     intermediateHtml: validatedHtml,
-    sourceHtml: input.rawHtml,
+    sourceHtml: rawHtml,
     placeholders,
     images: tokenized.images,
     lostPositions,
@@ -158,12 +152,12 @@ async function cleanWithRetries(
   onStep({ step: "Clean (LLM)", status: "active" });
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     const cleaned = await cleanHtml({
+      provider: input.provider ?? DEFAULT_PROVIDER,
       apiKey: input.apiKey,
       model: input.model,
       title,
       html: tokenizedHtml,
       violationNote,
-      provider: input.provider,
       proxyUrl: input.proxyUrl,
       proxyToken: input.proxyToken,
     });
@@ -197,10 +191,7 @@ async function cleanWithRetries(
 }
 
 /** Validate + (if tokens drifted) repair, without any model involvement. */
-function enforceTokens(
-  html: string,
-  expected: number[],
-): { html: string; lostPositions: number[] } {
+function enforceTokens(html: string, expected: number[]): { html: string; lostPositions: number[] } {
   const { html: validated, report } = validateFragment(html, expected);
   if (!report.missing.length && !report.extra.length) {
     return { html: validated, lostPositions: [] };

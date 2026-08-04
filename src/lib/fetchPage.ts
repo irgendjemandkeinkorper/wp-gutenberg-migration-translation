@@ -11,19 +11,12 @@ export interface FetchPageOptions {
   proxies?: ((url: string) => string)[];
 }
 
-export async function fetchPage(
-  url: string,
-  options: FetchPageOptions = {},
-): Promise<string> {
+export async function fetchPage(url: string, options: FetchPageOptions = {}): Promise<string> {
   const timeoutMs = options.timeoutMs ?? 10000; // 10s default timeout
   const maxBytes = options.maxBytes ?? 10 * 1024 * 1024; // 10MB default size limit
 
   // Support local development and testing by ignoring proxies if accessing localhost/127.0.0.1
-  const proxies =
-    options.proxies ??
-    (url.includes("127.0.0.1") || url.includes("localhost")
-      ? [(u) => u]
-      : PROXIES);
+  const proxies = options.proxies ?? (url.includes("127.0.0.1") || url.includes("localhost") ? [(u) => u] : PROXIES);
 
   let lastError = "";
   for (const proxy of proxies) {
@@ -50,13 +43,8 @@ export async function fetchPage(
 
       // Validate Content-Type
       const contentType = resp.headers.get("content-type") || "";
-      if (
-        !contentType.includes("text/html") &&
-        !contentType.includes("application/xhtml+xml")
-      ) {
-        throw new Error(
-          `Rejected non-HTML response (content-type: "${contentType}")`,
-        );
+      if (!contentType.includes("text/html") && !contentType.includes("application/xhtml+xml")) {
+        throw new Error(`Rejected non-HTML response (content-type: "${contentType}")`);
       }
 
       // Check Content-Length header if present
@@ -83,9 +71,7 @@ export async function fetchPage(
             if (value) {
               bytesReceived += value.length;
               if (bytesReceived > maxBytes) {
-                throw new Error(
-                  `Response size limit of ${maxBytes} bytes exceeded.`,
-                );
+                throw new Error(`Response size limit of ${maxBytes} bytes exceeded.`);
               }
               chunks.push(value);
             }
@@ -103,9 +89,7 @@ export async function fetchPage(
       } else {
         text = await resp.text();
         if (text.length > maxBytes) {
-          throw new Error(
-            `Response size limit of ${maxBytes} bytes exceeded.`,
-          );
+          throw new Error(`Response size limit of ${maxBytes} bytes exceeded.`);
         }
       }
 

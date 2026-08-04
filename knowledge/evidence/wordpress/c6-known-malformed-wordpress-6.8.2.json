@@ -1,0 +1,121 @@
+{
+  "schemaVersion": "1.0.0",
+  "pass": false,
+  "run": {
+    "runId": "codex-live-92-malformed-20260804a",
+    "project": "blockify-wp-codex-live-92-malformed-20260804a",
+    "fixture": "known-malformed",
+    "fixtureSha256": "02206dad20c81f8e3b7864ed5d3d5784f90c818c840e584a40b0a686eea1e29e",
+    "importerVersion": "0.8.3",
+    "startedAt": "2026-08-04T01:43:38.404Z",
+    "completedAt": null
+  },
+  "source": {
+    "pageCount": 1,
+    "migrationIds": [
+      "a2-malformed-page-9002"
+    ],
+    "htmlAudit": {
+      "recordCount": 1,
+      "records": [
+        {
+          "migrationId": "a2-malformed-page-9002",
+          "sourcePostId": "9002",
+          "title": "Blockify Malformed Gutenberg Page",
+          "slug": "blockify-harness-fixture-page",
+          "type": "page",
+          "status": "publish",
+          "path": "source-html/source-0001.html",
+          "bytes": 238,
+          "sha256": "c4ad0be5953cf1dd6c9352eda4c138cd757ee5db7bc728f37fe680cde0789b59"
+        }
+      ],
+      "aggregateSha256": "3465bfe9caeea83190a311eff4821ea28c3fec19f957c34fb7d3940cb6874de7"
+    }
+  },
+  "destination": {
+    "homepageStatus": 200,
+    "restApiStatus": 200,
+    "pageCount": 1,
+    "migrationIds": [
+      "a2-malformed-page-9002"
+    ],
+    "pages": [
+      {
+        "migrationId": "a2-malformed-page-9002",
+        "postId": 9002,
+        "slug": "blockify-harness-fixture-page",
+        "title": "Blockify Malformed Gutenberg Page",
+        "status": "publish",
+        "blockNames": [
+          "core/group",
+          "core/paragraph",
+          null
+        ],
+        "blocks": [
+          {
+            "name": "core/group",
+            "path": "root.1"
+          },
+          {
+            "name": "core/paragraph",
+            "path": "root.1.1"
+          },
+          {
+            "name": null,
+            "path": "root.2"
+          }
+        ],
+        "parserFailures": [
+          {
+            "kind": "mismatched-closing-block",
+            "name": "core/group",
+            "path": "root.2",
+            "message": "Closing block does not match the most recent opening block."
+          }
+        ],
+        "unexpectedFreeformHtml": [
+          {
+            "path": "root.2",
+            "length": 65,
+            "sha256": "4b2cfee0882dd13f00d6863480241f56c43cded20c4f05f310721339b0a746b2",
+            "tags": [
+              "div"
+            ]
+          }
+        ],
+        "invalidBlocks": [],
+        "recoveredBlocks": []
+      }
+    ]
+  },
+  "counts": {
+    "expectedPages": 1,
+    "importedPages": 1,
+    "missingPages": 0,
+    "unexpectedPages": 0,
+    "findings": 3,
+    "findingsByKind": {
+      "parser-failure": 1,
+      "unexpected-freeform-html": 1,
+      "harness-failure": 1
+    }
+  },
+  "findings": [
+    {
+      "kind": "parser-failure",
+      "migrationId": "a2-malformed-page-9002",
+      "message": "Closing block does not match the most recent opening block."
+    },
+    {
+      "kind": "unexpected-freeform-html",
+      "migrationId": "a2-malformed-page-9002",
+      "message": "Diagnostic recorded."
+    },
+    {
+      "kind": "harness-failure",
+      "migrationId": null,
+      "message": "Gutenberg verification failed with 2 diagnostic(s). parser-failure [a2-malformed-page-9002]: Closing block does not match the most recent opening block.; unexpected-freeform-html [a2-malformed-page-9002]: diagnostic recorded"
+    }
+  ]
+}

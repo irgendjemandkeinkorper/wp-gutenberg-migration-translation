@@ -23,6 +23,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
 
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     container = document.createElement("div");
     document.body.appendChild(container);
     vi.stubGlobal("confirm", () => true);
@@ -47,9 +48,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
 
   // Helper to change values on React 19 controlled inputs
   function setInputValue(input: HTMLInputElement | HTMLTextAreaElement, value: string) {
-    const prototype = input instanceof HTMLTextAreaElement
-      ? HTMLTextAreaElement.prototype
-      : HTMLInputElement.prototype;
+    const prototype = input instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
     const descriptor = Object.getOwnPropertyDescriptor(prototype, "value");
     descriptor?.set?.call(input, value);
     input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -66,14 +65,14 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     const textarea = container.querySelector("textarea") as HTMLTextAreaElement;
     expect(textarea).not.toBeNull();
 
-    const skipLlmCheckbox = container.querySelector(
-      'input[type="checkbox"]'
-    ) as HTMLInputElement;
+    const skipLlmCheckbox = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
     expect(skipLlmCheckbox).not.toBeNull();
 
     // Fill paste area HTML and enable skip-LLM checkbox by simulating a click
     await act(async () => {
-      setInputValue(textarea, `
+      setInputValue(
+        textarea,
+        `
         <html>
           <head><title>Test Local Paste</title></head>
           <body>
@@ -84,7 +83,8 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
             </div>
           </body>
         </html>
-      `);
+      `,
+      );
     });
 
     await act(async () => {
@@ -94,7 +94,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     });
 
     const convertBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent === "Convert"
+      (btn) => btn.textContent === "Convert",
     ) as HTMLButtonElement;
     expect(convertBtn).not.toBeNull();
 
@@ -108,9 +108,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     expect(container.textContent).toContain("Title");
 
     // Title input should be editable
-    const titleInput = container.querySelector(
-      'input[type="text"]'
-    ) as HTMLInputElement;
+    const titleInput = container.querySelector('input[type="text"]') as HTMLInputElement;
     expect(titleInput).not.toBeNull();
     expect(titleInput.value).toBe("Test Local Paste");
 
@@ -127,8 +125,8 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
       },
     });
 
-    const copyBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent?.includes("Copy to clipboard")
+    const copyBtn = Array.from(container.querySelectorAll("button")).find((btn) =>
+      btn.textContent?.includes("Copy to clipboard"),
     ) as HTMLButtonElement;
     expect(copyBtn).not.toBeNull();
 
@@ -144,15 +142,13 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     await renderApp();
 
     // Select settings button
-    const settingsBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent?.includes("Settings")
+    const settingsBtn = Array.from(container.querySelectorAll("button")).find((btn) =>
+      btn.textContent?.toLowerCase().includes("settings"),
     ) as HTMLButtonElement;
     expect(settingsBtn).not.toBeNull();
 
     // The settings panel should start hidden
-    let apiKeyInput = container.querySelector(
-      'input[type="password"]'
-    ) as HTMLInputElement;
+    let apiKeyInput = container.querySelector('input[type="password"]') as HTMLInputElement;
     expect(apiKeyInput).toBeNull();
 
     // Click to open settings
@@ -160,9 +156,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
       settingsBtn.click();
     });
 
-    apiKeyInput = container.querySelector(
-      'input[type="password"]'
-    ) as HTMLInputElement;
+    apiKeyInput = container.querySelector('input[type="password"]') as HTMLInputElement;
     expect(apiKeyInput).not.toBeNull();
 
     // If key is empty and skip-LLM is disabled, check error on convert
@@ -172,37 +166,34 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     });
 
     const convertBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent === "Convert"
+      (btn) => btn.textContent === "Convert",
     ) as HTMLButtonElement;
 
     await act(async () => {
       convertBtn.click();
     });
 
-    expect(container.textContent).toContain(
-      "Add your Gemini API key in Settings first."
-    );
+    expect(container.textContent).toContain("Add your Gemini API key in Settings first.");
 
     // Provide an API key
     await act(async () => {
       setInputValue(apiKeyInput, "AIza_mock_key_123");
     });
 
-    // Key should persist in localStorage
-    expect(localStorage.getItem("blockify.apiKey")).toBe("AIza_mock_key_123");
+    // Credentials are tab-scoped and must never persist in localStorage.
+    expect(sessionStorage.getItem("blockify.apiKey.gemini")).toBe("AIza_mock_key_123");
+    expect(localStorage.getItem("blockify.apiKey")).toBeNull();
   });
 
   it("asserts step progress and warning and unsupported-content states", async () => {
     await renderApp();
 
     const textarea = container.querySelector("textarea") as HTMLTextAreaElement;
-    const skipLlmCheckbox = container.querySelector(
-      'input[type="checkbox"]'
-    ) as HTMLInputElement;
+    const skipLlmCheckbox = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
 
     // Use a CSS selector explicitly so we bypass Readability's automatic scoring completely
-    const advancedBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent?.includes("Advanced")
+    const advancedBtn = Array.from(container.querySelectorAll("button")).find((btn) =>
+      btn.textContent?.includes("Advanced"),
     ) as HTMLButtonElement;
     expect(advancedBtn).not.toBeNull();
 
@@ -215,7 +206,9 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
 
     await act(async () => {
       setInputValue(selectorInput, "#my-content");
-      setInputValue(textarea, `
+      setInputValue(
+        textarea,
+        `
         <html>
           <body>
             <div id="my-content">
@@ -225,7 +218,8 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
             </div>
           </body>
         </html>
-      `);
+      `,
+      );
     });
 
     await act(async () => {
@@ -235,7 +229,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     });
 
     const convertBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent === "Convert"
+      (btn) => btn.textContent === "Convert",
     ) as HTMLButtonElement;
 
     await act(async () => {
@@ -256,8 +250,8 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     expect(container.textContent).toContain("MIGRATION PLACEHOLDER 1: iframe");
 
     // Expand Audit Table
-    const auditBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent?.includes("Asset Manifest / Audit")
+    const auditBtn = Array.from(container.querySelectorAll("button")).find((btn) =>
+      btn.textContent?.includes("Asset Manifest / Audit"),
     ) as HTMLButtonElement;
     expect(auditBtn).not.toBeNull();
 
@@ -278,12 +272,12 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     await renderApp();
 
     const textarea = container.querySelector("textarea") as HTMLTextAreaElement;
-    const skipLlmCheckbox = container.querySelector(
-      'input[type="checkbox"]'
-    ) as HTMLInputElement;
+    const skipLlmCheckbox = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
 
     await act(async () => {
-      setInputValue(textarea, `
+      setInputValue(
+        textarea,
+        `
         <html>
           <head><title>Page Title</title></head>
           <body>
@@ -293,7 +287,8 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
             </main>
           </body>
         </html>
-      `);
+      `,
+      );
     });
 
     await act(async () => {
@@ -303,7 +298,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     });
 
     const convertBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent === "Convert"
+      (btn) => btn.textContent === "Convert",
     ) as HTMLButtonElement;
 
     await act(async () => {
@@ -311,7 +306,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     });
 
     const addToBundleBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent === "Add page to WXR bundle"
+      (btn) => btn.textContent === "Add page to WXR bundle",
     ) as HTMLButtonElement;
     expect(addToBundleBtn).not.toBeNull();
 
@@ -323,9 +318,9 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     expect(container.textContent).toContain("WXR bundle (1 page)");
 
     // Target specific interactive controls for import author / options
-    const authorInput = Array.from(container.querySelectorAll("label")).find(
-      (lbl) => lbl.textContent?.includes("Author login")
-    )?.querySelector("input") as HTMLInputElement;
+    const authorInput = Array.from(container.querySelectorAll("label"))
+      .find((lbl) => lbl.textContent?.includes("Author login"))
+      ?.querySelector("input") as HTMLInputElement;
     expect(authorInput).not.toBeNull();
     expect(authorInput.value).toBe("admin");
 
@@ -334,13 +329,9 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     });
 
     // Check accessible "Remove" aria-label on the item
-    const removeBtn = container.querySelector(
-      'button[aria-label^="Remove \\""]'
-    ) as HTMLButtonElement;
+    const removeBtn = container.querySelector('button[aria-label^="Remove \\""]') as HTMLButtonElement;
     expect(removeBtn).not.toBeNull();
-    expect(removeBtn.getAttribute("aria-label")).toBe(
-      'Remove "Page Title" from bundle'
-    );
+    expect(removeBtn.getAttribute("aria-label")).toBe('Remove "Page Title" from bundle');
 
     // Mock and check download WXR execution
     vi.stubGlobal("URL", {
@@ -353,7 +344,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     const removeSpy = vi.spyOn(HTMLAnchorElement.prototype, "remove");
 
     const downloadBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent === "Download WXR"
+      (btn) => btn.textContent === "Download WXR",
     ) as HTMLButtonElement;
     expect(downloadBtn).not.toBeNull();
 
@@ -367,7 +358,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
 
     // Check Clear Bundle destructive confirmation behavior
     const clearBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent === "Clear bundle"
+      (btn) => btn.textContent === "Clear bundle",
     ) as HTMLButtonElement;
     expect(clearBtn).not.toBeNull();
 
@@ -386,7 +377,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
 
     // Click the Batch (crawl) tab
     const batchTab = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent === "Batch (crawl)"
+      (btn) => btn.textContent === "Batch (crawl)",
     ) as HTMLButtonElement;
     expect(batchTab).not.toBeNull();
 
@@ -394,9 +385,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
       batchTab.click();
     });
 
-    const fileInput = container.querySelector(
-      'input[type="file"]'
-    ) as HTMLInputElement;
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
     expect(fileInput).not.toBeNull();
 
     // Mock File text and loading
@@ -432,9 +421,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     expect(container.textContent).toContain("Page Two");
 
     // Enable skip-LLM
-    const skipLlmCheckbox = container.querySelector(
-      'input[type="checkbox"]'
-    ) as HTMLInputElement;
+    const skipLlmCheckbox = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
     await act(async () => {
       if (!skipLlmCheckbox.checked) {
         skipLlmCheckbox.click();
@@ -442,7 +429,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     });
 
     const convertAllBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent === "Convert all & add to bundle"
+      (btn) => btn.textContent === "Start Batch",
     ) as HTMLButtonElement;
     expect(convertAllBtn).not.toBeNull();
 
@@ -460,8 +447,8 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     await renderApp();
 
     // 1. Keyboard focus and focus-visible on primary buttons or settings
-    const settingsBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent?.includes("Settings")
+    const settingsBtn = Array.from(container.querySelectorAll("button")).find((btn) =>
+      btn.textContent?.toLowerCase().includes("settings"),
     ) as HTMLButtonElement;
     expect(settingsBtn).not.toBeNull();
 
@@ -478,9 +465,9 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     expect(settingsBtn.getAttribute("aria-expanded")).toBe("true");
 
     // 3. Accessibility / label element checks
-    const targetSelectorSelect = Array.from(
-      container.querySelectorAll("label")
-    ).find((lbl) => lbl.textContent?.includes("Target GolfNow template"));
+    const targetSelectorSelect = Array.from(container.querySelectorAll("label")).find((lbl) =>
+      lbl.textContent?.includes("Target GolfNow template"),
+    );
     expect(targetSelectorSelect).not.toBeNull();
 
     // 4. Checking mobile styles or responsive classes

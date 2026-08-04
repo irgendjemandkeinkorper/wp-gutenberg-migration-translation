@@ -1,11 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import {
-  cleanCacheKey,
-  cleanCacheSize,
-  clearCleanCache,
-  readCleanCache,
-  writeCleanCache,
-} from "../lib/cache";
+import { cleanCacheKey, cleanCacheSize, clearCleanCache, readCleanCache, writeCleanCache } from "../lib/cache";
 
 describe("clean cache", () => {
   beforeEach(() => localStorage.clear());

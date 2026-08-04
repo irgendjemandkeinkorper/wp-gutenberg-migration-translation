@@ -20,7 +20,7 @@ describe("Hardened URL fetching and crawler tests", () => {
 
       if (pathname === "/normal") {
         res.writeHead(200, { "Content-Type": "text/html" });
-        res.end("<html><head><title>Normal</title></head><body><a href=\"/slow\">Slow link</a></body></html>");
+        res.end('<html><head><title>Normal</title></head><body><a href="/slow">Slow link</a></body></html>');
       } else if (pathname === "/slow") {
         setTimeout(() => {
           res.writeHead(200, { "Content-Type": "text/html" });
@@ -72,21 +72,17 @@ describe("Hardened URL fetching and crawler tests", () => {
     });
 
     it("terminates and throws a descriptive error on slow page (timeout)", async () => {
-      await expect(
-        fetchPage(`${serverUrl}/slow`, { timeoutMs: 100 }),
-      ).rejects.toThrow(/Request timed out after 100ms/);
+      await expect(fetchPage(`${serverUrl}/slow`, { timeoutMs: 100 })).rejects.toThrow(/Request timed out after 100ms/);
     });
 
     it("terminates and throws a descriptive error on oversized page", async () => {
-      await expect(
-        fetchPage(`${serverUrl}/huge`, { maxBytes: 1000 }),
-      ).rejects.toThrow(/exceeds the limit of 1000 bytes/);
+      await expect(fetchPage(`${serverUrl}/huge`, { maxBytes: 1000 })).rejects.toThrow(
+        /exceeds the limit of 1000 bytes/,
+      );
     });
 
     it("rejects non-HTML responses", async () => {
-      await expect(
-        fetchPage(`${serverUrl}/non-html`),
-      ).rejects.toThrow(/Rejected non-HTML response/);
+      await expect(fetchPage(`${serverUrl}/non-html`)).rejects.toThrow(/Rejected non-HTML response/);
     });
   });
 

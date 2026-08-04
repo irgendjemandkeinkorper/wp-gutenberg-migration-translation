@@ -1,0 +1,150 @@
+{
+  "schemaVersion": "1.0.0",
+  "pass": true,
+  "run": {
+    "runId": "codex-live-10-media-20260804b",
+    "project": "blockify-wp-codex-live-10-media-20260804b",
+    "fixture": "known-media",
+    "fixtureSha256": "8bec1bbb8398419c08726ff44230b952ec53f8e4bae8ce0317b9849c284619a3",
+    "importerVersion": "0.8.3",
+    "startedAt": "2026-08-04T02:21:15.956Z",
+    "completedAt": "2026-08-04T02:21:34.180Z"
+  },
+  "source": {
+    "pageCount": 2,
+    "migrationIds": [
+      "a4-media-page-9101",
+      "a4-media-page-9102"
+    ],
+    "htmlAudit": {
+      "recordCount": 2,
+      "records": [
+        {
+          "migrationId": "a4-media-page-9101",
+          "sourcePostId": "9101",
+          "title": "Shared Media Fixture A",
+          "slug": "blockify-shared-media-a",
+          "type": "page",
+          "status": "publish",
+          "path": "source-html/source-0001.html",
+          "bytes": 210,
+          "sha256": "60bbd93906cac45a932eeb13c9a1bc208cbddd9a52ae48bbcfe010541482ad1c"
+        },
+        {
+          "migrationId": "a4-media-page-9102",
+          "sourcePostId": "9102",
+          "title": "Shared Media Fixture B",
+          "slug": "blockify-shared-media-b",
+          "type": "page",
+          "status": "publish",
+          "path": "source-html/source-0002.html",
+          "bytes": 210,
+          "sha256": "60bbd93906cac45a932eeb13c9a1bc208cbddd9a52ae48bbcfe010541482ad1c"
+        }
+      ],
+      "aggregateSha256": "91ebf3cb03135f31de63c36fc1fef13426688e4485fe8867a9e3cc099ec866cb"
+    }
+  },
+  "destination": {
+    "homepageStatus": 200,
+    "restApiStatus": 200,
+    "pageCount": 2,
+    "migrationIds": [
+      "a4-media-page-9101",
+      "a4-media-page-9102"
+    ],
+    "pages": [
+      {
+        "migrationId": "a4-media-page-9101",
+        "postId": 9101,
+        "slug": "blockify-shared-media-a",
+        "title": "Shared Media Fixture A",
+        "status": "publish",
+        "blockNames": [
+          "core/image"
+        ],
+        "blocks": [
+          {
+            "name": "core/image",
+            "path": "root.1"
+          }
+        ],
+        "parserFailures": [],
+        "unexpectedFreeformHtml": [],
+        "invalidBlocks": [],
+        "recoveredBlocks": []
+      },
+      {
+        "migrationId": "a4-media-page-9102",
+        "postId": 9102,
+        "slug": "blockify-shared-media-b",
+        "title": "Shared Media Fixture B",
+        "status": "publish",
+        "blockNames": [
+          "core/image"
+        ],
+        "blocks": [
+          {
+            "name": "core/image",
+            "path": "root.1"
+          }
+        ],
+        "parserFailures": [],
+        "unexpectedFreeformHtml": [],
+        "invalidBlocks": [],
+        "recoveredBlocks": []
+      }
+    ],
+    "media": {
+      "schemaVersion": "1.0.0",
+      "pass": true,
+      "expectedMigrationIds": [
+        "a4-media-page-9101",
+        "a4-media-page-9102"
+      ],
+      "attachmentCount": 1,
+      "attachments": [
+        {
+          "attachmentId": 9103,
+          "destinationUrl": "http://127.0.0.1:35183/wp-content/uploads/2025/01/blockify-fixture.png",
+          "parentId": 9101,
+          "mime": "image/png",
+          "sourceFileSha256": "431ced6916a2a21a156e38701afe55bbd7f88969fbbfc56d7fe099d47f265460",
+          "width": 1,
+          "height": 1
+        }
+      ],
+      "pages": [
+        {
+          "migrationId": "a4-media-page-9101",
+          "postId": 9101,
+          "contentSha256": "a54bf995b389634e418facde8db8a2bac41dc671792b7a3a9f390b26cd8daaa2",
+          "mediaUrls": [
+            "http://127.0.0.1:35183/wp-content/uploads/2025/01/blockify-fixture.png"
+          ]
+        },
+        {
+          "migrationId": "a4-media-page-9102",
+          "postId": 9102,
+          "contentSha256": "a54bf995b389634e418facde8db8a2bac41dc671792b7a3a9f390b26cd8daaa2",
+          "mediaUrls": [
+            "http://127.0.0.1:35183/wp-content/uploads/2025/01/blockify-fixture.png"
+          ]
+        }
+      ],
+      "destinationUrls": [
+        "http://127.0.0.1:35183/wp-content/uploads/2025/01/blockify-fixture.png"
+      ],
+      "failures": []
+    }
+  },
+  "counts": {
+    "expectedPages": 2,
+    "importedPages": 2,
+    "missingPages": 0,
+    "unexpectedPages": 0,
+    "findings": 0,
+    "findingsByKind": {}
+  },
+  "findings": []
+}

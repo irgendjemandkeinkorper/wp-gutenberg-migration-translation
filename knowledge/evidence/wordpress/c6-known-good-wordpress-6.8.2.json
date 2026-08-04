@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "1.0.0",
+  "pass": true,
+  "run": {
+    "runId": "codex-live-92-10-20260804b",
+    "project": "blockify-wp-codex-live-92-10-20260804b",
+    "fixture": "known-good",
+    "fixtureSha256": "2e944e3ac4a3dca0bac39da5dc9ee6c50b2a374c279d2ec32ca6bca265a23471",
+    "importerVersion": "0.8.3",
+    "startedAt": "2026-08-04T01:42:18.561Z",
+    "completedAt": "2026-08-04T01:43:01.283Z"
+  },
+  "source": {
+    "pageCount": 1,
+    "migrationIds": [
+      "a2-good-page-9001"
+    ],
+    "htmlAudit": {
+      "recordCount": 1,
+      "records": [
+        {
+          "migrationId": "a2-good-page-9001",
+          "sourcePostId": "9001",
+          "title": "Blockify Harness Fixture Page",
+          "slug": "blockify-harness-fixture-page",
+          "type": "page",
+          "status": "publish",
+          "path": "source-html/source-0001.html",
+          "bytes": 197,
+          "sha256": "e79365d3783613d881c1ac771b292d2f550fbda97be4de4fb3bb4e2db1c33fcd"
+        }
+      ],
+      "aggregateSha256": "2f7d2ce21a430c27364e2fb15e2ce9de82f8414550171cc34255ffb3c0f46877"
+    }
+  },
+  "destination": {
+    "homepageStatus": 200,
+    "restApiStatus": 200,
+    "pageCount": 1,
+    "migrationIds": [
+      "a2-good-page-9001"
+    ],
+    "pages": [
+      {
+        "migrationId": "a2-good-page-9001",
+        "postId": 9001,
+        "slug": "blockify-harness-fixture-page",
+        "title": "Blockify Harness Fixture Page",
+        "status": "publish",
+        "blockNames": [
+          "core/group",
+          "core/paragraph"
+        ],
+        "blocks": [
+          {
+            "name": "core/group",
+            "path": "root.1"
+          },
+          {
+            "name": "core/paragraph",
+            "path": "root.1.1"
+          }
+        ],
+        "parserFailures": [],
+        "unexpectedFreeformHtml": [],
+        "invalidBlocks": [],
+        "recoveredBlocks": []
+      }
+    ]
+  },
+  "counts": {
+    "expectedPages": 1,
+    "importedPages": 1,
+    "missingPages": 0,
+    "unexpectedPages": 0,
+    "findings": 0,
+    "findingsByKind": {}
+  },
+  "findings": []
+}

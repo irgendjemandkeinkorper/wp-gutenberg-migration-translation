@@ -2,32 +2,21 @@ import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import * as http from "http";
 import * as fs from "fs";
 import * as path from "path";
-import {
-  discoverImageCandidates,
-  extractBaseUrlFromHtml,
-  getImageDimensions,
-  crawlMedia,
-} from "../lib/crawl-media";
+import { discoverImageCandidates, extractBaseUrlFromHtml, getImageDimensions, crawlMedia } from "../lib/crawl-media";
 
 const MINIMAL_PNG = Buffer.from(
   "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000a49444154789cc3070000020001614723c70000000049454e44ae426082",
-  "hex"
+  "hex",
 );
 
 const MINIMAL_GIF = Buffer.from(
   "47494638396101000100800000ffffff00000021f90401000000002c00000000010001000002024401003b",
-  "hex"
+  "hex",
 );
 
-const MOCK_JPEG = Buffer.from(
-  "ffd8ffc0000b080002000301011100ffd9",
-  "hex"
-);
+const MOCK_JPEG = Buffer.from("ffd8ffc0000b080002000301011100ffd9", "hex");
 
-const MOCK_WEBP = Buffer.from(
-  "524946461a00000057454250565038580a00000000000000090000130000",
-  "hex"
-);
+const MOCK_WEBP = Buffer.from("524946461a00000057454250565038580a00000000000000090000130000", "hex");
 
 describe("Candidate Image Discovery & Base URL Extraction", () => {
   it("discovers all kinds of images, picture/sources, and custom lazy-loading attributes", () => {
@@ -58,7 +47,7 @@ describe("Candidate Image Discovery & Base URL Extraction", () => {
     expect(candidates).toContain("https://example.com/fallback.png");
 
     // Ignore data URIs
-    candidates.forEach(c => {
+    candidates.forEach((c) => {
       expect(c.startsWith("data:")).toBe(false);
     });
   });
@@ -123,10 +112,10 @@ describe("crawlMedia Pipeline Integration Tests", () => {
         res.writeHead(200, { "Content-Type": "image/jpeg" });
         res.end(MOCK_JPEG);
       } else if (pathname === "/redirect") {
-        res.writeHead(302, { "Location": "/image.png" });
+        res.writeHead(302, { Location: "/image.png" });
         res.end();
       } else if (pathname === "/double-redirect") {
-        res.writeHead(302, { "Location": "/redirect" });
+        res.writeHead(302, { Location: "/redirect" });
         res.end();
       } else if (pathname === "/404") {
         res.writeHead(404, { "Content-Type": "text/plain" });

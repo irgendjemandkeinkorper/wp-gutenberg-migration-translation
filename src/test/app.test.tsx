@@ -15,6 +15,7 @@ describe("App clipboard copy", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
     localStorage.clear();
+    sessionStorage.clear();
     localStorage.setItem("blockify.skipLlm", "1");
   });
 
@@ -87,9 +88,7 @@ describe("App clipboard copy", () => {
       textarea.dispatchEvent(new Event("input", { bubbles: true }));
     }
 
-    const convertBtn = Array.from(container!.querySelectorAll("button")).find(
-      (btn) => btn.textContent === "Convert"
-    );
+    const convertBtn = Array.from(container!.querySelectorAll("button")).find((btn) => btn.textContent === "Convert");
     expect(convertBtn).toBeTruthy();
 
     await act(async () => {
@@ -98,7 +97,7 @@ describe("App clipboard copy", () => {
     await flushAllUpdates();
 
     const copyBtn = Array.from(container!.querySelectorAll("button")).find(
-      (btn) => btn.textContent === "Copy to clipboard"
+      (btn) => btn.textContent === "Copy to clipboard",
     );
     expect(copyBtn).toBeTruthy();
 
@@ -129,14 +128,16 @@ describe("App clipboard copy", () => {
     const originalCreateRange = document.createRange;
     const originalGetSelection = window.getSelection;
 
-    document.createRange = () => ({
-      selectNodeContents: mockSelectNodeContents,
-    } as any);
+    document.createRange = () =>
+      ({
+        selectNodeContents: mockSelectNodeContents,
+      }) as any;
 
-    window.getSelection = () => ({
-      removeAllRanges: mockRemoveAllRanges,
-      addRange: mockAddRange,
-    } as any);
+    window.getSelection = () =>
+      ({
+        removeAllRanges: mockRemoveAllRanges,
+        addRange: mockAddRange,
+      }) as any;
 
     try {
       await renderApp();
@@ -148,9 +149,7 @@ describe("App clipboard copy", () => {
         textarea.dispatchEvent(new Event("input", { bubbles: true }));
       }
 
-      const convertBtn = Array.from(container!.querySelectorAll("button")).find(
-        (btn) => btn.textContent === "Convert"
-      );
+      const convertBtn = Array.from(container!.querySelectorAll("button")).find((btn) => btn.textContent === "Convert");
       expect(convertBtn).toBeTruthy();
 
       await act(async () => {
@@ -159,7 +158,7 @@ describe("App clipboard copy", () => {
       await flushAllUpdates();
 
       const copyBtn = Array.from(container!.querySelectorAll("button")).find(
-        (btn) => btn.textContent === "Copy to clipboard"
+        (btn) => btn.textContent === "Copy to clipboard",
       );
       expect(copyBtn).toBeTruthy();
 
@@ -196,14 +195,16 @@ describe("App clipboard copy", () => {
     const originalCreateRange = document.createRange;
     const originalGetSelection = window.getSelection;
 
-    document.createRange = () => ({
-      selectNodeContents: mockSelectNodeContents,
-    } as any);
+    document.createRange = () =>
+      ({
+        selectNodeContents: mockSelectNodeContents,
+      }) as any;
 
-    window.getSelection = () => ({
-      removeAllRanges: mockRemoveAllRanges,
-      addRange: mockAddRange,
-    } as any);
+    window.getSelection = () =>
+      ({
+        removeAllRanges: mockRemoveAllRanges,
+        addRange: mockAddRange,
+      }) as any;
 
     try {
       await renderApp();
@@ -215,9 +216,7 @@ describe("App clipboard copy", () => {
         textarea.dispatchEvent(new Event("input", { bubbles: true }));
       }
 
-      const convertBtn = Array.from(container!.querySelectorAll("button")).find(
-        (btn) => btn.textContent === "Convert"
-      );
+      const convertBtn = Array.from(container!.querySelectorAll("button")).find((btn) => btn.textContent === "Convert");
       expect(convertBtn).toBeTruthy();
 
       await act(async () => {
@@ -226,7 +225,7 @@ describe("App clipboard copy", () => {
       await flushAllUpdates();
 
       const copyBtn = Array.from(container!.querySelectorAll("button")).find(
-        (btn) => btn.textContent === "Copy to clipboard"
+        (btn) => btn.textContent === "Copy to clipboard",
       );
       expect(copyBtn).toBeTruthy();
 

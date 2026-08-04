@@ -5,12 +5,12 @@ import App from "../App";
 import { convertPage } from "../lib/pipeline";
 
 // Configure React act environment
-// @ts-ignore
+// @ts-expect-error React's test-only act environment flag is intentionally global.
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 // Polyfill File.prototype.text for JSDOM
 if (typeof File.prototype.text !== "function") {
-  File.prototype.text = function(this: File) {
+  File.prototype.text = function (this: File) {
     return new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
@@ -35,6 +35,7 @@ describe("Batch Conversion App Integration Tests", () => {
 
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     localStorage.setItem("blockify.apiKey", "dummy-key");
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -49,7 +50,7 @@ describe("Batch Conversion App Integration Tests", () => {
     const start = Date.now();
     while (Date.now() - start < timeout) {
       if (condition()) return;
-      await new Promise(resolve => setTimeout(resolve, 5));
+      await new Promise((resolve) => setTimeout(resolve, 5));
     }
     console.log("HTML at Timeout:", container.innerHTML);
     throw new Error("Timeout waiting for condition");
@@ -64,7 +65,7 @@ describe("Batch Conversion App Integration Tests", () => {
 
     // Locate Batch (crawl) tab and click it
     const tabs = container.querySelectorAll("button.tab");
-    const batchTab = Array.from(tabs).find(t => t.textContent?.includes("Batch"));
+    const batchTab = Array.from(tabs).find((t) => t.textContent?.includes("Batch"));
     expect(batchTab).toBeDefined();
 
     await act(async () => {
@@ -84,8 +85,8 @@ describe("Batch Conversion App Integration Tests", () => {
       pages: [
         { url: "https://example.com/p1", title: "Page 1", html: "<h1>P1</h1>" },
         { url: "https://example.com/p2", title: "Page 2", html: "<h1>P2</h1>" },
-        { url: "https://example.com/p3", title: "Page 3", html: "<h1>P3</h1>" }
-      ]
+        { url: "https://example.com/p3", title: "Page 3", html: "<h1>P3</h1>" },
+      ],
     });
     const file = new File([fileContent], "pages.json", { type: "application/json" });
 
@@ -96,7 +97,7 @@ describe("Batch Conversion App Integration Tests", () => {
       Object.defineProperty(fileInput, "files", {
         value: files,
         writable: true,
-        configurable: true
+        configurable: true,
       });
       fileInput.dispatchEvent(new Event("change", { bubbles: true }));
     });
@@ -115,7 +116,7 @@ describe("Batch Conversion App Integration Tests", () => {
       placeholders: [],
       images: [],
       lostPositions: [],
-      warnings: []
+      warnings: [],
     });
 
     await renderAppAndGoToBatch();
@@ -123,7 +124,9 @@ describe("Batch Conversion App Integration Tests", () => {
     const listItems = container.querySelectorAll(".bundle-list li");
     expect(listItems.length).toBe(3);
 
-    const startBtn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("Start Batch"));
+    const startBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Start Batch"),
+    );
     expect(startBtn).toBeDefined();
 
     await act(async () => {
@@ -164,14 +167,16 @@ describe("Batch Conversion App Integration Tests", () => {
         placeholders: [],
         images: [],
         lostPositions: [],
-        warnings: []
+        warnings: [],
       });
     });
 
     await renderAppAndGoToBatch();
 
     // Start batch
-    const startBtn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("Start Batch"));
+    const startBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Start Batch"),
+    );
     expect(startBtn).toBeDefined();
 
     await act(async () => {
@@ -179,7 +184,9 @@ describe("Batch Conversion App Integration Tests", () => {
     });
 
     // While page 1 is converting, click Cancel Conversion
-    const cancelBtn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("Cancel Conversion"));
+    const cancelBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Cancel Conversion"),
+    );
     expect(cancelBtn).toBeDefined();
 
     await act(async () => {
@@ -197,7 +204,7 @@ describe("Batch Conversion App Integration Tests", () => {
         placeholders: [],
         images: [],
         lostPositions: [],
-        warnings: []
+        warnings: [],
       });
     });
 
@@ -233,14 +240,16 @@ describe("Batch Conversion App Integration Tests", () => {
         placeholders: [],
         images: [],
         lostPositions: [],
-        warnings: []
+        warnings: [],
       });
     });
 
     await renderAppAndGoToBatch();
 
     // Start batch
-    const startBtn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("Start Batch"));
+    const startBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Start Batch"),
+    );
     expect(startBtn).toBeDefined();
 
     await act(async () => {
@@ -260,7 +269,9 @@ describe("Batch Conversion App Integration Tests", () => {
     expect(summaryText).toContain("Failed: 1");
 
     // Click Resume Batch now that convertPage succeeds
-    const resumeBtn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("Resume Batch"));
+    const resumeBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Resume Batch"),
+    );
     expect(resumeBtn).toBeDefined();
 
     await act(async () => {

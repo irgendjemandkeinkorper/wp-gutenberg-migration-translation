@@ -85,10 +85,7 @@ export function saveBundle(pages: BundlePage[]): boolean {
   }
 }
 
-export function addOrReplaceBundleEntry(
-  prev: BundlePage[],
-  entry: BundlePage,
-): BundlePage[] {
+export function addOrReplaceBundleEntry(prev: BundlePage[], entry: BundlePage): BundlePage[] {
   const at = prev.findIndex((b) => b.link === entry.link);
   if (at < 0) return [...prev, entry];
   const next = [...prev];
@@ -96,11 +93,7 @@ export function addOrReplaceBundleEntry(
   return next;
 }
 
-export function downloadFile(
-  filename: string,
-  content: string,
-  mime: string,
-): void {
+export function downloadFile(filename: string, content: string, mime: string): void {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  TEMPLATE_REGISTRY,
-  getTemplateDisplayName,
-  getTemplateById,
-  normalizeTemplateId,
-} from "../lib/templates";
+import { TEMPLATE_REGISTRY, getTemplateDisplayName, getTemplateById, normalizeTemplateId } from "../lib/templates";
 
 describe("templates registry", () => {
   it("should contain known stable templates and handle them properly", () => {

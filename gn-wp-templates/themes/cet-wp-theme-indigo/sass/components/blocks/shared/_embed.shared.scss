@@ -1,7 +1,0 @@
-@mixin embed_shared() {
-    :where(.wp-block-embed) {
-        :where(iframe) {
-            border-radius: 24px;
-        }
-    }
-}

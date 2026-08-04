@@ -46,9 +46,7 @@ export function normalizeTemplateId(idOrName: string): string {
   }
   // Match display name (case-insensitive) or lowercase ID
   const found = TEMPLATE_REGISTRY.find(
-    (t) =>
-      t.displayName.toLowerCase() === clean.toLowerCase() ||
-      t.id.toLowerCase() === clean.toLowerCase()
+    (t) => t.displayName.toLowerCase() === clean.toLowerCase() || t.id.toLowerCase() === clean.toLowerCase(),
   );
   if (found) return found.id;
   return clean;

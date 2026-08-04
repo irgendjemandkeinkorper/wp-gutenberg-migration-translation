@@ -31,9 +31,7 @@ describe("convertPage (skipLlm)", () => {
 
     expect(result.blocks).toContain('<!-- wp:heading {"level":2} -->');
     expect(result.blocks).toContain("<p>Welcome to <strong>our</strong> firm.</p>");
-    expect(result.blocks).toContain(
-      '<img src="https://example.com/uploads/team.jpg" alt="The team"/>',
-    );
+    expect(result.blocks).toContain('<img src="https://example.com/uploads/team.jpg" alt="The team"/>');
     expect(result.blocks).toContain("<!-- wp:list -->");
     expect(result.blocks).not.toContain("tracked");
     expect(result.lostPositions).toEqual([]);
@@ -58,9 +56,17 @@ describe("convertPage (skipLlm)", () => {
   });
 
   it("retains original HTML and preserves unsupported content for QA", async () => {
-    const rawHtml = '<html><head><title>Tee Times</title></head><body><main><p>Book:</p><iframe src="https://booking.example/tee"></iframe></main></body></html>';
+    const rawHtml =
+      '<html><head><title>Tee Times</title></head><body><main><p>Book:</p><iframe src="https://booking.example/tee"></iframe></main></body></html>';
     const result = await convertPage(
-      { rawHtml, url: "https://example.com/tee-times", selector: "main", apiKey: "", model: "irrelevant", skipLlm: true },
+      {
+        rawHtml,
+        url: "https://example.com/tee-times",
+        selector: "main",
+        apiKey: "",
+        model: "irrelevant",
+        skipLlm: true,
+      },
       () => {},
     );
     expect(result.sourceHtml).toBe(rawHtml);

@@ -9,10 +9,7 @@ import type { AssetRef } from "./types";
  * Asset URLs/captions are joined in from the asset map, so positions come
  * from the source DOM, never guessed.
  */
-export function serializeBlocks(
-  html: string,
-  images: Map<number, AssetRef>,
-): string {
+export function serializeBlocks(html: string, images: Map<number, AssetRef>): string {
   const doc = new DOMParser().parseFromString(html, "text/html");
   const out: string[] = [];
 
@@ -30,10 +27,7 @@ export function serializeBlocks(
   return out.join("\n\n");
 }
 
-function elementToBlock(
-  el: HTMLElement,
-  images: Map<number, AssetRef>,
-): string {
+function elementToBlock(el: HTMLElement, images: Map<number, AssetRef>): string {
   const tag = el.tagName.toLowerCase();
   switch (tag) {
     case "p": {
@@ -136,15 +130,9 @@ function listBlock(el: HTMLElement, ordered: boolean): string {
       }
     }
     const inline = clone.innerHTML.trim();
-    const nestedMarkup = nested
-      .map((n) => listBlock(n, n.tagName.toLowerCase() === "ol"))
-      .join("\n\n");
+    const nestedMarkup = nested.map((n) => listBlock(n, n.tagName.toLowerCase() === "ol")).join("\n\n");
 
-    items.push(
-      `<!-- wp:list-item -->\n` +
-        `<li>${inline}${nestedMarkup}</li>\n` +
-        `<!-- /wp:list-item -->`,
-    );
+    items.push(`<!-- wp:list-item -->\n` + `<li>${inline}${nestedMarkup}</li>\n` + `<!-- /wp:list-item -->`);
   }
 
   return (
@@ -170,8 +158,7 @@ function assetBlock(media: AssetRef): string {
     const sanitizedAttrs = JSON.stringify(media.attributes);
     const excerptEscaped = escapeHtml(media.excerpt);
     const label =
-      `MIGRATION PLACEHOLDER ${media.index + 1}: ${media.type}` +
-      ` — Unsupported ${media.tagName.toUpperCase()}`;
+      `MIGRATION PLACEHOLDER ${media.index + 1}: ${media.type}` + ` — Unsupported ${media.tagName.toUpperCase()}`;
     const srcHtml = media.src ? `<p><strong>Source:</strong> <code>${escapeHtml(media.src)}</code></p>` : "";
     return (
       `<!-- wp:html {"blockifyAsset":true,"assetIndex":${media.index},"assetType":"${media.type}"} -->\n` +
@@ -190,10 +177,7 @@ function assetBlock(media: AssetRef): string {
 }
 
 export function escapeHtml(text: string): string {
-  return text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
+  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
 function escapeAttr(text: string): string {

@@ -7,7 +7,12 @@ describe("preserveUnsupported", () => {
       '<p>Intro</p><iframe src="https://tee.example/widget"></iframe><form action="/join"><button>Join</button></form>',
     );
     expect(result.placeholders).toEqual([
-      { index: 0, kind: "iframe", source: "https://tee.example/widget", label: "MIGRATION PLACEHOLDER 1: iframe — https://tee.example/widget" },
+      {
+        index: 0,
+        kind: "iframe",
+        source: "https://tee.example/widget",
+        label: "MIGRATION PLACEHOLDER 1: iframe — https://tee.example/widget",
+      },
       { index: 1, kind: "form", source: "/join", label: "MIGRATION PLACEHOLDER 2: form — /join" },
     ]);
     expect(result.html).toContain("[MIGRATION PLACEHOLDER 1: iframe");

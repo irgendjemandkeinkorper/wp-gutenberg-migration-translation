@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+    xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+    xmlns:content="http://purl.org/rss/1.0/modules/content/"
+    xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:wp="http://wordpress.org/export/1.2/">
+<channel>
+    <title>Blockify Generated Integration Fixture</title>
+    <link>https://example.com</link>
+    <description>Migrated content</description>
+    <pubDate>Wed, 15 Jan 2025 12:00:00 +0000</pubDate>
+    <language>en-US</language>
+    <wp:wxr_version>1.2</wp:wxr_version>
+    <wp:author>
+        <wp:author_login><![CDATA[blockify-harness]]></wp:author_login>
+        <wp:author_display_name><![CDATA[blockify-harness]]></wp:author_display_name>
+    </wp:author>
+    <item>
+        <title>Blockify Generated Media A</title>
+        <link>https://source.example.test/generated-media-a</link>
+        <pubDate>Wed, 15 Jan 2025 12:00:00 +0000</pubDate>
+        <dc:creator><![CDATA[blockify-harness]]></dc:creator>
+        <guid isPermaLink="false">https://source.example.test/generated-media-a</guid>
+        <description></description>
+        <content:encoded><![CDATA[<!-- wp:group -->
+<div class="wp-block-group">
+<!-- wp:paragraph -->
+<p>Generated fixture A preserves its first meaningful paragraph.</p>
+<!-- /wp:paragraph -->
+<!-- wp:image {"sizeSlug":"full"} -->
+<figure class="wp-block-image size-full"><img src="http://wordpress/blockify-fixture.png" alt="Blockify shared fixture"/></figure>
+<!-- /wp:image -->
+<!-- wp:html {"blockifyAsset":true,"assetIndex":0,"assetType":"iframe"} -->
+<div class="blockify-unsupported-placeholder" data-asset-index="0" data-asset-type="iframe">MIGRATION PLACEHOLDER 1: iframe — https://booking.example.test/tee-times</div>
+<!-- /wp:html -->
+<!-- wp:paragraph -->
+<p>Generated fixture A preserves its closing meaningful paragraph.</p>
+<!-- /wp:paragraph -->
+</div>
+<!-- /wp:group -->]]></content:encoded>
+        <excerpt:encoded><![CDATA[]]></excerpt:encoded>
+        <wp:post_id>1</wp:post_id>
+        <wp:post_date>2025-01-15 12:00:00</wp:post_date>
+        <wp:post_date_gmt>2025-01-15 12:00:00</wp:post_date_gmt>
+        <wp:comment_status>closed</wp:comment_status>
+        <wp:ping_status>closed</wp:ping_status>
+        <wp:post_name><![CDATA[blockify-generated-media-a]]></wp:post_name>
+        <wp:status>publish</wp:status>
+        <wp:post_parent>0</wp:post_parent>
+        <wp:menu_order>0</wp:menu_order>
+        <wp:post_type>page</wp:post_type>
+        <wp:post_password></wp:post_password>
+        <wp:is_sticky>0</wp:is_sticky>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_blockify_source_url]]></wp:meta_key>
+            <wp:meta_value><![CDATA[https://source.example.test/generated-media-a]]></wp:meta_value>
+        </wp:postmeta>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_blockify_migration_id]]></wp:meta_key>
+            <wp:meta_value><![CDATA[a1-generated-page-9101]]></wp:meta_value>
+        </wp:postmeta>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_blockify_source_html]]></wp:meta_key>
+            <wp:meta_value><![CDATA[<main><p>Generated fixture A preserves its first meaningful paragraph.</p><img src="http://wordpress/blockify-fixture.png?fit=crop&width=600" alt="Blockify shared fixture"><iframe src="https://booking.example.test/tee-times"></iframe><p>Generated fixture A preserves its closing meaningful paragraph.</p></main>]]></wp:meta_value>
+        </wp:postmeta>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_blockify_target_template]]></wp:meta_key>
+            <wp:meta_value><![CDATA[synthetic-harness-profile]]></wp:meta_value>
+        </wp:postmeta>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_blockify_migration_placeholders]]></wp:meta_key>
+            <wp:meta_value><![CDATA[[{"index":0,"kind":"iframe","source":"https://booking.example.test/tee-times","label":"MIGRATION PLACEHOLDER 1: iframe — https://booking.example.test/tee-times"}]]]></wp:meta_value>
+        </wp:postmeta>
+    </item>
+    <item>
+        <title>Blockify shared fixture</title>
+        <link>http://wordpress/blockify-fixture.png</link>
+        <pubDate>Wed, 15 Jan 2025 12:00:00 +0000</pubDate>
+        <dc:creator><![CDATA[blockify-harness]]></dc:creator>
+        <guid isPermaLink="false">http://wordpress/blockify-fixture.png</guid>
+        <description></description>
+        <content:encoded><![CDATA[]]></content:encoded>
+        <excerpt:encoded><![CDATA[]]></excerpt:encoded>
+        <wp:post_id>2</wp:post_id>
+        <wp:post_date>2025-01-15 12:00:00</wp:post_date>
+        <wp:post_date_gmt>2025-01-15 12:00:00</wp:post_date_gmt>
+        <wp:comment_status>closed</wp:comment_status>
+        <wp:ping_status>closed</wp:ping_status>
+        <wp:post_name><![CDATA[blockify-shared-fixture]]></wp:post_name>
+        <wp:status>inherit</wp:status>
+        <wp:post_parent>1</wp:post_parent>
+        <wp:menu_order>0</wp:menu_order>
+        <wp:post_type>attachment</wp:post_type>
+        <wp:post_password></wp:post_password>
+        <wp:is_sticky>0</wp:is_sticky>
+        <wp:post_mime_type>image/png</wp:post_mime_type>
+        <wp:attachment_url>http://wordpress/blockify-fixture.png</wp:attachment_url>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_wp_attached_file]]></wp:meta_key>
+            <wp:meta_value><![CDATA[blockify-fixture.png]]></wp:meta_value>
+        </wp:postmeta>
+        <wp:postmeta>
+            <wp:meta_key>_wp_attachment_image_alt</wp:meta_key>
+            <wp:meta_value><![CDATA[Blockify shared fixture]]></wp:meta_value>
+        </wp:postmeta>
+    </item>
+    <item>
+        <title>Blockify Generated Media B</title>
+        <link>https://source.example.test/generated-media-b</link>
+        <pubDate>Wed, 15 Jan 2025 12:00:00 +0000</pubDate>
+        <dc:creator><![CDATA[blockify-harness]]></dc:creator>
+        <guid isPermaLink="false">https://source.example.test/generated-media-b</guid>
+        <description></description>
+        <content:encoded><![CDATA[<!-- wp:group -->
+<div class="wp-block-group">
+<!-- wp:paragraph -->
+<p>Generated fixture B preserves its meaningful paragraph.</p>
+<!-- /wp:paragraph -->
+<!-- wp:image {"sizeSlug":"full"} -->
+<figure class="wp-block-image size-full"><img src="http://wordpress/blockify-fixture.png" alt="Blockify shared fixture"/></figure>
+<!-- /wp:image -->
+</div>
+<!-- /wp:group -->]]></content:encoded>
+        <excerpt:encoded><![CDATA[]]></excerpt:encoded>
+        <wp:post_id>3</wp:post_id>
+        <wp:post_date>2025-01-15 12:00:00</wp:post_date>
+        <wp:post_date_gmt>2025-01-15 12:00:00</wp:post_date_gmt>
+        <wp:comment_status>closed</wp:comment_status>
+        <wp:ping_status>closed</wp:ping_status>
+        <wp:post_name><![CDATA[blockify-generated-media-b]]></wp:post_name>
+        <wp:status>publish</wp:status>
+        <wp:post_parent>0</wp:post_parent>
+        <wp:menu_order>0</wp:menu_order>
+        <wp:post_type>page</wp:post_type>
+        <wp:post_password></wp:post_password>
+        <wp:is_sticky>0</wp:is_sticky>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_blockify_source_url]]></wp:meta_key>
+            <wp:meta_value><![CDATA[https://source.example.test/generated-media-b]]></wp:meta_value>
+        </wp:postmeta>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_blockify_migration_id]]></wp:meta_key>
+            <wp:meta_value><![CDATA[a1-generated-page-9102]]></wp:meta_value>
+        </wp:postmeta>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_blockify_source_html]]></wp:meta_key>
+            <wp:meta_value><![CDATA[<main><p>Generated fixture B preserves its meaningful paragraph.</p><img src="http://wordpress/blockify-fixture.png?fit=crop&width=900" alt="Blockify shared fixture"></main>]]></wp:meta_value>
+        </wp:postmeta>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_blockify_target_template]]></wp:meta_key>
+            <wp:meta_value><![CDATA[synthetic-harness-profile]]></wp:meta_value>
+        </wp:postmeta>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_blockify_migration_placeholders]]></wp:meta_key>
+            <wp:meta_value><![CDATA[[]]]></wp:meta_value>
+        </wp:postmeta>
+    </item>
+</channel>
+</rss>

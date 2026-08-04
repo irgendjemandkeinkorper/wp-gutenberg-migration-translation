@@ -10,7 +10,7 @@ import {
 
 describe("Model Catalog Validation", () => {
   it("verifies the catalog is loaded with the expected default Google provider", () => {
-    const google = PROVIDER_CATALOG.find(p => p.id === "google");
+    const google = PROVIDER_CATALOG.find((p) => p.id === "google");
     expect(google).toBeDefined();
     expect(google?.models.length).toBeGreaterThan(0);
   });
@@ -22,22 +22,22 @@ describe("Model Catalog Validation", () => {
 
   it("fails for stale models with clear status, lastVerified date, and action guidance", () => {
     expect(() => validateProviderModel("google", "gemini-2.5-flash")).toThrowError(
-      /Model "Gemini 2.5 Flash" is marked as stale \(last verified: 2025-02-21\)\. Please select a supported model/
+      /Model "Gemini 2.5 Flash" is marked as stale \(last verified: 2025-02-21\)\. Please select a supported model/,
     );
   });
 
   it("fails for unsupported models with status, lastVerified date, and action guidance", () => {
     expect(() => validateProviderModel("google", "gemini-2.5-pro")).toThrowError(
-      /Model "Gemini 2.5 Pro" is marked as unsupported \(last verified: 2025-02-21\)\. Please select a supported model/
+      /Model "Gemini 2.5 Pro" is marked as unsupported \(last verified: 2025-02-21\)\. Please select a supported model/,
     );
   });
 
   it("fails for unknown providers or malformed model IDs", () => {
     expect(() => validateProviderModel("nonexistent", "gemini-3.6-flash")).toThrowError(
-      /Unknown provider "nonexistent"/
+      /Unknown provider "nonexistent"/,
     );
     expect(() => validateProviderModel("google", "gemini-9.9-ultra-pro")).toThrowError(
-      /Unknown model "gemini-9.9-ultra-pro" for provider "Google Gemini"/
+      /Unknown model "gemini-9.9-ultra-pro" for provider "Google Gemini"/,
     );
   });
 });
@@ -51,7 +51,8 @@ describe("Credential Sanitization", () => {
   });
 
   it("sanitizes api keys from query params and Bearer tokens", () => {
-    const urlError = "Failed request to https://generativelanguage.googleapis.com/v1beta/models/gemini?key=AIzaSy_somekey123";
+    const urlError =
+      "Failed request to https://generativelanguage.googleapis.com/v1beta/models/gemini?key=AIzaSy_somekey123";
     const cleanedUrl = sanitizeErrorMessage(urlError);
     expect(cleanedUrl).not.toContain("AIzaSy_somekey123");
     expect(cleanedUrl).toContain("key=[REDACTED");
@@ -175,7 +176,11 @@ describe("API Contract Verification (Stubbed Requests)", () => {
       if (typeof headers.get === "function") {
         apiKeyHeader = headers.get("x-goog-api-key") || headers.get("Authorization");
       } else {
-        apiKeyHeader = headers["x-goog-api-key"] || headers["Authorization"] || headers["x-goog-api-key".toLowerCase()] || headers["Authorization".toLowerCase()];
+        apiKeyHeader =
+          headers["x-goog-api-key"] ||
+          headers["Authorization"] ||
+          headers["x-goog-api-key".toLowerCase()] ||
+          headers["Authorization".toLowerCase()];
       }
     }
     expect(apiKeyHeader || lastRequestUrl).toContain("AIzaSyFakeKey1234567890");

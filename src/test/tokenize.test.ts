@@ -22,10 +22,7 @@ describe("tokenizeImages", () => {
       '<img data-src="/lazy.png"><img srcset="/w400.png 400w, /w800.png 800w">',
       "https://example.com/",
     );
-    expect(images.map((i) => i.src)).toEqual([
-      "https://example.com/lazy.png",
-      "https://example.com/w400.png",
-    ]);
+    expect(images.map((i) => i.src)).toEqual(["https://example.com/lazy.png", "https://example.com/w400.png"]);
   });
 
   it("removes srcless and data-URI images without issuing a token (gapless indices)", () => {
@@ -62,14 +59,7 @@ describe("tokenizeImages", () => {
       "https://example.com/",
     );
     expect(images).toHaveLength(6);
-    expect(images.map((i) => i.type)).toEqual([
-      "iframe",
-      "object",
-      "embed",
-      "video",
-      "audio",
-      "form",
-    ]);
+    expect(images.map((i) => i.type)).toEqual(["iframe", "object", "embed", "video", "audio", "form"]);
     expect(images.map((i) => i.src)).toEqual([
       "https://example.com/v",
       "https://example.com/o",
@@ -86,7 +76,7 @@ describe("tokenizeImages", () => {
 
   it("excludes tracking/analytics and script, style tags", () => {
     const { html, images } = tokenizeImages(
-      '<script>console.log()</script><style>body{}</style>' +
+      "<script>console.log()</script><style>body{}</style>" +
         '<img src="pixel.jpg" width="1" height="1" alt="tracking">' +
         '<iframe src="https://tracker.com"></iframe>',
     );

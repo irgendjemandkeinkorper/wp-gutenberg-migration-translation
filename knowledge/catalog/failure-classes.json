@@ -1,0 +1,67 @@
+[
+  {
+    "id": "unsupported-ir-node",
+    "label": "Unsupported semantic node",
+    "severity": "blocking",
+    "symptom": "A source node has no deterministic target compiler and becomes a visible migration placeholder.",
+    "remediation": "Classify the node, capture target capability evidence, then add a focused compiler and round-trip fixture.",
+    "evidence": [
+      "src/lib/compiler/core.ts",
+      "src/lib/ir/types.ts",
+      "integration/wordpress-harness/fixtures/known-media.wxr.xml",
+      "knowledge/evidence/wordpress/a1-generated-harness-wordpress-6.8.2.json"
+    ]
+  },
+  {
+    "id": "unresolved-media-identity",
+    "label": "Media identity not reconciled",
+    "severity": "blocking",
+    "symptom": "An image or gallery asset has no verified destination attachment ID and URL.",
+    "remediation": "Acquire once, match by content hash or source alias, reconcile the destination response, and rewrite only from observed evidence.",
+    "evidence": [
+      "src/lib/media/registry.ts",
+      "src/lib/compiler/media.ts",
+      "docs/media-registry-contract.md",
+      "integration/wordpress-harness/verification.mjs",
+      "integration/wordpress-harness/fixtures/known-media.wxr.xml",
+      "knowledge/evidence/wordpress/a4-known-media-wordpress-6.8.2.json",
+      "knowledge/evidence/wordpress/a1-generated-harness-wordpress-6.8.2.json"
+    ]
+  },
+  {
+    "id": "invalid-gutenberg-block",
+    "label": "Invalid or recovered Gutenberg block",
+    "severity": "blocking",
+    "symptom": "WordPress marks a block invalid, unregistered, or recovered during parse.",
+    "remediation": "Retain the structural diagnostic, identify the target capability/version mismatch, and update the compiler or profile fixture.",
+    "evidence": [
+      "integration/wordpress-harness/verification.mjs",
+      "integration/wordpress-harness/fixtures/known-malformed.wxr.xml",
+      "knowledge/evidence/wordpress/c6-known-malformed-wordpress-6.8.2.json"
+    ]
+  },
+  {
+    "id": "text-recall-loss",
+    "label": "Meaningful text was dropped or reordered",
+    "severity": "blocking",
+    "symptom": "Imported meaningful text has recall below 1 or violates source sequence.",
+    "remediation": "Compare immutable source evidence with destination records, isolate the compiler or parser boundary, and add a minimal regression fixture.",
+    "evidence": ["src/lib/qa/reconciliation.ts", "docs/reconciliation.md"]
+  },
+  {
+    "id": "placeholder-drift",
+    "label": "Placeholder or exception manifest drift",
+    "severity": "blocking",
+    "symptom": "Expected placeholder IDs do not match imported IDs one-to-one.",
+    "remediation": "Preserve stable exception identity through IR, WXR metadata, import, and reconciliation; never silently discard unresolved content.",
+    "evidence": ["src/lib/qa/reconciliation.ts", "src/lib/exceptions/lifecycle.ts", "docs/wxr-format.md"]
+  },
+  {
+    "id": "source-evidence-missing",
+    "label": "Source evidence cannot be audited",
+    "severity": "blocking",
+    "symptom": "A finding has no immutable source hash, locator, or retained audit artifact.",
+    "remediation": "Persist the source snapshot and byte-range/HTML evidence before conversion; link the report to the artifact instead of embedding unbounded content.",
+    "evidence": ["src/lib/ir/types.ts", "integration/wordpress-harness/report.mjs"]
+  }
+]
