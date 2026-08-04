@@ -6,11 +6,11 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 
 ## Current baseline
 
-- Local HEAD: latest commit titled `Decompose App into focused panels` (use `git log -1 --oneline` for the exact hash).
-- Latest implementation wave: behavior-preserving Gate 0 App decomposition into settings, source, review, and bundle/export components.
-- Branch: `main`, locally ahead of `origin/main` by 38 commits and behind by 21 commits before this handoff refresh; the next commit will make the local lead 39.
+- Local HEAD: latest commit titled `Add page QA workbench and safe reruns` (use `git log -1 --oneline` for the exact hash).
+- Latest implementation wave: F5/#95 page evidence workbench and authorization-safe targeted rerun controls.
+- Branch: `main`, locally ahead of `origin/main` by 39 commits and behind by 21 commits before this handoff refresh; the next commit will make the local lead 40.
 - The handoff source files are committed with this implementation wave. A clean worktree after commit is expected.
-- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all thirty-seven local commits after this handoff refresh before synchronizing.
+- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all forty local commits after this handoff refresh before synchronizing.
 - No implementation PR has been pushed and no branch-protection change has been made.
 
 ## Implemented in c810d94
@@ -61,10 +61,11 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 - M1 scorecard: `integration/wordpress-harness/report.mjs` builds a hash-and-structure-only reconciliation report, while `verification.mjs` extracts source records and the harness retains one raw source HTML audit file per migration record. Successful and failed live runs publish durable reports under `/tmp/blockify-wordpress-harness/reports/` (or `BLOCKIFY_REPORT_DIR`) for CI artifact collection.
 - Cross-project migration knowledge: `knowledge/catalog/` is the canonical capability/failure/project record store; `knowledge/vault/` is an Obsidian-compatible projection; `scripts/generate-knowledge-vault.mjs` supports `npm run knowledge:generate`, `npm run knowledge:check`, and external `--vault` projections. Status values distinguish local contracts from live WordPress support.
 - Gate 0 App decomposition: `src/App.tsx` is reduced to 330 lines of top-level orchestration/composition; settings, source input/batch, result review, and bundle/export live in four focused components under `src/components/`. Panel-local review/export state moved with its panel, and `src/test/app-decomposition.test.tsx` verifies the wiring and actions.
+- F5 page QA workbench: `src/lib/qa/workbench.ts` validates versioned safe evidence, computes canonical entity-scoped invalidation previews, requires external grants for recrawl/publish, emits audited commands without implicit execution, and retains prior revisions. `src/components/PageQaWorkbench.tsx` exposes source/IR/placement/mapping/destination/finding/exception evidence with risk filters and rerun controls; it deliberately requires durable workspace records rather than fabricating evidence from the legacy in-memory converter. See `docs/page-qa-workbench.md`.
 
 ## Current verification evidence
 
-- `npm test -- --reporter=dot` — 38 test files, 167 tests passed.
+- `npm test -- --reporter=dot` — 40 test files, 173 tests passed.
 - `npm run verify` — production build, full test suite, and forced-process checkpoint integration passed with fixture-server/subprocess permissions.
 - `npm run lint` and `npm run format:check` — passed.
 - `npm run check:bundle` — largest JavaScript asset remains below the 650,000-byte budget.
@@ -89,10 +90,11 @@ The live WordPress harness has not run because Docker Desktop/WSL integration is
 
 ## GitHub issue state
 
-Manifest coverage is 44 IDs total. Twenty-two are closed by this implementation, B4/#12 was already closed, and 21 manifest issues remain open. Additional repository and code-quality issues #43–#46, #48–#54, #57–#60, and #62 are now closed outside the 44-item PRD mapping.
+Manifest coverage is 44 IDs total. Twenty-three are closed by this implementation, B4/#12 was already closed, and 20 manifest issues remain open. Additional repository and code-quality issues #43–#46, #48–#54, #57–#60, and #62 are now closed outside the 44-item PRD mapping.
 
 Closed with implementation evidence:
 
+- [#95](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/95) — safe page evidence view, canonical invalidation preview, external recrawl/publish authorization, and immutable rerun/revision audit history.
 - [#48](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/48) — App decomposed into four focused panels with explicit state/action props and regression coverage.
 - [#47](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/47) — Node engine pin.
 - [#69](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/69) — acquisition/page-snapshot contract.
@@ -139,10 +141,10 @@ Work in three disjoint scopes:
 
 1. Run live WordPress validation for A3/#104, A4/#70, C6/#92, A1/#11, B3/#10, A2/#71, and the #13 scorecard/failure-fixture paths; resolve D1/#78 only with authoritative target data.
 2. Run the new WordPress integration job on a real PR, then complete #55/#56 through protected-main verification.
-3. Continue remaining adapter/compiler QA and release-readiness issues in manifest dependency order.
+3. No additional local implementation issue is dependency-ready after #95: #10 and #92 still need live WordPress evidence, #78 is an authoritative human-decision gate, and #107 remains blocked by #100 even after #95 closes.
 4. Preserve this handoff and inspect the 21-commit remote divergence before any synchronization.
 
-Do not start C2, E2, or downstream consumers until their contract artifacts are reviewed. Do not start D2/D6 without authoritative GolfNow target data.
+Do not start #90/#94/#96 or downstream target-profile work without authoritative target data from #78. Do not start pilot/release work before its human-decision and corpus gates close.
 
 ## Later dependency order
 
@@ -158,5 +160,5 @@ Do not start C2, E2, or downstream consumers until their contract artifacts are 
 - Preserve existing user changes and all local implementation commits.
 - Keep each agent’s write set disjoint and return changed files, tests, risks, and open questions.
 - Do not close an issue based only on intent or local unit tests when its acceptance requires external WordPress, PR, authoritative target, or pilot evidence.
-- The local branch remains behind `origin/main` by 21 commits and ahead by thirty-nine local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
-- GitHub comments were posted for the 22 implemented PRD issues, G4/#84, E3/#89, WXR schema/#62, CI/#7/#55, A3/#104, A4/#70, #10/#11/#13/#71, and the repository/code-quality issues #43–#54/#57–#60. #10, #13, #70, #71, #78, #92, #104, #55, and #56 remain open; #12 was already closed before this work. #42 remains open only for the unperformed history-size rewrite.
+- The local branch remains behind `origin/main` by 21 commits and ahead by forty local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
+- GitHub comments were posted for the 23 implemented PRD issues, G4/#84, E3/#89, WXR schema/#62, CI/#7/#55, A3/#104, A4/#70, #10/#11/#13/#71, and the repository/code-quality issues #43–#54/#57–#60. #10, #13, #70, #71, #78, #92, #104, #55, and #56 remain open; #12 was already closed before this work. #42 remains open only for the unperformed history-size rewrite.
