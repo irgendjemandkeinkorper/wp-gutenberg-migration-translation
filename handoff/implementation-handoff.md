@@ -6,9 +6,9 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 
 ## Current baseline
 
-- Local HEAD: latest commit titled `Split WordPress integration CI gate` (use `git log -1 --oneline` for the exact hash).
-- Latest implementation wave: checkpoint process recovery, repository quality gates, and split WordPress integration CI.
-- Branch: `main`, locally ahead of `origin/main` by 36 commits and behind by 21 commits before this handoff refresh.
+- Local HEAD: latest commit titled `Add reconciliation scorecard and migration knowledge vault` (use `git log -1 --oneline` for the exact hash).
+- Latest implementation wave: durable post-import reconciliation artifacts, source-evidence retention, and an Obsidian-compatible cross-project migration knowledge vault.
+- Branch: `main`, locally ahead of `origin/main` by 37 commits and behind by 21 commits before this handoff refresh; the next commit will make the local lead 38.
 - The handoff source files are committed with this implementation wave. A clean worktree after commit is expected.
 - Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all thirty-seven local commits after this handoff refresh before synchronizing.
 - No implementation PR has been pushed and no branch-protection change has been made.
@@ -58,10 +58,12 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 - Repository quality gates: ESLint flat config and CI lint step, Prettier config/format check, provider-adapter refactor, `useProviderSettings` hook, result-panel error boundary, and their focused tests.
 - Vendor disposition under `docs/vendor-disposition.md`: unreferenced `gn-wp-templates/` tree removed from the working tree; its historical bytes remain in Git history pending any authorized history rewrite.
 - CI/harness orientation: `Validate` and `WordPress integration` are separate named jobs with timeout and failure-artifact upload; `CONTRIBUTING.md` documents agent workflow and harness reproduction.
+- M1 scorecard: `integration/wordpress-harness/report.mjs` builds a hash-and-structure-only reconciliation report, while `verification.mjs` extracts source records and the harness retains one raw source HTML audit file per migration record. Successful and failed live runs publish durable reports under `/tmp/blockify-wordpress-harness/reports/` (or `BLOCKIFY_REPORT_DIR`) for CI artifact collection.
+- Cross-project migration knowledge: `knowledge/catalog/` is the canonical capability/failure/project record store; `knowledge/vault/` is an Obsidian-compatible projection; `scripts/generate-knowledge-vault.mjs` supports `npm run knowledge:generate`, `npm run knowledge:check`, and external `--vault` projections. Status values distinguish local contracts from live WordPress support.
 
 ## Current verification evidence
 
-- `npm test -- --reporter=dot` — 37 test files, 162 tests passed.
+- `npm test -- --reporter=dot` — 37 test files, 165 tests passed.
 - `npm run verify` — production build, full test suite, and forced-process checkpoint integration passed with fixture-server/subprocess permissions.
 - `npm run lint` and `npm run format:check` — passed.
 - `npm run check:bundle` — largest JavaScript asset remains below the 650,000-byte budget.
@@ -69,6 +71,7 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 - `npm run build` — TypeScript and Vite production build passed.
 - `git diff --check` — passed.
 - `node integration/wordpress-harness/run.mjs --dry-run` — passed.
+- `npm run knowledge:check` — 21 generated Obsidian-vault files match the canonical catalogs.
 - Live WordPress/Docker validation remains unavailable because Docker Desktop/WSL integration is not enabled in this environment.
 
 ## Historical c810d94 verification evidence
@@ -116,10 +119,15 @@ Closed with implementation evidence:
 
 Implemented but intentionally still open:
 
+- [#10](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/10) — media registry/WXR remapping is implemented locally; live attachment count and URL remapping evidence remains.
 - [#11](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/11) — harness needs a live Docker/WordPress run.
+- [#13](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/13) — durable scorecard and source-evidence artifacts are implemented; successful and failure-fixture live import acceptance remains.
+- [#70](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/70) — attachment reconciliation evidence is implemented locally; live imported IDs/URLs/counts remain.
+- [#71](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/71) — Gutenberg verifier and malformed fixture are implemented locally; live parser evidence remains.
+- [#92](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/92) — local round-trip verifier exists; live WordPress parser validation remains to be run.
+- [#104](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/104) — page/text/placeholder reconciliation is implemented locally; live imported-page evidence remains.
 - [#55](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/55) — needs an actual PR check run and branch protection requiring `CI / Validate`.
 - [#78](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/78) — blocked at the human-decision gate pending authoritative target capability data.
-- [#92](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/92) — local round-trip verifier exists; live WordPress parser validation remains to be run.
 
 The original backlog setup report and complete A1–H5 mapping are in [`github-backlog-setup-report.md`](./github-backlog-setup-report.md). The source requirements remain [`blockify-human-grade-migration-prd.md`](./blockify-human-grade-migration-prd.md) and [`blockify-github-issue-manifest.json`](./blockify-github-issue-manifest.json).
 
@@ -127,7 +135,7 @@ The original backlog setup report and complete A1–H5 mapping are in [`github-b
 
 Work in three disjoint scopes:
 
-1. Run live WordPress validation for A3/#104, A4/#70, C6/#92, A1/#11, B3/#10, and A2/#71; resolve D1/#78 only with authoritative target data.
+1. Run live WordPress validation for A3/#104, A4/#70, C6/#92, A1/#11, B3/#10, A2/#71, and the #13 scorecard/failure-fixture paths; resolve D1/#78 only with authoritative target data.
 2. Run the new WordPress integration job on a real PR, then complete #55/#56 through protected-main verification.
 3. Continue remaining adapter/compiler QA and release-readiness issues in manifest dependency order.
 4. Preserve this handoff and inspect the 21-commit remote divergence before any synchronization.
@@ -136,7 +144,7 @@ Do not start C2, E2, or downstream consumers until their contract artifacts are 
 
 ## Later dependency order
 
-- M1: finish #11/#55, then A2/A3/A4 and reconcile A5/#13; B3/#10 remains the media-delivery implementation lane and still needs live WordPress evidence.
+- M1: finish #11/#55, then A2/A3/A4 and reconcile A5/#13; B3/#10 remains the media-delivery implementation lane and still needs live WordPress evidence. The scorecard is ready to make those live results durable.
 - M3: C1 before C2–C6; D1 before D2–D6.
 - M2: E1 before E2–E5.
 - M4: F/G work after the shared IR and workspace contracts stabilize.
@@ -148,5 +156,5 @@ Do not start C2, E2, or downstream consumers until their contract artifacts are 
 - Preserve existing user changes and all local implementation commits.
 - Keep each agent’s write set disjoint and return changed files, tests, risks, and open questions.
 - Do not close an issue based only on intent or local unit tests when its acceptance requires external WordPress, PR, authoritative target, or pilot evidence.
-- The local branch remains behind `origin/main` by 21 commits and ahead by thirty-seven local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
-- GitHub comments were posted for the 22 implemented PRD issues, G4/#84, E3/#89, WXR schema/#62, CI/#7/#55, A3/#104, A4/#70, and the repository/code-quality issues #43–#54/#57–#60. #70, #78, #92, #104, #55, and #56 remain open; #12 was already closed before this work. #42 remains open only for the unperformed history-size rewrite.
+- The local branch remains behind `origin/main` by 21 commits and ahead by thirty-eight local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
+- GitHub comments were posted for the 22 implemented PRD issues, G4/#84, E3/#89, WXR schema/#62, CI/#7/#55, A3/#104, A4/#70, and the repository/code-quality issues #43–#54/#57–#60. The next evidence comment should cover #10/#13/#71 with this wave’s commit. #10, #13, #70, #71, #78, #92, #104, #55, and #56 remain open; #12 was already closed before this work. #42 remains open only for the unperformed history-size rewrite.

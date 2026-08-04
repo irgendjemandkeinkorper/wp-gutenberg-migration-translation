@@ -1,0 +1,17 @@
+[
+  {
+    "id": "blockify",
+    "name": "Blockify migration",
+    "status": "active",
+    "scope": "HTML/source evidence to Gutenberg IR, deterministic blocks, WXR delivery, and verified WordPress import",
+    "repository": "wp-gutenberg-migration-translation",
+    "evidencePolicy": "Local tests establish contracts; live WordPress harness results are required before declaring production support.",
+    "openGates": [
+      "live disposable WordPress import",
+      "target profile approval",
+      "branch-protected CI",
+      "pilot/release decision"
+    ],
+    "catalogs": ["block-capabilities", "failure-classes"]
+  }
+]

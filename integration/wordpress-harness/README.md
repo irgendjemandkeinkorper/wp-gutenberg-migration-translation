@@ -4,6 +4,11 @@ This harness provisions an isolated WordPress and MariaDB pair, installs the
 official `wordpress-importer` plugin, imports a checked-in WXR fixture, checks
 the homepage/REST API and imported page state, runs the post-import Gutenberg
 verifier, then removes the containers and volumes on success.
+Every live run also writes `reconciliation-report.json`, a JSONL
+source-evidence manifest, and one raw source HTML audit file per migration
+record under the durable report directory. The scorecard contains hashes,
+paths, structural destination evidence, and findings; raw source HTML is kept
+in adjacent audit files rather than duplicated into the scorecard.
 
 ## One command
 
@@ -44,6 +49,12 @@ then fail the Gutenberg gate with a retained JSON verification report:
 ```sh
 node integration/wordpress-harness/run.mjs --fixture known-malformed
 ```
+
+Set `BLOCKIFY_REPORT_DIR` to choose the durable report location. The default is
+`/tmp/blockify-wordpress-harness/reports/<project>`, so successful reports are
+available to CI artifact upload even though the disposable Docker project is
+removed. `BLOCKIFY_STATE_DIR` continues to control retained operational failure
+logs and state.
 
 The verifier reports each page's stable migration ID, block names, nesting
 paths, parser failures, invalid/unregistered blocks, recovered blocks, and

@@ -24,8 +24,15 @@ function nonEmptyString(value) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+function xmlValue(xml, tagName) {
+  const match = String(xml ?? "").match(new RegExp(`<${tagName}\\b[^>]*>([\\s\\S]*?)<\\/${tagName}>`, "i"));
+  return match ? decodeXmlText(match[1]).trim() : "";
+}
+
 function stableHash(value) {
-  return createHash("sha256").update(String(value ?? "")).digest("hex");
+  return createHash("sha256")
+    .update(String(value ?? ""))
+    .digest("hex");
 }
 
 function htmlSummary(value) {
@@ -62,6 +69,40 @@ export function extractMigrationIdsFromWxr(xml) {
 }
 
 /**
+ * Extract source-side page evidence from a WXR fixture without retaining it
+ * in the machine-readable scorecard. The caller writes sourceHtml to a
+ * separate audit artifact and keeps only its hash/path in the report.
+ */
+export function extractSourceEvidenceFromWxr(xml) {
+  const records = [];
+  const itemPattern = /<item\b[^>]*>([\s\S]*?)<\/item>/gi;
+  for (const match of String(xml ?? "").matchAll(itemPattern)) {
+    const item = match[1];
+    let migrationId = "";
+    for (const metaMatch of item.matchAll(/<wp:postmeta\b[^>]*>([\s\S]*?)<\/wp:postmeta>/gi)) {
+      const meta = metaMatch[1];
+      if (xmlValue(meta, "wp:meta_key") === MIGRATION_ID_META_KEY) {
+        migrationId = xmlValue(meta, "wp:meta_value");
+        break;
+      }
+    }
+    const sourceHtml = xmlValue(item, "content:encoded");
+    const sourcePostId = xmlValue(item, "wp:post_id");
+    if (!migrationId) continue;
+    records.push({
+      migrationId,
+      sourcePostId: sourcePostId || null,
+      title: xmlValue(item, "title") || null,
+      slug: xmlValue(item, "wp:post_name") || null,
+      type: xmlValue(item, "wp:post_type") || null,
+      status: xmlValue(item, "wp:status") || null,
+      sourceHtml,
+    });
+  }
+  return records.sort((left, right) => left.migrationId.localeCompare(right.migrationId));
+}
+
+/**
  * Deterministically inspect serialized Gutenberg comments without requiring a
  * running WordPress. This catches malformed delimiters and root-level HTML;
  * the live verifier augments it with WordPress's parse_blocks output.
@@ -92,12 +133,22 @@ export function analyzeBlockMarkup(markup) {
     const isSelfClosing = /\/\s*-->\s*$/i.test(token);
     if (isClosing) {
       if (!stack.length) {
-        parserFailures.push({ kind: "unmatched-closing-block", name, path: "root", message: `Closing ${name} has no matching opening block.` });
+        parserFailures.push({
+          kind: "unmatched-closing-block",
+          name,
+          path: "root",
+          message: `Closing ${name} has no matching opening block.`,
+        });
         continue;
       }
       const open = stack[stack.length - 1];
       if (open.name !== name) {
-        parserFailures.push({ kind: "mismatched-closing-block", name, path: open.path, message: `Expected closing ${open.name}, found closing ${name}.` });
+        parserFailures.push({
+          kind: "mismatched-closing-block",
+          name,
+          path: open.path,
+          message: `Expected closing ${open.name}, found closing ${name}.`,
+        });
         stack.pop();
         continue;
       }
@@ -115,13 +166,22 @@ export function analyzeBlockMarkup(markup) {
 
   if (stack.length === 0) addFreeform(source.slice(cursor), "root");
   for (const node of stack.toReversed()) {
-    parserFailures.push({ kind: "unclosed-block", name: node.name, path: node.path, message: `Block ${node.name} was not closed.` });
+    parserFailures.push({
+      kind: "unclosed-block",
+      name: node.name,
+      path: node.path,
+      message: `Block ${node.name} was not closed.`,
+    });
   }
 
   const blockMarkerCount = [...source.matchAll(/<!--\s*\/?\s*wp:/gi)].length;
   const recognizedMarkerCount = [...source.matchAll(tokenPattern)].length;
   if (blockMarkerCount > recognizedMarkerCount) {
-    parserFailures.push({ kind: "malformed-block-marker", path: "root", message: "A Gutenberg block marker is not a complete WordPress comment." });
+    parserFailures.push({
+      kind: "malformed-block-marker",
+      path: "root",
+      message: "A Gutenberg block marker is not a complete WordPress comment.",
+    });
   }
 
   const blocks = [];
@@ -148,7 +208,8 @@ function flattenWordPressBlocks(blocks, path = "root") {
     const blockPath = nonEmptyString(block?.path) || `${path}.${index + 1}`;
     const name = nonEmptyString(block?.name ?? block?.blockName);
     const children = Array.isArray(block?.children) ? block.children : block?.innerBlocks;
-    const freeform = block?.freeformHtml || (block?.freeform && typeof block.freeform === "object" ? block.freeform : null);
+    const freeform =
+      block?.freeformHtml || (block?.freeform && typeof block.freeform === "object" ? block.freeform : null);
     flattened.push({
       name,
       path: blockPath,
@@ -174,12 +235,25 @@ function pageDiagnostics(page) {
   const recoveredBlocks = diagnosticList(page.recoveredBlocks);
 
   if (!Array.isArray(page.blocks)) {
-    parserFailures.push({ kind: "missing-wordpress-block-output", message: "WordPress did not return parsed block data for this page." });
+    parserFailures.push({
+      kind: "missing-wordpress-block-output",
+      message: "WordPress did not return parsed block data for this page.",
+    });
   }
 
   for (const block of blocks) {
-    if (block.invalid) invalidBlocks.push({ name: block.name, path: block.path, message: `Block ${block.name} is not registered or was marked invalid by WordPress.` });
-    if (block.recovered) recoveredBlocks.push({ name: block.name, path: block.path, message: `Block ${block.name} was recovered by the parser.` });
+    if (block.invalid)
+      invalidBlocks.push({
+        name: block.name,
+        path: block.path,
+        message: `Block ${block.name} is not registered or was marked invalid by WordPress.`,
+      });
+    if (block.recovered)
+      recoveredBlocks.push({
+        name: block.name,
+        path: block.path,
+        message: `Block ${block.name} was recovered by the parser.`,
+      });
     if (block.freeformHtml) unexpectedFreeformHtml.push({ path: block.path, ...block.freeformHtml });
   }
 
@@ -210,39 +284,75 @@ function uniqueSorted(values) {
 
 export function verifyImportedPages({ pages, expectedMigrationIds }) {
   const records = Array.isArray(pages) ? pages : [];
-  const expected = uniqueSorted((Array.isArray(expectedMigrationIds) ? expectedMigrationIds : []).map(nonEmptyString).filter(Boolean));
+  const expected = uniqueSorted(
+    (Array.isArray(expectedMigrationIds) ? expectedMigrationIds : []).map(nonEmptyString).filter(Boolean),
+  );
   const failures = [];
   const seen = new Map();
   const pageReports = records.map(pageDiagnostics);
 
-  if (!expected.length) failures.push({ kind: "missing-fixture-migration-ids", message: "The fixture declares no stable migration IDs." });
+  if (!expected.length)
+    failures.push({ kind: "missing-fixture-migration-ids", message: "The fixture declares no stable migration IDs." });
   for (const page of pageReports) {
     if (!page.migrationId) {
-      failures.push({ kind: "missing-migration-id", postId: page.postId, message: "Imported page has no stable migration ID." });
+      failures.push({
+        kind: "missing-migration-id",
+        postId: page.postId,
+        message: "Imported page has no stable migration ID.",
+      });
       continue;
     }
     if (seen.has(page.migrationId)) {
-      failures.push({ kind: "duplicate-migration-id", migrationId: page.migrationId, message: `Migration ID ${page.migrationId} was returned more than once.` });
+      failures.push({
+        kind: "duplicate-migration-id",
+        migrationId: page.migrationId,
+        message: `Migration ID ${page.migrationId} was returned more than once.`,
+      });
     }
     seen.set(page.migrationId, page);
     if (page.status && page.status !== "publish") {
-      failures.push({ kind: "unexpected-page-status", migrationId: page.migrationId, message: `Imported page has status ${page.status}, expected publish.` });
+      failures.push({
+        kind: "unexpected-page-status",
+        migrationId: page.migrationId,
+        message: `Imported page has status ${page.status}, expected publish.`,
+      });
     }
-    for (const diagnostic of page.parserFailures) failures.push({ ...diagnostic, kind: "parser-failure", diagnosticKind: diagnostic.kind, migrationId: page.migrationId });
-    for (const diagnostic of page.invalidBlocks) failures.push({ kind: "invalid-block", migrationId: page.migrationId, ...diagnostic });
-    for (const diagnostic of page.recoveredBlocks) failures.push({ kind: "recovered-block", migrationId: page.migrationId, ...diagnostic });
-    for (const diagnostic of page.unexpectedFreeformHtml) failures.push({ kind: "unexpected-freeform-html", migrationId: page.migrationId, ...diagnostic });
+    for (const diagnostic of page.parserFailures)
+      failures.push({
+        ...diagnostic,
+        kind: "parser-failure",
+        diagnosticKind: diagnostic.kind,
+        migrationId: page.migrationId,
+      });
+    for (const diagnostic of page.invalidBlocks)
+      failures.push({ kind: "invalid-block", migrationId: page.migrationId, ...diagnostic });
+    for (const diagnostic of page.recoveredBlocks)
+      failures.push({ kind: "recovered-block", migrationId: page.migrationId, ...diagnostic });
+    for (const diagnostic of page.unexpectedFreeformHtml)
+      failures.push({ kind: "unexpected-freeform-html", migrationId: page.migrationId, ...diagnostic });
   }
 
   const actual = uniqueSorted(pageReports.map((page) => page.migrationId).filter(Boolean));
   for (const migrationId of expected) {
-    if (!seen.has(migrationId)) failures.push({ kind: "missing-imported-page", migrationId, message: `Fixture page ${migrationId} was not returned by WordPress.` });
+    if (!seen.has(migrationId))
+      failures.push({
+        kind: "missing-imported-page",
+        migrationId,
+        message: `Fixture page ${migrationId} was not returned by WordPress.`,
+      });
   }
   for (const migrationId of actual) {
-    if (!expected.includes(migrationId)) failures.push({ kind: "unexpected-imported-page", migrationId, message: `WordPress returned page ${migrationId}, which is not declared by the fixture.` });
+    if (!expected.includes(migrationId))
+      failures.push({
+        kind: "unexpected-imported-page",
+        migrationId,
+        message: `WordPress returned page ${migrationId}, which is not declared by the fixture.`,
+      });
   }
 
-  const orderedPages = [...pageReports].sort((left, right) => (left.migrationId || "").localeCompare(right.migrationId || ""));
+  const orderedPages = [...pageReports].sort((left, right) =>
+    (left.migrationId || "").localeCompare(right.migrationId || ""),
+  );
   return {
     schemaVersion: "1.0.0",
     pass: failures.length === 0,
@@ -255,8 +365,17 @@ export function verifyImportedPages({ pages, expectedMigrationIds }) {
 
 export function assertVerificationPass(report) {
   if (report?.pass) return report;
-  const details = (report?.failures || []).slice(0, 8).map((failure) => `${failure.kind}${failure.migrationId ? ` [${failure.migrationId}]` : ""}: ${failure.message || "diagnostic recorded"}`).join("; ");
-  throw new VerificationError(`Gutenberg verification failed with ${(report?.failures || []).length} diagnostic(s). ${details}`, report);
+  const details = (report?.failures || [])
+    .slice(0, 8)
+    .map(
+      (failure) =>
+        `${failure.kind}${failure.migrationId ? ` [${failure.migrationId}]` : ""}: ${failure.message || "diagnostic recorded"}`,
+    )
+    .join("; ");
+  throw new VerificationError(
+    `Gutenberg verification failed with ${(report?.failures || []).length} diagnostic(s). ${details}`,
+    report,
+  );
 }
 
 /**

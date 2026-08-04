@@ -1,0 +1,129 @@
+[
+  {
+    "id": "core/paragraph",
+    "label": "Paragraph",
+    "status": "locally-verified",
+    "confidence": "high",
+    "destination": "core/paragraph",
+    "lossModes": [],
+    "evidence": [
+      "src/lib/compiler/core.ts",
+      "src/test/compiler-core.test.ts",
+      "integration/reliability/fixtures/hosted-builder.html"
+    ],
+    "nextProbe": "Run the valid nested fixture through live WordPress parse_blocks() and compare text recall/order."
+  },
+  {
+    "id": "core/heading",
+    "label": "Heading",
+    "status": "locally-verified",
+    "confidence": "high",
+    "destination": "core/heading",
+    "lossModes": ["heading levels outside the supported target range may be normalized"],
+    "evidence": ["src/lib/compiler/core.ts", "src/test/compiler-core.test.ts"],
+    "nextProbe": "Verify heading levels and registered block parsing inside the target WordPress version."
+  },
+  {
+    "id": "core/list",
+    "label": "Ordered and unordered list",
+    "status": "locally-verified",
+    "confidence": "high",
+    "destination": "core/list + core/list-item",
+    "lossModes": ["non-list children are preserved with a warning"],
+    "evidence": [
+      "src/lib/compiler/core.ts",
+      "src/test/compiler-core.test.ts",
+      "integration/reliability/fixtures/hosted-builder.html"
+    ],
+    "nextProbe": "Verify nested ordered/unordered lists against the target parser and theme."
+  },
+  {
+    "id": "core/quote",
+    "label": "Quote",
+    "status": "locally-verified",
+    "confidence": "medium",
+    "destination": "core/quote",
+    "lossModes": ["non-paragraph quote children are rendered as flow content"],
+    "evidence": ["src/lib/compiler/core.ts", "src/test/compiler-core.test.ts"],
+    "nextProbe": "Add a live quote fixture with nested inline marks and compare rendered structure."
+  },
+  {
+    "id": "core/code",
+    "label": "Code",
+    "status": "locally-verified",
+    "confidence": "medium",
+    "destination": "core/code",
+    "lossModes": ["language metadata is not currently preserved"],
+    "evidence": ["src/lib/compiler/core.ts", "src/test/compiler-core.test.ts"],
+    "nextProbe": "Decide whether code-language metadata is required, then verify parser and rendering behavior."
+  },
+  {
+    "id": "core/table",
+    "label": "Table",
+    "status": "locally-verified",
+    "confidence": "medium",
+    "destination": "core/table",
+    "lossModes": ["caption, alignment, and complex cell attributes require explicit IR extensions"],
+    "evidence": [
+      "src/lib/compiler/core.ts",
+      "src/test/compiler-core.test.ts",
+      "integration/reliability/fixtures/static-table.html"
+    ],
+    "nextProbe": "Expand table fixtures for captions, colspan/rowspan, and alignment before declaring live support."
+  },
+  {
+    "id": "core/image",
+    "label": "Image",
+    "status": "locally-verified",
+    "confidence": "high",
+    "destination": "core/image",
+    "lossModes": ["delivery is blocking until media identity is reconciled to a destination attachment"],
+    "evidence": ["src/lib/compiler/media.ts", "src/test/compiler-media.test.ts", "src/lib/media/registry.ts"],
+    "nextProbe": "Run the shared/query-string media fixture through live WordPress and reconcile attachment IDs and URLs."
+  },
+  {
+    "id": "core/gallery",
+    "label": "Gallery",
+    "status": "locally-verified",
+    "confidence": "medium",
+    "destination": "core/gallery + core/image",
+    "lossModes": ["gallery layout/options are intentionally minimal; each asset still requires media reconciliation"],
+    "evidence": [
+      "src/lib/ir/emitter.ts",
+      "src/lib/compiler/media.ts",
+      "src/test/ir-emitter.test.ts",
+      "src/test/compiler-media.test.ts"
+    ],
+    "nextProbe": "Verify ordering, shared assets, and gallery rendering in the target WordPress environment."
+  },
+  {
+    "id": "unknown-content",
+    "label": "Unsupported or unknown content",
+    "status": "placeholder-required",
+    "confidence": "high",
+    "destination": "core/html migration placeholder",
+    "lossModes": ["content is not semantically translated", "release remains blocked until reviewed or remediated"],
+    "evidence": ["src/lib/compiler/core.ts", "src/lib/blocks.ts", "src/test/compiler-core.test.ts"],
+    "nextProbe": "Classify recurring unknown nodes and add a dedicated compiler only after a target capability is approved."
+  },
+  {
+    "id": "core/embed",
+    "label": "Embed",
+    "status": "unsupported",
+    "confidence": "high",
+    "destination": "migration placeholder",
+    "lossModes": ["provider-specific embed semantics are not implemented"],
+    "evidence": ["src/lib/compiler/core.ts", "src/lib/ir/types.ts"],
+    "nextProbe": "Capture provider, privacy, and target-plugin requirements before implementing an adapter."
+  },
+  {
+    "id": "core/form",
+    "label": "Form or widget",
+    "status": "unsupported",
+    "confidence": "high",
+    "destination": "migration placeholder",
+    "lossModes": ["submission behavior, validation, and integrations cannot be inferred safely"],
+    "evidence": ["src/lib/ir/types.ts", "src/lib/compiler/core.ts"],
+    "nextProbe": "Require an approved target form capability and security/privacy contract before translation."
+  }
+]

@@ -11,8 +11,10 @@ import {
   analyzeBlockMarkup,
   assertVerificationPass,
   extractMigrationIdsFromWxr,
+  extractSourceEvidenceFromWxr,
   verifyImportedPages,
 } from "./verification.mjs";
+import { buildReconciliationReport } from "./report.mjs";
 
 const harnessDir = dirname(fileURLToPath(import.meta.url));
 const repoDir = resolve(harnessDir, "../..");
@@ -39,6 +41,7 @@ Options:
 Environment:
   BLOCKIFY_RUN_ID                 Safe run identifier for repeatable diagnostics
   BLOCKIFY_STATE_DIR              Failure artifact directory (default: OS temp)
+  BLOCKIFY_REPORT_DIR             Durable scorecard/evidence directory (default: OS temp)
   BLOCKIFY_WP_THEME_SLUG         Optional WordPress.org theme to install and activate
   BLOCKIFY_WP_PLUGIN_SLUGS       Optional comma-separated WordPress.org plugins to install/activate
   BLOCKIFY_IMPORTER_VERSION      Official wordpress-importer version (default: ${importerVersion})
@@ -108,7 +111,10 @@ function redact(value) {
 function appendLog(logPath, label, result) {
   const stdout = redact(result.stdout);
   const stderr = redact(result.stderr);
-  appendFileSync(logPath, `\n===== ${label} =====\n$ ${redact(result.command)}\n${stdout}${stderr ? `\n[stderr]\n${stderr}` : ""}\nexit=${result.status ?? "signal"}\n`);
+  appendFileSync(
+    logPath,
+    `\n===== ${label} =====\n$ ${redact(result.command)}\n${stdout}${stderr ? `\n[stderr]\n${stderr}` : ""}\nexit=${result.status ?? "signal"}\n`,
+  );
 }
 
 function commandResult(command, args, options = {}) {
@@ -172,13 +178,17 @@ function dryRun(fixtureKey) {
     throw new HarnessError("Known-good fixture is missing its deterministic page slug.");
   }
   if (fixtureKey === "known-good") {
-    const analysis = analyzeBlockMarkup(fixtureText.match(/<content:encoded><!\[CDATA\[([\s\S]*?)\]\]><\/content:encoded>/i)?.[1] || "");
+    const analysis = analyzeBlockMarkup(
+      fixtureText.match(/<content:encoded><!\[CDATA\[([\s\S]*?)\]\]><\/content:encoded>/i)?.[1] || "",
+    );
     if (analysis.parserFailures.length || analysis.unexpectedFreeformHtml.length) {
       throw new HarnessError("Known-good fixture contains malformed block markup or unexpected freeform HTML.");
     }
   }
   if (fixtureKey === "known-malformed") {
-    const analysis = analyzeBlockMarkup(fixtureText.match(/<content:encoded><!\[CDATA\[([\s\S]*?)\]\]><\/content:encoded>/i)?.[1] || "");
+    const analysis = analyzeBlockMarkup(
+      fixtureText.match(/<content:encoded><!\[CDATA\[([\s\S]*?)\]\]><\/content:encoded>/i)?.[1] || "",
+    );
     if (!analysis.parserFailures.length) {
       throw new HarnessError("Known-malformed fixture does not contain a detectable parser failure.");
     }
@@ -199,23 +209,62 @@ async function main() {
 
   const dockerCheck = commandResult("docker", ["compose", "version"]);
   if (dockerCheck.status !== 0) {
-    throw new HarnessError("Docker Compose v2 is required. Install/start Docker Desktop or Docker Engine, then rerun this command.");
+    throw new HarnessError(
+      "Docker Compose v2 is required. Install/start Docker Desktop or Docker Engine, then rerun this command.",
+    );
   }
 
   const runId = safeRunId(process.env.BLOCKIFY_RUN_ID);
   const project = `blockify-wp-${runId}`;
   const stateDir = resolve(process.env.BLOCKIFY_STATE_DIR || join("/tmp", "blockify-wordpress-harness", project));
+  const reportDir = resolve(
+    process.env.BLOCKIFY_REPORT_DIR || join("/tmp", "blockify-wordpress-harness", "reports", project),
+  );
   if (existsSync(stateDir)) {
-    throw new HarnessError(`Failure state directory already exists: ${stateDir}. Choose another BLOCKIFY_RUN_ID or remove it after inspection.`);
+    throw new HarnessError(
+      `Failure state directory already exists: ${stateDir}. Choose another BLOCKIFY_RUN_ID or remove it after inspection.`,
+    );
   }
-  const port = Number(process.env.BLOCKIFY_WP_PORT || await findAvailablePort());
+  if (existsSync(reportDir)) {
+    throw new HarnessError(
+      `Report directory already exists: ${reportDir}. Choose another BLOCKIFY_RUN_ID or remove it after inspection.`,
+    );
+  }
+  const port = Number(process.env.BLOCKIFY_WP_PORT || (await findAvailablePort()));
   if (!Number.isInteger(port) || port < 1024 || port > 65535) {
     throw new HarnessError("BLOCKIFY_WP_PORT must be an integer between 1024 and 65535.");
   }
   mkdirSync(stateDir, { recursive: true });
+  mkdirSync(join(reportDir, "source-html"), { recursive: true });
   const logPath = join(stateDir, "harness.log");
   const statePath = join(stateDir, "state.json");
+  const reportPath = join(reportDir, "reconciliation-report.json");
+  const sourceManifestPath = join(reportDir, "source-evidence.jsonl");
   const fixturePath = join(fixturesDir, fixtureFiles[options.fixture]);
+  const fixtureText = readFileSync(fixturePath, "utf8");
+  const sourceRecords = extractSourceEvidenceFromWxr(fixtureText);
+  const sourceEvidenceManifest = sourceRecords.map((record, index) => {
+    const fileName = `source-${String(index + 1).padStart(4, "0")}.html`;
+    const relativePath = `source-html/${fileName}`;
+    const sourcePath = join(reportDir, relativePath);
+    writeFileSync(sourcePath, record.sourceHtml);
+    return {
+      migrationId: record.migrationId,
+      sourcePostId: record.sourcePostId,
+      title: record.title,
+      slug: record.slug,
+      type: record.type,
+      status: record.status,
+      path: relativePath,
+      bytes: Buffer.byteLength(record.sourceHtml, "utf8"),
+      sha256: createHash("sha256").update(record.sourceHtml).digest("hex"),
+    };
+  });
+  writeFileSync(
+    sourceManifestPath,
+    sourceEvidenceManifest.map((record) => JSON.stringify(record)).join("\n") +
+      (sourceEvidenceManifest.length ? "\n" : ""),
+  );
   const url = `http://127.0.0.1:${port}`;
   const composeEnv = { ...process.env, BLOCKIFY_WP_PORT: String(port), COMPOSE_PROJECT_NAME: project };
   const summary = {
@@ -226,6 +275,9 @@ async function main() {
     importerVersion,
     url,
     stateDir,
+    reportDir,
+    reportPath,
+    sourceManifestPath,
     startedAt: new Date().toISOString(),
     optionalTargetPieces: {
       theme: process.env.BLOCKIFY_WP_THEME_SLUG || null,
@@ -235,7 +287,9 @@ async function main() {
   writeFileSync(statePath, `${JSON.stringify(summary, null, 2)}\n`);
 
   const compose = (args, label) => {
-    const result = commandResult("docker", ["compose", "--project-name", project, "--file", composeFile, ...args], { env: composeEnv });
+    const result = commandResult("docker", ["compose", "--project-name", project, "--file", composeFile, ...args], {
+      env: composeEnv,
+    });
     appendLog(logPath, label, result);
     return result;
   };
@@ -246,17 +300,48 @@ async function main() {
   };
   const started = { value: false };
   let completed = false;
+  let verification = null;
+  let importedPages = [];
+  let homepageStatus = null;
+  let restApiStatus = null;
+
+  const writeReport = (failure = null) => {
+    const report = buildReconciliationReport({
+      run: {
+        runId,
+        project,
+        fixture: options.fixture,
+        fixtureSha256: summary.fixtureSha256,
+        importerVersion,
+        startedAt: summary.startedAt,
+        completedAt: summary.completedAt || null,
+      },
+      sourceRecords,
+      sourceEvidenceManifest,
+      verification,
+      homepageStatus,
+      restApiStatus,
+      failure,
+    });
+    writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+    summary.reconciliationReport = { path: reportPath, pass: report.pass, findingCount: report.findings.length };
+    writeFileSync(statePath, `${JSON.stringify(summary, null, 2)}\n`);
+    return report;
+  };
 
   const captureFailureState = (reason) => {
     summary.failure = redact(reason instanceof Error ? reason.message : String(reason));
     summary.failedAt = new Date().toISOString();
-    writeFileSync(statePath, `${JSON.stringify(summary, null, 2)}\n`);
+    writeReport(summary.failure);
     compose(["ps", "--all"], "failure docker compose ps");
     compose(["logs", "--no-color", "--tail=250", "wordpress", "db"], "failure service logs");
     wp(["core", "version"], "failure WordPress core version");
     wp(["plugin", "list", "--format=table"], "failure plugin list");
     wp(["option", "get", "home"], "failure WordPress home option");
-    wp(["post", "list", "--post_type=page", "--fields=ID,post_title,post_status,post_name", "--format=table"], "failure page state");
+    wp(
+      ["post", "list", "--post_type=page", "--fields=ID,post_title,post_status,post_name", "--format=table"],
+      "failure page state",
+    );
     compose(["stop"], "failure stop containers");
   };
 
@@ -267,36 +352,83 @@ async function main() {
 
     const installed = wp(["core", "is-installed"], "check WordPress installation");
     if (installed.status !== 0) {
-      requireSuccess(wp([
-        "core", "install",
-        `--url=${url}`,
-        "--title=Blockify Disposable Harness",
-        "--admin_user=blockify-harness",
-        `--admin_password=${adminPassword}`,
-        "--admin_email=blockify-harness@example.invalid",
-        "--skip-email",
-      ], "install WordPress core"), "WordPress core installation");
+      requireSuccess(
+        wp(
+          [
+            "core",
+            "install",
+            `--url=${url}`,
+            "--title=Blockify Disposable Harness",
+            "--admin_user=blockify-harness",
+            `--admin_password=${adminPassword}`,
+            "--admin_email=blockify-harness@example.invalid",
+            "--skip-email",
+          ],
+          "install WordPress core",
+        ),
+        "WordPress core installation",
+      );
     }
 
-    requireSuccess(wp(["plugin", "install", "wordpress-importer", `--version=${importerVersion}`, "--activate"], "install official WordPress importer"), "Official importer installation");
+    requireSuccess(
+      wp(
+        ["plugin", "install", "wordpress-importer", `--version=${importerVersion}`, "--activate"],
+        "install official WordPress importer",
+      ),
+      "Official importer installation",
+    );
 
     const theme = process.env.BLOCKIFY_WP_THEME_SLUG?.trim();
-    if (theme) requireSuccess(wp(["theme", "install", safeSlug(theme, "BLOCKIFY_WP_THEME_SLUG"), "--activate"], "install optional target theme"), "Optional target theme installation");
+    if (theme)
+      requireSuccess(
+        wp(
+          ["theme", "install", safeSlug(theme, "BLOCKIFY_WP_THEME_SLUG"), "--activate"],
+          "install optional target theme",
+        ),
+        "Optional target theme installation",
+      );
     else console.log("Optional target theme: not configured; skipped.");
 
     for (const plugin of slugsFromEnv("BLOCKIFY_WP_PLUGIN_SLUGS")) {
-      requireSuccess(wp(["plugin", "install", plugin, "--activate"], `install optional target plugin ${plugin}`), `Optional target plugin ${plugin} installation`);
+      requireSuccess(
+        wp(["plugin", "install", plugin, "--activate"], `install optional target plugin ${plugin}`),
+        `Optional target plugin ${plugin} installation`,
+      );
     }
     if (!process.env.BLOCKIFY_WP_PLUGIN_SLUGS?.trim()) console.log("Optional target plugins: not configured; skipped.");
 
-    requireSuccess(wp(["plugin", "is-active", "wordpress-importer"], "verify official importer active"), "Official importer activation");
-    requireSuccess(wp(["import", `/fixtures/${fixtureFiles[options.fixture]}`, "--authors=create"], `import ${options.fixture} WXR fixture`), "WXR import");
+    requireSuccess(
+      wp(["plugin", "is-active", "wordpress-importer"], "verify official importer active"),
+      "Official importer activation",
+    );
+    requireSuccess(
+      wp(
+        ["import", `/fixtures/${fixtureFiles[options.fixture]}`, "--authors=create"],
+        `import ${options.fixture} WXR fixture`,
+      ),
+      "WXR import",
+    );
 
     const home = await waitForHttp(`${url}/`);
     const api = await waitForHttp(`${url}/wp-json/`);
-    if (home.status !== 200 || api.status !== 200) throw new HarnessError(`Unexpected verification status: homepage=${home.status}, REST API=${api.status}`);
-    const pages = requireSuccess(wp(["post", "list", "--post_type=page", "--name=blockify-harness-fixture-page", "--fields=ID,post_title,post_status,post_name", "--format=json"], "verify imported page state"), "Imported page verification");
-    let importedPages;
+    homepageStatus = home.status;
+    restApiStatus = api.status;
+    if (homepageStatus !== 200 || restApiStatus !== 200)
+      throw new HarnessError(`Unexpected verification status: homepage=${homepageStatus}, REST API=${restApiStatus}`);
+    const pages = requireSuccess(
+      wp(
+        [
+          "post",
+          "list",
+          "--post_type=page",
+          "--name=blockify-harness-fixture-page",
+          "--fields=ID,post_title,post_status,post_name",
+          "--format=json",
+        ],
+        "verify imported page state",
+      ),
+      "Imported page verification",
+    );
     try {
       importedPages = JSON.parse(pages.stdout.trim() || "[]");
     } catch {
@@ -306,23 +438,32 @@ async function main() {
       throw new HarnessError(`Expected one published fixture page, found ${importedPages.length}.`);
     }
 
-    const pageInspection = requireSuccess(wp(["--quiet", "eval", WORDPRESS_VERIFICATION_EVAL], "inspect imported Gutenberg blocks"), "WordPress Gutenberg inspection");
+    const pageInspection = requireSuccess(
+      wp(["--quiet", "eval", WORDPRESS_VERIFICATION_EVAL], "inspect imported Gutenberg blocks"),
+      "WordPress Gutenberg inspection",
+    );
     let inspectedPages;
     try {
       inspectedPages = JSON.parse(pageInspection.stdout.trim() || "[]");
     } catch {
       throw new HarnessError("WordPress returned an unreadable Gutenberg verification response.");
     }
-    const expectedMigrationIds = extractMigrationIdsFromWxr(readFileSync(fixturePath, "utf8"));
-    const verification = verifyImportedPages({ pages: inspectedPages, expectedMigrationIds });
-    summary.verification = { homepageStatus: home.status, restApiStatus: api.status, importedPages, ...verification };
+    const expectedMigrationIds = extractMigrationIdsFromWxr(fixtureText);
+    verification = verifyImportedPages({ pages: inspectedPages, expectedMigrationIds });
+    summary.verification = { homepageStatus, restApiStatus, importedPages, ...verification };
     writeFileSync(statePath, `${JSON.stringify(summary, null, 2)}\n`);
+    const report = writeReport();
     assertVerificationPass(verification);
+    if (!report.pass) throw new HarnessError(`Reconciliation report contains ${report.findings.length} finding(s).`);
     summary.completedAt = new Date().toISOString();
     writeFileSync(statePath, `${JSON.stringify(summary, null, 2)}\n`);
+    writeReport();
     completed = true;
     console.log(`PASS: imported ${options.fixture} WXR into disposable WordPress at ${url}.`);
-    console.log(`Verified homepage=${home.status}, REST API=${api.status}, pages=${verification.actualMigrationIds.length}, Gutenberg blocks=${verification.pages.reduce((count, page) => count + page.blocks.length, 0)}.`);
+    console.log(
+      `Verified homepage=${home.status}, REST API=${api.status}, pages=${verification.actualMigrationIds.length}, Gutenberg blocks=${verification.pages.reduce((count, page) => count + page.blocks.length, 0)}.`,
+    );
+    console.log(`Reconciliation report: ${reportPath}`);
   } catch (error) {
     if (started.value) captureFailureState(error);
     throw error;
@@ -341,7 +482,10 @@ async function main() {
 
 main().catch((error) => {
   console.error(`FAIL: ${error instanceof Error ? error.message : String(error)}`);
-  if (error instanceof HarnessError && error.message.includes("Failure state directory")) {
+  if (
+    error instanceof HarnessError &&
+    (error.message.includes("Failure state directory") || error.message.includes("Report directory"))
+  ) {
     console.error("No containers were started; no failure artifacts were changed.");
   }
   process.exitCode = 1;
