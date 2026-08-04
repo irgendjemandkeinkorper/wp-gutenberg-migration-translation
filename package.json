@@ -24,6 +24,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
     "test:checkpoint": "node integration/workspace/checkpoint-integration.mjs",
+    "test:wordpress": "node integration/wordpress-harness/run.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "crawl": "node scripts/crawl.mjs"
