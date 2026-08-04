@@ -2,7 +2,9 @@
 
 A fully client-side web app that converts content from any non-WordPress web
 page into WordPress **Gutenberg block markup**, and bundles converted pages
-into a **WXR** file for Tools → Import → WordPress. Nothing leaves your
+into a **WXR** file for Tools → Import → WordPress. Despite the repository
+name, translation between languages is not implemented; the current product
+scope is HTML → Gutenberg → WXR migration. Nothing leaves your
 browser except the optional page fetch (via a public CORS proxy) and requests
 sent directly to the selected AI provider.
 

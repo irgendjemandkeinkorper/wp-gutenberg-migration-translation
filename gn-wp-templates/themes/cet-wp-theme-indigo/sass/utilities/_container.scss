@@ -1,9 +1,0 @@
-.container {
-    // Makes anything inside container take full viewport width
-    .indigo-full-width-inside-container {
-        width: 100vw; /* Make it 100% of the viewport width */
-        position: relative; /* Essential for positioning relative to its normal flow */
-        left: 50%; /* Center the element horizontally */
-        margin-left: -50vw; /* Pull it back by half its width to truly center and expand */
-    }
-}

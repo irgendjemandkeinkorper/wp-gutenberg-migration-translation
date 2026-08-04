@@ -1,8 +1,0 @@
-/*
- * Layer Order Declaration
- *
- * Establishes cascade layer order for the theme architecture.
- * Must be declared before any @layer usage.
- */
-
-@layer reset, tokens, base, typography, layout, components, blocks, utilities;

@@ -1,9 +1,0 @@
-.wp-block-media-text {
-    &:not(.alignfull) {
-        .wp-block-media-text__content {
-            @media only screen and (min-width: 960px) {
-                padding: 0 8% 0 0;
-            }
-        }
-    }
-}
