@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { downloadFile, loadBundle, saveBundle } from "./lib/bundle";
 import { fetchPage } from "./lib/fetchPage";
-import { DEFAULT_PROVIDER, getProviderConfig, isLlmProvider, LLM_PROVIDERS } from "./lib/llm";
+import { LLM_PROVIDERS } from "./lib/llm";
 import { convertPage } from "./lib/pipeline";
 import { buildWxr, slugify } from "./lib/wxr";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import type { LlmProvider } from "./lib/llm";
+import { useProviderSettings } from "./hooks/useProviderSettings";
 import type { BundlePage, PageResult, StepStatus, StepUpdate } from "./lib/types";
 
 const STEP_ORDER = ["Fetch", "Extract", "Images", "Clean (LLM)", "Validate", "Blocks"];
@@ -42,30 +42,6 @@ interface BatchState {
   note?: string;
 }
 
-type ProviderValues = Record<LlmProvider, string>;
-
-function initialProvider(): LlmProvider {
-  const saved = localStorage.getItem("blockify.provider");
-  return isLlmProvider(saved) ? saved : DEFAULT_PROVIDER;
-}
-
-function initialModels(): ProviderValues {
-  const legacyGemini = localStorage.getItem("blockify.model");
-  return {
-    gemini: localStorage.getItem("blockify.model.gemini") || legacyGemini || getProviderConfig("gemini").defaultModel,
-    anthropic: localStorage.getItem("blockify.model.anthropic") || getProviderConfig("anthropic").defaultModel,
-    openai: localStorage.getItem("blockify.model.openai") || getProviderConfig("openai").defaultModel,
-  };
-}
-
-function initialApiKeys(): ProviderValues {
-  return {
-    gemini: sessionStorage.getItem("blockify.apiKey.gemini") || localStorage.getItem("blockify.apiKey") || "",
-    anthropic: sessionStorage.getItem("blockify.apiKey.anthropic") || "",
-    openai: sessionStorage.getItem("blockify.apiKey.openai") || "",
-  };
-}
-
 export default function App() {
   const [tab, setTab] = useState<"paste" | "fetch" | "batch">("paste");
   const [pastedHtml, setPastedHtml] = useState("");
@@ -74,9 +50,7 @@ export default function App() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  const [provider, setProvider] = useState<LlmProvider>(initialProvider);
-  const [apiKeys, setApiKeys] = useState<ProviderValues>(initialApiKeys);
-  const [models, setModels] = useState<ProviderValues>(initialModels);
+  const { apiKey, model, provider, providerConfig, setApiKey, setModel, setProvider } = useProviderSettings();
   const [skipLlm, setSkipLlm] = useState(() => localStorage.getItem("blockify.skipLlm") === "1");
 
   const [busy, setBusy] = useState(false);
@@ -100,39 +74,11 @@ export default function App() {
   const [sideload, setSideload] = useState(true);
   const [targetTemplate, setTargetTemplate] = useState(() => localStorage.getItem("blockify.targetTemplate") ?? "");
 
-  const providerConfig = getProviderConfig(provider);
-  const apiKey = apiKeys[provider];
-  const model = models[provider];
-
   useEffect(() => saveBundle(bundle), [bundle]);
-  useEffect(() => {
-    localStorage.removeItem("blockify.apiKey");
-    localStorage.removeItem("blockify.model");
-  }, []);
-  useEffect(() => localStorage.setItem("blockify.provider", provider), [provider]);
-  useEffect(() => {
-    for (const option of LLM_PROVIDERS) {
-      localStorage.setItem(`blockify.model.${option.id}`, models[option.id]);
-      const keyName = `blockify.apiKey.${option.id}`;
-      if (apiKeys[option.id]) {
-        sessionStorage.setItem(keyName, apiKeys[option.id]);
-      } else {
-        sessionStorage.removeItem(keyName);
-      }
-    }
-  }, [apiKeys, models]);
   useEffect(() => localStorage.setItem("blockify.skipLlm", skipLlm ? "1" : "0"), [skipLlm]);
   useEffect(() => localStorage.setItem("blockify.targetTemplate", targetTemplate), [targetTemplate]);
 
   const lostSet = useMemo(() => new Set(result?.lostPositions ?? []), [result]);
-
-  function setApiKey(value: string) {
-    setApiKeys((current) => ({ ...current, [provider]: value }));
-  }
-
-  function setModel(value: string) {
-    setModels((current) => ({ ...current, [provider]: value }));
-  }
 
   function onStep(u: StepUpdate) {
     setSteps((prev) => {
