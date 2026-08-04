@@ -450,7 +450,15 @@ $markup_failures = function ($content) {
     }
     return $failures;
 };
-$posts = get_posts(array('post_type' => 'page', 'post_status' => 'any', 'numberposts' => -1, 'orderby' => 'ID', 'order' => 'ASC', 'suppress_filters' => true));
+$posts = get_posts(array(
+    'post_type' => 'page',
+    'post_status' => 'any',
+    'numberposts' => -1,
+    'orderby' => 'ID',
+    'order' => 'ASC',
+    'suppress_filters' => true,
+    'meta_query' => array(array('key' => $meta_key, 'compare' => 'EXISTS')),
+));
 $records = array();
 foreach ($posts as $post) {
     $content = (string) $post->post_content;

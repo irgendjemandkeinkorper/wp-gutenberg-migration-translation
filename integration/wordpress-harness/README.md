@@ -61,6 +61,9 @@ paths, parser failures, invalid/unregistered blocks, recovered blocks, and
 unexpected freeform HTML. Any one of those diagnostics fails the run. Its
 markup scanner and fixture tests run without Docker; a live run additionally
 uses WordPress `parse_blocks()` and the registered block-type registry.
+The WordPress probe selects only pages carrying `_blockify_migration_id`, so
+the installation's default Sample and Privacy Policy pages cannot be mistaken
+for imported fixture pages; a missing fixture record still fails explicitly.
 The server-side probe intentionally emits hashes and structural diagnostics,
 not post content, so retained artifacts keep the existing redaction behavior.
 

@@ -188,6 +188,8 @@ describe("post-import Gutenberg verifier", () => {
     expect(WORDPRESS_VERIFICATION_EVAL).toContain("parse_blocks");
     expect(WORDPRESS_VERIFICATION_EVAL).toContain("WP_Block_Type_Registry");
     expect(WORDPRESS_VERIFICATION_EVAL).toContain("_blockify_migration_id");
+    expect(WORDPRESS_VERIFICATION_EVAL).toContain("'meta_query'");
+    expect(WORDPRESS_VERIFICATION_EVAL).toContain("'compare' => 'EXISTS'");
     expect(WORDPRESS_VERIFICATION_EVAL).toContain("sha256");
   });
 });
