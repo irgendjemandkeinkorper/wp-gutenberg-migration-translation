@@ -35,6 +35,17 @@ describe("post-import Gutenberg verifier", () => {
       status: "publish",
     });
     expect(records[0].sourceHtml).toContain("Blockify deterministic import fixture.");
+    expect(records[0].textSequence).toEqual(["Blockify", "deterministic", "import", "fixture"]);
+    const punctuationAndWhitespace = fixture("known-good.wxr.xml").replace(
+      "<p>Blockify deterministic import fixture.</p>",
+      "<p>\n Blockify&nbsp;\t deterministic&mdash;import&#8230;fixture. \u200B</p>",
+    );
+    expect(extractSourceEvidenceFromWxr(punctuationAndWhitespace)[0].textSequence).toEqual([
+      "Blockify",
+      "deterministic",
+      "import",
+      "fixture",
+    ]);
   });
 
   it("compares imported Blockify postmeta to generated fixture hashes and counts", () => {
@@ -56,6 +67,8 @@ describe("post-import Gutenberg verifier", () => {
       postMeta: record.postMeta,
       blocks: [],
       parserFailures: [],
+      textSequence: record.textSequence,
+      placeholderIds: record.placeholderIds,
     }));
     const passing = verifyImportedPages({
       pages,
@@ -63,12 +76,51 @@ describe("post-import Gutenberg verifier", () => {
       expectedSourceRecords: sourceRecords,
     });
     expect(passing.pass).toBe(true);
+    expect(passing.textReconciliation).toMatchObject({
+      expectedPageCount: 2,
+      reconciledPageCount: 2,
+      exactPageCount: 2,
+      expectedTokenCount: 23,
+      actualTokenCount: 23,
+      matchedTokenCount: 23,
+      recall: 1,
+      allOrderPreserved: true,
+    });
+    expect(passing.placeholderReconciliation).toMatchObject({
+      expectedPageCount: 2,
+      reconciledPageCount: 2,
+      exactPageCount: 2,
+      expectedPlaceholderCount: 1,
+      actualPlaceholderCount: 1,
+    });
+    expect(passing.pages[0].textReconciliation).toMatchObject({
+      recall: 1,
+      exactSequence: true,
+      missingTokenCount: 0,
+      duplicatedTokenCount: 0,
+      unexpectedTokenCount: 0,
+    });
+    expect(passing.pages[0].placeholderReconciliation).toMatchObject({
+      expectedIds: ["1"],
+      actualIds: ["1"],
+      exactMatch: true,
+    });
+    expect(passing.pages[0]).not.toHaveProperty("_textSequence");
+    expect(JSON.stringify(passing)).not.toContain("Generated fixture A preserves");
+    const scorecard = buildReconciliationReport({
+      run: { runId: "fixture", fixture: "known-media", fixtureSha256: "fixture-hash" },
+      sourceRecords,
+      verification: passing,
+      homepageStatus: 200,
+      restApiStatus: 200,
+    });
+    expect(scorecard.schemaVersion).toBe("1.1.0");
+    expect(scorecard.destination.textReconciliation).toEqual(passing.textReconciliation);
+    expect(scorecard.destination.placeholderReconciliation).toEqual(passing.placeholderReconciliation);
+    expect(JSON.stringify(scorecard)).not.toContain("Generated fixture A preserves");
 
     const failing = verifyImportedPages({
-      pages: [
-        { ...pages[0], postMeta: { ...pages[0].postMeta, sourceHtmlSha256: "0".repeat(64) } },
-        pages[1],
-      ],
+      pages: [{ ...pages[0], postMeta: { ...pages[0].postMeta, sourceHtmlSha256: "0".repeat(64) } }, pages[1]],
       expectedMigrationIds: sourceRecords.map((record) => record.migrationId),
       expectedSourceRecords: sourceRecords,
     });
@@ -82,6 +134,51 @@ describe("post-import Gutenberg verifier", () => {
         }),
       ]),
     );
+  });
+
+  it("blocks missing, duplicated, and reordered text plus duplicate placeholders", () => {
+    const sourceRecords = extractSourceEvidenceFromWxr(fixture("known-media.wxr.xml"));
+    const pages = sourceRecords.map((record) => ({
+      migrationId: record.migrationId,
+      postId: Number(record.sourcePostId),
+      slug: record.slug,
+      status: record.status,
+      postType: record.type,
+      postMeta: record.postMeta,
+      blocks: [],
+      parserFailures: [],
+      textSequence: [...record.textSequence],
+      placeholderIds: [...record.placeholderIds],
+    }));
+    const verify = (firstPage) =>
+      verifyImportedPages({
+        pages: [firstPage, pages[1]],
+        expectedMigrationIds: sourceRecords.map((record) => record.migrationId),
+        expectedSourceRecords: sourceRecords,
+      });
+
+    const missing = verify({ ...pages[0], textSequence: pages[0].textSequence.slice(1) });
+    expect(missing.failures.map((failure) => failure.kind)).toContain("text-recall-loss");
+    expect(missing.pages[0].textReconciliation.recall).toBeLessThan(1);
+
+    const duplicated = verify({
+      ...pages[0],
+      textSequence: [...pages[0].textSequence, pages[0].textSequence[0]],
+    });
+    expect(duplicated.failures.map((failure) => failure.kind)).toContain("text-duplication");
+
+    const reorderedTokens = [...pages[0].textSequence];
+    [reorderedTokens[0], reorderedTokens[1]] = [reorderedTokens[1], reorderedTokens[0]];
+    const reordered = verify({ ...pages[0], textSequence: reorderedTokens });
+    expect(reordered.failures.map((failure) => failure.kind)).toContain("text-order-mismatch");
+    expect(reordered.pages[0].textReconciliation.orderPreserved).toBe(false);
+
+    const duplicatePlaceholder = verify({ ...pages[0], placeholderIds: ["1", "1"] });
+    expect(duplicatePlaceholder.failures.map((failure) => failure.kind)).toContain("placeholder-mismatch");
+    expect(duplicatePlaceholder.pages[0].placeholderReconciliation).toMatchObject({
+      duplicateDestinationIds: ["1"],
+      exactMatch: false,
+    });
   });
 
   it("builds a durable passing scorecard with source evidence pointers and no raw HTML", () => {

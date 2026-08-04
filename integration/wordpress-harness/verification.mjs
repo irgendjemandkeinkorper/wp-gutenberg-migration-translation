@@ -40,6 +40,174 @@ function stableHash(value) {
     .digest("hex");
 }
 
+function stripSerializedPlaceholderBlocks(value) {
+  return String(value ?? "").replace(
+    /<!--\s+wp:html\s+(\{[\s\S]*?\})\s*-->([\s\S]*?)<!--\s+\/wp:html\s*-->/gi,
+    (markup, rawAttributes) => {
+      try {
+        return JSON.parse(rawAttributes)?.blockifyAsset === true ? " " : markup;
+      } catch {
+        return markup;
+      }
+    },
+  );
+}
+
+function meaningfulTextSequence(value) {
+  const namedEntities = {
+    amp: "&",
+    apos: "'",
+    gt: ">",
+    hellip: "…",
+    ldquo: "“",
+    lsquo: "‘",
+    lt: "<",
+    mdash: "—",
+    nbsp: " ",
+    ndash: "–",
+    quot: '"',
+    rdquo: "”",
+    rsquo: "’",
+  };
+  const text = stripSerializedPlaceholderBlocks(value)
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<(script|style|template|noscript)\b[\s\S]*?<\/\1\s*>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&(#x[\da-f]+|#\d+|[a-z][a-z\d]+);/gi, (entity, code) => {
+      if (code[0] !== "#") return namedEntities[code.toLowerCase()] ?? entity;
+      const radix = code[1].toLowerCase() === "x" ? 16 : 10;
+      const codePoint = Number.parseInt(radix === 16 ? code.slice(2) : code.slice(1), radix);
+      try {
+        return codePoint >= 0 && codePoint <= 0x10ffff ? String.fromCodePoint(codePoint) : entity;
+      } catch {
+        return entity;
+      }
+    })
+    .replace(/[\u200B-\u200D\uFEFF]/gu, " ");
+  return text.match(/[\p{L}\p{N}](?:[\p{L}\p{M}\p{N}]|['’.-](?=[\p{L}\p{N}]))*/gu) ?? [];
+}
+
+function placeholderIdsFromContent(value) {
+  return [...String(value ?? "").matchAll(/MIGRATION\s+PLACEHOLDER\s+(\d+)/gi)].map((match) => match[1]);
+}
+
+function placeholderManifestEvidence(entries) {
+  const ids = [];
+  const issues = [];
+  for (const [position, entry] of (Array.isArray(entries) ? entries : []).entries()) {
+    const labelId = String(entry?.label ?? "").match(/MIGRATION\s+PLACEHOLDER\s+(\d+)/i)?.[1] ?? null;
+    const indexId = Number.isInteger(entry?.index) && entry.index >= 0 ? String(entry.index + 1) : null;
+    if (labelId && indexId && labelId !== indexId)
+      issues.push({
+        kind: "placeholder-id-disagreement",
+        position,
+        message: `Placeholder manifest entry ${position + 1} has conflicting label and index IDs.`,
+      });
+    const id = labelId || indexId;
+    if (!id)
+      issues.push({
+        kind: "missing-placeholder-id",
+        position,
+        message: `Placeholder manifest entry ${position + 1} has no stable placeholder ID.`,
+      });
+    else ids.push(id);
+  }
+  const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))].sort();
+  if (duplicateIds.length)
+    issues.push({
+      kind: "duplicate-placeholder-id",
+      ids: duplicateIds,
+      message: `Placeholder manifest repeats ID${duplicateIds.length === 1 ? "" : "s"} ${duplicateIds.join(", ")}.`,
+    });
+  return { ids, issues };
+}
+
+function countsFor(values) {
+  const counts = new Map();
+  for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
+  return counts;
+}
+
+function isSubsequence(expected, actual) {
+  let cursor = 0;
+  for (const value of expected) {
+    while (cursor < actual.length && actual[cursor] !== value) cursor += 1;
+    if (cursor === actual.length) return false;
+    cursor += 1;
+  }
+  return true;
+}
+
+function firstDifferenceIndex(expected, actual) {
+  const length = Math.max(expected.length, actual.length);
+  for (let index = 0; index < length; index += 1) if (expected[index] !== actual[index]) return index;
+  return null;
+}
+
+function reconcileTextSequences(expected, actual) {
+  const expectedCounts = countsFor(expected);
+  const actualCounts = countsFor(actual);
+  let matchedTokenCount = 0;
+  let missingTokenCount = 0;
+  let duplicatedTokenCount = 0;
+  let unexpectedTokenCount = 0;
+  for (const [token, count] of expectedCounts) {
+    const actualCount = actualCounts.get(token) ?? 0;
+    matchedTokenCount += Math.min(count, actualCount);
+    missingTokenCount += Math.max(0, count - actualCount);
+    duplicatedTokenCount += Math.max(0, actualCount - count);
+  }
+  for (const [token, count] of actualCounts) if (!expectedCounts.has(token)) unexpectedTokenCount += count;
+  const orderPreserved = isSubsequence(expected, actual);
+  return {
+    expectedTokenCount: expected.length,
+    actualTokenCount: actual.length,
+    matchedTokenCount,
+    recall: expected.length ? Number((matchedTokenCount / expected.length).toFixed(6)) : 1,
+    orderPreserved,
+    exactSequence: expected.length === actual.length && firstDifferenceIndex(expected, actual) === null,
+    missingTokenCount,
+    duplicatedTokenCount,
+    unexpectedTokenCount,
+    firstDifferenceIndex: firstDifferenceIndex(expected, actual),
+    expectedSequenceSha256: stableHash(JSON.stringify(expected)),
+    actualSequenceSha256: stableHash(JSON.stringify(actual)),
+  };
+}
+
+function duplicateValues(values) {
+  return [...new Set(values.filter((value, index) => values.indexOf(value) !== index))].sort();
+}
+
+function reconcilePlaceholderIds(expected, actual) {
+  const expectedCounts = countsFor(expected);
+  const actualCounts = countsFor(actual);
+  const missingIds = [...expectedCounts]
+    .filter(([id, count]) => (actualCounts.get(id) ?? 0) < count)
+    .map(([id]) => id)
+    .sort();
+  const unexpectedIds = [...actualCounts]
+    .filter(([id, count]) => count > (expectedCounts.get(id) ?? 0))
+    .map(([id]) => id)
+    .sort();
+  return {
+    expectedIds: [...expected],
+    actualIds: [...actual],
+    expectedCount: expected.length,
+    actualCount: actual.length,
+    duplicateManifestIds: duplicateValues(expected),
+    duplicateDestinationIds: duplicateValues(actual),
+    missingIds,
+    unexpectedIds,
+    orderPreserved:
+      missingIds.length === 0 &&
+      unexpectedIds.length === 0 &&
+      expected.length === actual.length &&
+      expected.every((id, index) => id === actual[index]),
+    exactMatch: expected.length === actual.length && expected.every((id, index) => id === actual[index]),
+  };
+}
+
 function htmlSummary(value) {
   const html = String(value ?? "");
   const tags = [...html.matchAll(/<([a-z][a-z0-9:-]*)\b/gi)].map((match) => match[1].toLowerCase());
@@ -101,6 +269,18 @@ export function extractSourceEvidenceFromWxr(xml) {
     } catch {
       // Invalid or absent manifests remain explicit structural evidence.
     }
+    const placeholderEvidence =
+      parsedPlaceholders === null
+        ? {
+            ids: [],
+            issues: [
+              {
+                kind: "invalid-placeholder-manifest",
+                message: "Placeholder manifest is absent, malformed JSON, or not an array.",
+              },
+            ],
+          }
+        : placeholderManifestEvidence(parsedPlaceholders);
     const sourcePostId = xmlValue(item, "wp:post_id");
     if (!migrationId) continue;
     records.push({
@@ -112,6 +292,9 @@ export function extractSourceEvidenceFromWxr(xml) {
       status: xmlValue(item, "wp:status") || null,
       sourceHtml,
       sourceHtmlOrigin: sourceHtmlFromMetadata === undefined ? "content-fallback" : "postmeta",
+      textSequence: meaningfulTextSequence(contentHtml),
+      placeholderIds: placeholderEvidence.ids,
+      placeholderManifestIssues: placeholderEvidence.issues,
       postMeta: {
         sourceUrlSha256: stableHash(metadata.get("_blockify_source_url") ?? ""),
         sourceHtmlSha256: stableHash(sourceHtmlFromMetadata ?? ""),
@@ -256,6 +439,14 @@ function pageDiagnostics(page) {
   const unexpectedFreeformHtml = diagnosticList(page.unexpectedFreeformHtml);
   const invalidBlocks = diagnosticList(page.invalidBlocks);
   const recoveredBlocks = diagnosticList(page.recoveredBlocks);
+  const textEvidencePresent = Array.isArray(page.textSequence) || page.meaningfulHtml !== undefined;
+  const textSequence = Array.isArray(page.textSequence)
+    ? page.textSequence.map((token) => String(token)).filter(Boolean)
+    : meaningfulTextSequence(page.meaningfulHtml ?? "");
+  const placeholderEvidencePresent = Array.isArray(page.placeholderIds) || page.content !== undefined;
+  const placeholderIds = Array.isArray(page.placeholderIds)
+    ? page.placeholderIds.map((id) => String(id)).filter(Boolean)
+    : placeholderIdsFromContent(page.content);
 
   if (!Array.isArray(page.blocks)) {
     parserFailures.push({
@@ -307,6 +498,10 @@ function pageDiagnostics(page) {
     unexpectedFreeformHtml,
     invalidBlocks,
     recoveredBlocks,
+    _textEvidencePresent: textEvidencePresent,
+    _textSequence: textSequence,
+    _placeholderEvidencePresent: placeholderEvidencePresent,
+    _placeholderIds: placeholderIds,
   };
 }
 
@@ -330,6 +525,15 @@ export function verifyImportedPages({ pages, expectedMigrationIds, expectedSourc
 
   if (!expected.length)
     failures.push({ kind: "missing-fixture-migration-ids", message: "The fixture declares no stable migration IDs." });
+  if (expectedRecords.size)
+    for (const migrationId of expected) {
+      if (!expectedRecords.has(migrationId))
+        failures.push({
+          kind: "missing-source-reconciliation-record",
+          migrationId,
+          message: `Fixture page ${migrationId} has no saved source record for text and placeholder reconciliation.`,
+        });
+    }
   for (const page of pageReports) {
     if (!page.migrationId) {
       failures.push({
@@ -379,6 +583,86 @@ export function verifyImportedPages({ pages, expectedMigrationIds, expectedSourc
         }
       }
     }
+    if (sourceRecord) {
+      if (!Array.isArray(sourceRecord.textSequence))
+        failures.push({
+          kind: "invalid-source-text-evidence",
+          migrationId: page.migrationId,
+          message: "Saved source evidence has no normalized meaningful-text sequence.",
+        });
+      else if (!page._textEvidencePresent)
+        failures.push({
+          kind: "missing-destination-text-evidence",
+          migrationId: page.migrationId,
+          message: "WordPress returned no normalized meaningful-text sequence for the imported page.",
+        });
+      else {
+        const textReconciliation = reconcileTextSequences(sourceRecord.textSequence, page._textSequence);
+        page.textReconciliation = textReconciliation;
+        if (textReconciliation.missingTokenCount)
+          failures.push({
+            kind: "text-recall-loss",
+            migrationId: page.migrationId,
+            message:
+              `Imported meaningful text matched ${textReconciliation.matchedTokenCount} of ` +
+              `${textReconciliation.expectedTokenCount} expected tokens (recall ${textReconciliation.recall}).`,
+          });
+        if (textReconciliation.duplicatedTokenCount)
+          failures.push({
+            kind: "text-duplication",
+            migrationId: page.migrationId,
+            message: `Imported meaningful text duplicates ${textReconciliation.duplicatedTokenCount} expected token occurrence(s).`,
+          });
+        if (textReconciliation.unexpectedTokenCount)
+          failures.push({
+            kind: "unexpected-meaningful-text",
+            migrationId: page.migrationId,
+            message: `Imported page contains ${textReconciliation.unexpectedTokenCount} unexpected meaningful token(s).`,
+          });
+        if (!textReconciliation.orderPreserved && textReconciliation.missingTokenCount === 0)
+          failures.push({
+            kind: "text-order-mismatch",
+            migrationId: page.migrationId,
+            message: `Meaningful text order diverges at normalized token index ${textReconciliation.firstDifferenceIndex}.`,
+          });
+      }
+
+      const manifestIssues = Array.isArray(sourceRecord.placeholderManifestIssues)
+        ? sourceRecord.placeholderManifestIssues
+        : [{ message: "Saved source evidence has no validated placeholder manifest." }];
+      if (manifestIssues.length)
+        failures.push({
+          kind: "placeholder-manifest-invalid",
+          migrationId: page.migrationId,
+          message: manifestIssues.map((issue) => issue.message).join(" "),
+        });
+      if (!Array.isArray(sourceRecord.placeholderIds))
+        failures.push({
+          kind: "invalid-source-placeholder-evidence",
+          migrationId: page.migrationId,
+          message: "Saved source evidence has no placeholder ID sequence.",
+        });
+      else if (!page._placeholderEvidencePresent)
+        failures.push({
+          kind: "missing-destination-placeholder-evidence",
+          migrationId: page.migrationId,
+          message: "WordPress returned no placeholder ID sequence for the imported page.",
+        });
+      else {
+        const placeholderReconciliation = reconcilePlaceholderIds(sourceRecord.placeholderIds, page._placeholderIds);
+        page.placeholderReconciliation = placeholderReconciliation;
+        if (!placeholderReconciliation.exactMatch)
+          failures.push({
+            kind: "placeholder-mismatch",
+            migrationId: page.migrationId,
+            message:
+              `Placeholder IDs do not reconcile one-to-one in content order ` +
+              `(expected ${placeholderReconciliation.expectedCount}, actual ${placeholderReconciliation.actualCount}; ` +
+              `missing ${placeholderReconciliation.missingIds.join(", ") || "none"}; ` +
+              `unexpected or duplicated ${placeholderReconciliation.unexpectedIds.join(", ") || "none"}).`,
+          });
+      }
+    }
     if (page.status && page.status !== "publish") {
       failures.push({
         kind: "unexpected-page-status",
@@ -419,14 +703,60 @@ export function verifyImportedPages({ pages, expectedMigrationIds, expectedSourc
       });
   }
 
+  const reconciliationRecords = expected.map((migrationId) => expectedRecords.get(migrationId)).filter(Boolean);
+  const textReconciliations = pageReports.map((page) => page.textReconciliation).filter(Boolean);
+  const placeholderReconciliations = pageReports.map((page) => page.placeholderReconciliation).filter(Boolean);
+  const textExpectedTokenCount = reconciliationRecords.reduce(
+    (count, record) => count + (Array.isArray(record.textSequence) ? record.textSequence.length : 0),
+    0,
+  );
+  const textMatchedTokenCount = textReconciliations.reduce(
+    (count, reconciliation) => count + reconciliation.matchedTokenCount,
+    0,
+  );
+  const textReconciliation = expectedRecords.size
+    ? {
+        expectedPageCount: reconciliationRecords.length,
+        reconciledPageCount: textReconciliations.length,
+        exactPageCount: textReconciliations.filter((item) => item.exactSequence).length,
+        expectedTokenCount: textExpectedTokenCount,
+        actualTokenCount: pageReports.reduce((count, page) => count + page._textSequence.length, 0),
+        matchedTokenCount: textMatchedTokenCount,
+        recall: textExpectedTokenCount ? Number((textMatchedTokenCount / textExpectedTokenCount).toFixed(6)) : 1,
+        allOrderPreserved:
+          reconciliationRecords.length === textReconciliations.length &&
+          textReconciliations.every((item) => item.orderPreserved),
+      }
+    : null;
+  const placeholderExpectedCount = reconciliationRecords.reduce(
+    (count, record) => count + (Array.isArray(record.placeholderIds) ? record.placeholderIds.length : 0),
+    0,
+  );
+  const placeholderReconciliation = expectedRecords.size
+    ? {
+        expectedPageCount: reconciliationRecords.length,
+        reconciledPageCount: placeholderReconciliations.length,
+        exactPageCount: placeholderReconciliations.filter((item) => item.exactMatch).length,
+        expectedPlaceholderCount: placeholderExpectedCount,
+        actualPlaceholderCount: pageReports.reduce((count, page) => count + page._placeholderIds.length, 0),
+      }
+    : null;
+  for (const page of pageReports) {
+    delete page._textEvidencePresent;
+    delete page._textSequence;
+    delete page._placeholderEvidencePresent;
+    delete page._placeholderIds;
+  }
   const orderedPages = [...pageReports].sort((left, right) =>
     (left.migrationId || "").localeCompare(right.migrationId || ""),
   );
   return {
-    schemaVersion: "1.0.0",
+    schemaVersion: "1.1.0",
     pass: failures.length === 0,
     expectedMigrationIds: expected,
     actualMigrationIds: actual,
+    textReconciliation,
+    placeholderReconciliation,
     pages: orderedPages,
     failures,
   };
@@ -636,6 +966,41 @@ $walk = function ($blocks, $path = 'root') use (&$walk, $registry, $freeform_sum
     }
     return $result;
 };
+$collect_meaningful_html = function ($blocks) use (&$collect_meaningful_html) {
+    $html = '';
+    foreach ((array) $blocks as $block) {
+        $attributes = isset($block['attrs']) && is_array($block['attrs']) ? $block['attrs'] : array();
+        if (!empty($attributes['blockifyAsset'])) continue;
+        $inner_blocks = isset($block['innerBlocks']) && is_array($block['innerBlocks']) ? $block['innerBlocks'] : array();
+        $inner_content = isset($block['innerContent']) && is_array($block['innerContent'])
+            ? $block['innerContent']
+            : null;
+        if ($inner_content !== null) {
+            $child_index = 0;
+            foreach ($inner_content as $fragment) {
+                if (is_string($fragment)) {
+                    $html .= $fragment;
+                } elseif (isset($inner_blocks[$child_index])) {
+                    $html .= $collect_meaningful_html(array($inner_blocks[$child_index]));
+                    $child_index++;
+                }
+            }
+            while (isset($inner_blocks[$child_index])) {
+                $html .= $collect_meaningful_html(array($inner_blocks[$child_index]));
+                $child_index++;
+            }
+        } else {
+            $html .= isset($block['innerHTML']) ? (string) $block['innerHTML'] : '';
+        }
+    }
+    return $html;
+};
+$normalized_text_sequence = function ($html) {
+    $text = html_entity_decode(wp_strip_all_tags((string) $html, true), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $text = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', ' ', $text);
+    preg_match_all("/[\p{L}\p{N}](?:[\p{L}\p{M}\p{N}]|['’.-](?=[\p{L}\p{N}]))*/u", (string) $text, $matches);
+    return array_values($matches[0] ?? array());
+};
 $markup_failures = function ($content) {
     $failures = array();
     $stack = array();
@@ -682,6 +1047,9 @@ $posts = get_posts(array(
 $records = array();
 foreach ($posts as $post) {
     $content = (string) $post->post_content;
+    $parsed_blocks = function_exists('parse_blocks') ? parse_blocks($content) : null;
+    $meaningful_html = $parsed_blocks !== null ? $collect_meaningful_html($parsed_blocks) : '';
+    preg_match_all('/MIGRATION\\s+PLACEHOLDER\\s+(\\d+)/i', $content, $placeholder_matches);
     $source_url = (string) get_post_meta($post->ID, '_blockify_source_url', true);
     $source_html = (string) get_post_meta($post->ID, '_blockify_source_html', true);
     $target_template = (string) get_post_meta($post->ID, '_blockify_target_template', true);
@@ -703,8 +1071,10 @@ foreach ($posts as $post) {
             'placeholderManifestValid' => $placeholder_manifest_valid,
             'placeholderCount' => $placeholder_manifest_valid ? count($decoded_placeholders) : null,
         ),
-        'blocks' => function_exists('parse_blocks') ? $walk(parse_blocks($content)) : array(),
-        'parserFailures' => function_exists('parse_blocks') ? $markup_failures($content) : array(array('kind' => 'missing-wordpress-parser', 'message' => 'WordPress parse_blocks() is unavailable.')),
+        'blocks' => $parsed_blocks !== null ? $walk($parsed_blocks) : array(),
+        'parserFailures' => $parsed_blocks !== null ? $markup_failures($content) : array(array('kind' => 'missing-wordpress-parser', 'message' => 'WordPress parse_blocks() is unavailable.')),
+        'textSequence' => $normalized_text_sequence($meaningful_html),
+        'placeholderIds' => array_values($placeholder_matches[1] ?? array()),
     );
 }
 echo wp_json_encode($records, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);

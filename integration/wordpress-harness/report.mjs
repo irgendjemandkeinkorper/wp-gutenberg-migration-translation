@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-export const RECONCILIATION_SCHEMA_VERSION = "1.0.0";
+export const RECONCILIATION_SCHEMA_VERSION = "1.1.0";
 
 function stableHash(value) {
   return createHash("sha256")
@@ -51,12 +51,17 @@ export function buildReconciliationReport({
     .sort();
   const actualIds = Array.isArray(verification?.actualMigrationIds) ? [...verification.actualMigrationIds].sort() : [];
   const pages = Array.isArray(verification?.pages) ? verification.pages : [];
-  const sourceManifest = sourceEvidenceManifest.map(({ sourceHtml, ...metadata }) => metadata);
+  const sourceManifest = sourceEvidenceManifest.map((record) => {
+    const metadata = { ...record };
+    delete metadata.sourceHtml;
+    return metadata;
+  });
   const sourceHtmlHashes = sourceRecords.map((record) => stableHash(record.sourceHtml));
 
   return {
     schemaVersion: RECONCILIATION_SCHEMA_VERSION,
-    pass: findings.length === 0 && verification?.pass === true && (mediaVerification === null || mediaVerification.pass),
+    pass:
+      findings.length === 0 && verification?.pass === true && (mediaVerification === null || mediaVerification.pass),
     run: { ...run },
     source: {
       pageCount: sourceRecords.length,
@@ -72,6 +77,8 @@ export function buildReconciliationReport({
       restApiStatus,
       pageCount: pages.length,
       migrationIds: actualIds,
+      textReconciliation: verification?.textReconciliation ?? null,
+      placeholderReconciliation: verification?.placeholderReconciliation ?? null,
       pages,
       media: mediaVerification,
     },
