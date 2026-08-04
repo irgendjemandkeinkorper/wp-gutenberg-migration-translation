@@ -75,6 +75,7 @@ export function buildWxrPackage(pages: BundlePage[], opts: WxrOptions): WxrPacka
     const rewritten = rewriteMediaReferences(page.contentBlocks, mediaRegistry, {
       baseUrl: page.link,
       requireDestination: opts.requireDestination,
+      preferAttachmentSource: opts.emitAttachments === true,
     });
     findings.push(...rewritten.findings);
     items.push(contentItem({ ...page, contentBlocks: rewritten.content }, pageId, opts, pub, dateGmt));

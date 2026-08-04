@@ -28,6 +28,7 @@ export function buildReconciliationReport({
   sourceRecords = [],
   sourceEvidenceManifest = [],
   verification = null,
+  mediaVerification = null,
   homepageStatus = null,
   restApiStatus = null,
   failure = null,
@@ -37,8 +38,13 @@ export function buildReconciliationReport({
         finding(item.kind || "verification-failure", item.message, item.migrationId || null),
       )
     : [];
+  const mediaFailures = Array.isArray(mediaVerification?.failures)
+    ? mediaVerification.failures.map((item) =>
+        finding(item.kind || "media-verification-failure", item.message, item.migrationId || null),
+      )
+    : [];
   const harnessFailures = failure ? [finding("harness-failure", failure)] : [];
-  const findings = [...verificationFailures, ...harnessFailures];
+  const findings = [...verificationFailures, ...mediaFailures, ...harnessFailures];
   const expectedIds = sourceRecords
     .map((record) => record.migrationId)
     .filter(Boolean)
@@ -50,7 +56,7 @@ export function buildReconciliationReport({
 
   return {
     schemaVersion: RECONCILIATION_SCHEMA_VERSION,
-    pass: findings.length === 0 && verification?.pass === true,
+    pass: findings.length === 0 && verification?.pass === true && (mediaVerification === null || mediaVerification.pass),
     run: { ...run },
     source: {
       pageCount: sourceRecords.length,
@@ -67,6 +73,7 @@ export function buildReconciliationReport({
       pageCount: pages.length,
       migrationIds: actualIds,
       pages,
+      media: mediaVerification,
     },
     counts: {
       expectedPages: expectedIds.length,

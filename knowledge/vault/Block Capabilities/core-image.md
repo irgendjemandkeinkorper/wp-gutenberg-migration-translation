@@ -1,6 +1,6 @@
 ---
 id: "core/image"
-status: "locally-verified"
+status: "live-parser-verified"
 confidence: "high"
 ---
 
@@ -8,19 +8,22 @@ confidence: "high"
 
 - **Source/IR ID:** <code>core/image</code>
 - **Destination:** core/image
-- **Status:** <code>locally-verified</code>
+- **Status:** <code>live-parser-verified</code>
 - **Confidence:** <code>high</code>
 
 ## Known loss modes
 
-- delivery is blocking until media identity is reconciled to a destination attachment
+- responsive variants, captions, and target-specific image metadata remain outside the current live fixture
 
 ## Evidence
 
 - <code>src/lib/compiler/media.ts</code>
 - <code>src/test/compiler-media.test.ts</code>
 - <code>src/lib/media/registry.ts</code>
+- <code>src/test/media.test.ts</code>
+- <code>integration/wordpress-harness/fixtures/known-media.wxr.xml</code>
+- <code>knowledge/evidence/wordpress/a4-known-media-wordpress-6.8.2.json</code>
 
 ## Next probe
 
-Run the shared/query-string media fixture through live WordPress and reconcile attachment IDs and URLs.
+Expand live import coverage to responsive srcset variants, captions, galleries, and the approved target theme.

@@ -36,6 +36,8 @@ services:
         define('DISALLOW_FILE_EDIT', true);
     volumes:
       - wordpress_data:/var/www/html
+      - ${BLOCKIFY_MEDIA_FIXTURE_PATH}:/var/www/html/blockify-fixture.png:ro
+      - ./mu-plugins:/var/www/html/wp-content/mu-plugins:ro
 
   wpcli:
     image: ${BLOCKIFY_WPCLI_IMAGE:-wordpress:cli-2.11.0-php8.3}
@@ -51,6 +53,7 @@ services:
     volumes:
       - wordpress_data:/var/www/html
       - ./fixtures:/fixtures:ro
+      - ./mu-plugins:/var/www/html/wp-content/mu-plugins:ro
     user: "33:33"
     working_dir: /var/www/html
     entrypoint: ["wp"]

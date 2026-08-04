@@ -155,6 +155,8 @@ export interface RewriteMediaOptions {
   baseUrl?: string;
   requireDestination?: boolean;
   allowedSourceHosts?: readonly string[];
+  /** Collapse proven aliases to the exact source URL emitted by a WXR attachment item. */
+  preferAttachmentSource?: boolean;
 }
 
 export interface RewriteMediaResult {
@@ -577,6 +579,9 @@ function replaceOneMediaUrl(
     }
   }
   if (record.import.destinationUrl) return escapeHtmlAttribute(record.import.destinationUrl);
+  if (options.preferAttachmentSource) {
+    return escapeHtmlAttribute(record.observedUrls[0] || record.canonicalUrl);
+  }
   if (options.requireDestination) {
     addFinding(findings, {
       code: "destination-not-reconciled",

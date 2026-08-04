@@ -50,6 +50,20 @@ then fail the Gutenberg gate with a retained JSON verification report:
 node integration/wordpress-harness/run.mjs --fixture known-malformed
 ```
 
+The `known-media` fixture imports two pages that share one image attachment. It
+passes only when WordPress creates exactly one attachment and rewrites both
+pages to that attachment's local uploads URL:
+
+```sh
+node integration/wordpress-harness/run.mjs --fixture known-media
+```
+
+WordPress's safe HTTP client normally rejects Docker-private hosts. The
+checked-in `mu-plugins/blockify-fixture-media.php` therefore allows only the
+exact disposable URL `http://wordpress/blockify-fixture.png`; it is mounted
+only in this harness and does not relax requests in generated or production
+WordPress environments.
+
 Set `BLOCKIFY_REPORT_DIR` to choose the durable report location. The default is
 `/tmp/blockify-wordpress-harness/reports/<project>`, so successful reports are
 available to CI artifact upload even though the disposable Docker project is

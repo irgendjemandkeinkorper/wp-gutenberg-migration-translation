@@ -5,12 +5,15 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   MIGRATION_ID_META_KEY,
+  WORDPRESS_MEDIA_VERIFICATION_EVAL,
   WORDPRESS_VERIFICATION_EVAL,
   VerificationError,
   analyzeBlockMarkup,
+  assertMediaVerificationPass,
   assertVerificationPass,
   extractMigrationIdsFromWxr,
   extractSourceEvidenceFromWxr,
+  verifyImportedMedia,
   verifyImportedPages,
 } from "./verification.mjs";
 import { buildReconciliationReport } from "./report.mjs";
@@ -129,6 +132,76 @@ describe("post-import Gutenberg verifier", () => {
     expect(report.pages[0].blocks.map((block) => block.path)).toEqual(["root.1", "root.1.1"]);
   });
 
+  it("proves two imported pages share one reconciled WordPress attachment", () => {
+    const destinationUrl = "http://destination.test/wp-content/uploads/2025/01/blockify-fixture.png";
+    const report = verifyImportedMedia({
+      expectedMigrationIds: ["a4-media-page-9101", "a4-media-page-9102"],
+      expectedAttachmentCount: 1,
+      forbiddenSourceUrls: [
+        "http://wordpress/blockify-fixture.png",
+        "http://wordpress/blockify-fixture.png?fit=crop&width=600",
+      ],
+      inspection: {
+        attachments: [
+          {
+            attachmentId: 73,
+            destinationUrl,
+            parentId: 51,
+            mime: "image/png",
+            sourceFileSha256: "a".repeat(64),
+            width: 1,
+            height: 1,
+          },
+        ],
+        pages: [
+          {
+            migrationId: "a4-media-page-9101",
+            postId: 51,
+            contentSha256: "b".repeat(64),
+            mediaUrls: [destinationUrl],
+          },
+          {
+            migrationId: "a4-media-page-9102",
+            postId: 52,
+            contentSha256: "c".repeat(64),
+            mediaUrls: [destinationUrl],
+          },
+        ],
+      },
+    });
+
+    expect(report.pass).toBe(true);
+    expect(report.attachmentCount).toBe(1);
+    expect(report.destinationUrls).toEqual([destinationUrl]);
+    expect(report.failures).toEqual([]);
+  });
+
+  it("fails media reconciliation when aliases remain or page/attachment evidence is incomplete", () => {
+    const sourceAlias = "http://wordpress/blockify-fixture.png?fit=crop&width=600";
+    const report = verifyImportedMedia({
+      expectedMigrationIds: ["a4-media-page-9101", "a4-media-page-9102"],
+      expectedAttachmentCount: 1,
+      forbiddenSourceUrls: [sourceAlias],
+      inspection: {
+        attachments: [],
+        pages: [
+          {
+            migrationId: "a4-media-page-9101",
+            postId: 51,
+            contentSha256: "b".repeat(64),
+            mediaUrls: [sourceAlias],
+          },
+        ],
+      },
+    });
+
+    expect(report.pass).toBe(false);
+    expect(report.failures.map((failure) => failure.kind)).toEqual(
+      expect.arrayContaining(["attachment-count-mismatch", "source-media-alias-remains", "missing-media-page"]),
+    );
+    expect(() => assertMediaVerificationPass(report)).toThrow(VerificationError);
+  });
+
   it("fails explicitly on parser, invalid, recovered, and freeform diagnostics", () => {
     const report = verifyImportedPages({
       expectedMigrationIds: ["a2-malformed-page-9002"],
@@ -180,8 +253,24 @@ describe("post-import Gutenberg verifier", () => {
       cwd: repoDir,
       encoding: "utf8",
     });
+    const media = execFileSync(process.execPath, [run, "--fixture", "known-media", "--dry-run"], {
+      cwd: repoDir,
+      encoding: "utf8",
+    });
     expect(good).toContain("DRY RUN PASS: known-good");
     expect(malformed).toContain("DRY RUN PASS: known-malformed");
+    expect(media).toContain("DRY RUN PASS: known-media");
+  });
+
+  it("limits the Docker-local media exception to the exact disposable fixture URL", () => {
+    const compose = readFileSync(join(harnessDir, "docker-compose.yml"), "utf8");
+    const allowlist = readFileSync(join(harnessDir, "mu-plugins", "blockify-fixture-media.php"), "utf8");
+
+    expect(compose.match(/\.\/mu-plugins:\/var\/www\/html\/wp-content\/mu-plugins:ro/g)).toHaveLength(2);
+    expect(allowlist).toContain("http_request_host_is_external");
+    expect(allowlist).toContain("http://wordpress/blockify-fixture.png");
+    expect(allowlist).toContain("'wordpress' === $host");
+    expect(allowlist).not.toContain("return true;");
   });
 
   it("keeps the WordPress probe on the parser and registry seam", () => {
@@ -191,5 +280,8 @@ describe("post-import Gutenberg verifier", () => {
     expect(WORDPRESS_VERIFICATION_EVAL).toContain("'meta_query'");
     expect(WORDPRESS_VERIFICATION_EVAL).toContain("'compare' => 'EXISTS'");
     expect(WORDPRESS_VERIFICATION_EVAL).toContain("sha256");
+    expect(WORDPRESS_MEDIA_VERIFICATION_EVAL).toContain("wp_get_attachment_url");
+    expect(WORDPRESS_MEDIA_VERIFICATION_EVAL).toContain("hash_file");
+    expect(WORDPRESS_MEDIA_VERIFICATION_EVAL).toContain("mediaUrls");
   });
 });

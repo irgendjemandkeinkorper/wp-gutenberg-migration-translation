@@ -7,11 +7,14 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { createServer } from "node:net";
 import {
+  WORDPRESS_MEDIA_VERIFICATION_EVAL,
   WORDPRESS_VERIFICATION_EVAL,
   analyzeBlockMarkup,
+  assertMediaVerificationPass,
   assertVerificationPass,
   extractMigrationIdsFromWxr,
   extractSourceEvidenceFromWxr,
+  verifyImportedMedia,
   verifyImportedPages,
 } from "./verification.mjs";
 import { buildReconciliationReport } from "./report.mjs";
@@ -24,6 +27,17 @@ const fixtureFiles = {
   "known-good": "known-good.wxr.xml",
   "known-bad": "known-bad.wxr.xml",
   "known-malformed": "known-malformed.wxr.xml",
+  "known-media": "known-media.wxr.xml",
+};
+const mediaFixturePngBase64 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+const mediaFixtureExpectation = {
+  expectedAttachmentCount: 1,
+  forbiddenSourceUrls: [
+    "http://wordpress/blockify-fixture.png",
+    "http://wordpress/blockify-fixture.png?fit=crop&width=600",
+    "http://wordpress/blockify-fixture.png?fit=crop&width=900",
+  ],
 };
 const importerVersion = process.env.BLOCKIFY_IMPORTER_VERSION || "0.8.3";
 const adminPassword = process.env.BLOCKIFY_ADMIN_PASSWORD || "blockify-harness-admin-password";
@@ -34,7 +48,7 @@ function usage() {
   console.log(`Usage: node integration/wordpress-harness/run.mjs [options]
 
 Options:
-  --fixture known-good|known-bad|known-malformed  WXR fixture to import (default: known-good)
+  --fixture known-good|known-bad|known-malformed|known-media  WXR fixture to import (default: known-good)
   --dry-run                       Validate the harness without Docker
   --help                          Show this help
 
@@ -70,7 +84,9 @@ function parseArgs(argv) {
     throw new HarnessError(`Unknown argument: ${arg}`);
   }
   if (!Object.hasOwn(fixtureFiles, options.fixture)) {
-    throw new HarnessError(`Unknown fixture '${options.fixture}'. Choose known-good, known-bad, or known-malformed.`);
+    throw new HarnessError(
+      `Unknown fixture '${options.fixture}'. Choose ${Object.keys(fixtureFiles).join(", ")}.`,
+    );
   }
   return options;
 }
@@ -162,9 +178,16 @@ async function waitForHttp(url, timeoutMs = 120_000) {
 
 function dryRun(fixtureKey) {
   const fixturePath = join(fixturesDir, fixtureFiles[fixtureKey]);
+  const mediaAllowlistPath = join(harnessDir, "mu-plugins", "blockify-fixture-media.php");
   const composeText = readFileSync(composeFile, "utf8");
   const fixtureText = readFileSync(fixturePath, "utf8");
-  const requiredComposeTokens = ["wordpress:", "db:", "wpcli:", "/fixtures:/fixtures"];
+  const requiredComposeTokens = [
+    "wordpress:",
+    "db:",
+    "wpcli:",
+    "/fixtures:/fixtures",
+    "./mu-plugins:/var/www/html/wp-content/mu-plugins:ro",
+  ];
   const runnerText = readFileSync(join(harnessDir, "run.mjs"), "utf8");
   const missing = requiredComposeTokens.filter((token) => !composeText.includes(token));
   if (missing.length) throw new HarnessError(`Harness configuration is missing: ${missing.join(", ")}`);
@@ -191,6 +214,28 @@ function dryRun(fixtureKey) {
     );
     if (!analysis.parserFailures.length) {
       throw new HarnessError("Known-malformed fixture does not contain a detectable parser failure.");
+    }
+  }
+  if (fixtureKey === "known-media") {
+    if (extractMigrationIdsFromWxr(fixtureText).length !== 2) {
+      throw new HarnessError("Known-media fixture must declare exactly two stable page migration IDs.");
+    }
+    if ((fixtureText.match(/<wp:post_type>attachment<\/wp:post_type>/g) || []).length !== 1) {
+      throw new HarnessError("Known-media fixture must declare exactly one shared attachment item.");
+    }
+    if (!fixtureText.includes("http://wordpress/blockify-fixture.png")) {
+      throw new HarnessError("Known-media fixture is missing its deterministic in-network attachment URL.");
+    }
+    if (!existsSync(mediaAllowlistPath)) {
+      throw new HarnessError("Known-media fixture is missing its Docker-local HTTP allowlist plugin.");
+    }
+    const mediaAllowlistText = readFileSync(mediaAllowlistPath, "utf8");
+    if (
+      !mediaAllowlistText.includes("http_request_host_is_external") ||
+      !mediaAllowlistText.includes("http://wordpress/blockify-fixture.png") ||
+      !mediaAllowlistText.includes("'wordpress' === $host")
+    ) {
+      throw new HarnessError("Known-media HTTP allowlist is not scoped to the exact disposable fixture URL.");
     }
   }
   if (!extractMigrationIdsFromWxr(fixtureText).length && fixtureKey !== "known-bad") {
@@ -240,6 +285,8 @@ async function main() {
   const statePath = join(stateDir, "state.json");
   const reportPath = join(reportDir, "reconciliation-report.json");
   const sourceManifestPath = join(reportDir, "source-evidence.jsonl");
+  const mediaFixturePath = join(stateDir, "blockify-fixture.png");
+  writeFileSync(mediaFixturePath, Buffer.from(mediaFixturePngBase64, "base64"));
   const fixturePath = join(fixturesDir, fixtureFiles[options.fixture]);
   const fixtureText = readFileSync(fixturePath, "utf8");
   const sourceRecords = extractSourceEvidenceFromWxr(fixtureText);
@@ -266,7 +313,12 @@ async function main() {
       (sourceEvidenceManifest.length ? "\n" : ""),
   );
   const url = `http://127.0.0.1:${port}`;
-  const composeEnv = { ...process.env, BLOCKIFY_WP_PORT: String(port), COMPOSE_PROJECT_NAME: project };
+  const composeEnv = {
+    ...process.env,
+    BLOCKIFY_WP_PORT: String(port),
+    BLOCKIFY_MEDIA_FIXTURE_PATH: mediaFixturePath,
+    COMPOSE_PROJECT_NAME: project,
+  };
   const summary = {
     runId,
     project,
@@ -301,6 +353,7 @@ async function main() {
   const started = { value: false };
   let completed = false;
   let verification = null;
+  let mediaVerification = null;
   let importedPages = [];
   let homepageStatus = null;
   let restApiStatus = null;
@@ -319,6 +372,7 @@ async function main() {
       sourceRecords,
       sourceEvidenceManifest,
       verification,
+      mediaVerification,
       homepageStatus,
       restApiStatus,
       failure,
@@ -415,29 +469,6 @@ async function main() {
     restApiStatus = api.status;
     if (homepageStatus !== 200 || restApiStatus !== 200)
       throw new HarnessError(`Unexpected verification status: homepage=${homepageStatus}, REST API=${restApiStatus}`);
-    const pages = requireSuccess(
-      wp(
-        [
-          "post",
-          "list",
-          "--post_type=page",
-          "--name=blockify-harness-fixture-page",
-          "--fields=ID,post_title,post_status,post_name",
-          "--format=json",
-        ],
-        "verify imported page state",
-      ),
-      "Imported page verification",
-    );
-    try {
-      importedPages = JSON.parse(pages.stdout.trim() || "[]");
-    } catch {
-      throw new HarnessError("WordPress returned an unreadable page verification response.");
-    }
-    if (importedPages.length !== 1 || importedPages[0].post_status !== "publish") {
-      throw new HarnessError(`Expected one published fixture page, found ${importedPages.length}.`);
-    }
-
     const pageInspection = requireSuccess(
       wp(["--quiet", "eval", WORDPRESS_VERIFICATION_EVAL], "inspect imported Gutenberg blocks"),
       "WordPress Gutenberg inspection",
@@ -450,10 +481,36 @@ async function main() {
     }
     const expectedMigrationIds = extractMigrationIdsFromWxr(fixtureText);
     verification = verifyImportedPages({ pages: inspectedPages, expectedMigrationIds });
+    importedPages = verification.pages.map((page) => ({
+      ID: page.postId,
+      post_title: page.title,
+      post_status: page.status,
+      post_name: page.slug,
+      migration_id: page.migrationId,
+    }));
     summary.verification = { homepageStatus, restApiStatus, importedPages, ...verification };
+    if (options.fixture === "known-media") {
+      const mediaInspectionResult = requireSuccess(
+        wp(["--quiet", "eval", WORDPRESS_MEDIA_VERIFICATION_EVAL], "inspect imported media reconciliation"),
+        "WordPress media inspection",
+      );
+      let mediaInspection;
+      try {
+        mediaInspection = JSON.parse(mediaInspectionResult.stdout.trim() || "{}");
+      } catch {
+        throw new HarnessError("WordPress returned an unreadable media verification response.");
+      }
+      mediaVerification = verifyImportedMedia({
+        inspection: mediaInspection,
+        expectedMigrationIds,
+        ...mediaFixtureExpectation,
+      });
+      summary.mediaVerification = mediaVerification;
+    }
     writeFileSync(statePath, `${JSON.stringify(summary, null, 2)}\n`);
     const report = writeReport();
     assertVerificationPass(verification);
+    if (mediaVerification) assertMediaVerificationPass(mediaVerification);
     if (!report.pass) throw new HarnessError(`Reconciliation report contains ${report.findings.length} finding(s).`);
     summary.completedAt = new Date().toISOString();
     writeFileSync(statePath, `${JSON.stringify(summary, null, 2)}\n`);
@@ -463,6 +520,11 @@ async function main() {
     console.log(
       `Verified homepage=${home.status}, REST API=${api.status}, pages=${verification.actualMigrationIds.length}, Gutenberg blocks=${verification.pages.reduce((count, page) => count + page.blocks.length, 0)}.`,
     );
+    if (mediaVerification) {
+      console.log(
+        `Verified attachments=${mediaVerification.attachmentCount}, reconciled media pages=${mediaVerification.pages.length}, destination URLs=${mediaVerification.destinationUrls.length}.`,
+      );
+    }
     console.log(`Reconciliation report: ${reportPath}`);
   } catch (error) {
     if (started.value) captureFailureState(error);

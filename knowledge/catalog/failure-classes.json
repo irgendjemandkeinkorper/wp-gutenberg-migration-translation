@@ -13,7 +13,14 @@
     "severity": "blocking",
     "symptom": "An image or gallery asset has no verified destination attachment ID and URL.",
     "remediation": "Acquire once, match by content hash or source alias, reconcile the destination response, and rewrite only from observed evidence.",
-    "evidence": ["src/lib/media/registry.ts", "src/lib/compiler/media.ts", "docs/media-registry-contract.md"]
+    "evidence": [
+      "src/lib/media/registry.ts",
+      "src/lib/compiler/media.ts",
+      "docs/media-registry-contract.md",
+      "integration/wordpress-harness/verification.mjs",
+      "integration/wordpress-harness/fixtures/known-media.wxr.xml",
+      "knowledge/evidence/wordpress/a4-known-media-wordpress-6.8.2.json"
+    ]
   },
   {
     "id": "invalid-gutenberg-block",
@@ -23,7 +30,8 @@
     "remediation": "Retain the structural diagnostic, identify the target capability/version mismatch, and update the compiler or profile fixture.",
     "evidence": [
       "integration/wordpress-harness/verification.mjs",
-      "integration/wordpress-harness/fixtures/known-malformed.wxr.xml"
+      "integration/wordpress-harness/fixtures/known-malformed.wxr.xml",
+      "knowledge/evidence/wordpress/c6-known-malformed-wordpress-6.8.2.json"
     ]
   },
   {

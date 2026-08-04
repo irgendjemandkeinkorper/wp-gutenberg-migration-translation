@@ -363,6 +363,157 @@ export function verifyImportedPages({ pages, expectedMigrationIds }) {
   };
 }
 
+function normalizedHttpUrl(value) {
+  try {
+    const url = new URL(String(value));
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    url.hash = "";
+    url.searchParams.sort();
+    return url.href;
+  } catch {
+    return null;
+  }
+}
+
+export function verifyImportedMedia({
+  inspection,
+  expectedMigrationIds,
+  expectedAttachmentCount,
+  forbiddenSourceUrls = [],
+}) {
+  const expected = uniqueSorted(
+    (Array.isArray(expectedMigrationIds) ? expectedMigrationIds : []).map(nonEmptyString).filter(Boolean),
+  );
+  const attachments = Array.isArray(inspection?.attachments) ? inspection.attachments : [];
+  const pages = Array.isArray(inspection?.pages) ? inspection.pages : [];
+  const failures = [];
+  const expectedCount = Number(expectedAttachmentCount);
+  if (!Number.isInteger(expectedCount) || expectedCount < 0) {
+    failures.push({ kind: "invalid-media-expectation", message: "Expected attachment count must be non-negative." });
+  } else if (attachments.length !== expectedCount) {
+    failures.push({
+      kind: "attachment-count-mismatch",
+      message: `WordPress imported ${attachments.length} attachment(s), expected ${expectedCount}.`,
+    });
+  }
+
+  const destinationUrls = new Set();
+  const attachmentIds = new Set();
+  for (const attachment of attachments) {
+    const attachmentId = Number(attachment?.attachmentId);
+    const destinationUrl = normalizedHttpUrl(attachment?.destinationUrl);
+    if (!Number.isInteger(attachmentId) || attachmentId < 1) {
+      failures.push({
+        kind: "missing-destination-attachment-identity",
+        message: "WordPress attachment evidence is missing a positive attachment ID.",
+      });
+    } else if (attachmentIds.has(attachmentId)) {
+      failures.push({
+        kind: "duplicate-destination-attachment-identity",
+        message: `WordPress attachment ID ${attachmentId} was returned more than once.`,
+      });
+    } else attachmentIds.add(attachmentId);
+    if (!destinationUrl) {
+      failures.push({
+        kind: "missing-destination-attachment-url",
+        message: `WordPress attachment ${attachmentId || "(unknown)"} has no safe destination URL.`,
+      });
+    } else destinationUrls.add(destinationUrl);
+  }
+
+  const forbidden = new Set(forbiddenSourceUrls.map(normalizedHttpUrl).filter(Boolean));
+  const seenPages = new Set();
+  const pageReports = pages.map((page) => {
+    const migrationId = nonEmptyString(page?.migrationId);
+    const mediaUrls = uniqueSorted((Array.isArray(page?.mediaUrls) ? page.mediaUrls : []).map(String));
+    if (migrationId) seenPages.add(migrationId);
+    if (!migrationId || !expected.includes(migrationId)) {
+      failures.push({
+        kind: "unexpected-media-page",
+        migrationId,
+        message: `Media inspection returned undeclared page ${migrationId || "(missing migration ID)"}.`,
+      });
+    }
+    if (!mediaUrls.length) {
+      failures.push({
+        kind: "missing-page-media",
+        migrationId,
+        message: `Imported page ${migrationId || "(unknown)"} has no media URL to reconcile.`,
+      });
+    }
+    for (const mediaUrl of mediaUrls) {
+      const normalized = normalizedHttpUrl(mediaUrl);
+      if (!normalized) {
+        failures.push({
+          kind: "invalid-destination-media-url",
+          migrationId,
+          message: `Imported page contains an unsafe or invalid media URL: ${mediaUrl}.`,
+        });
+      } else if (forbidden.has(normalized)) {
+        failures.push({
+          kind: "source-media-alias-remains",
+          migrationId,
+          message: `Imported page still references acquired source alias ${mediaUrl}.`,
+        });
+      } else if (!destinationUrls.has(normalized)) {
+        failures.push({
+          kind: "destination-media-mismatch",
+          migrationId,
+          message: `Imported page media URL ${mediaUrl} does not match a WordPress attachment response.`,
+        });
+      }
+    }
+    return {
+      migrationId,
+      postId: page?.postId ?? null,
+      contentSha256: nonEmptyString(page?.contentSha256),
+      mediaUrls,
+    };
+  });
+  for (const migrationId of expected) {
+    if (!seenPages.has(migrationId))
+      failures.push({
+        kind: "missing-media-page",
+        migrationId,
+        message: `Expected media page ${migrationId} was not returned by WordPress.`,
+      });
+  }
+
+  return {
+    schemaVersion: "1.0.0",
+    pass: failures.length === 0,
+    expectedMigrationIds: expected,
+    attachmentCount: attachments.length,
+    attachments: attachments.map((attachment) => ({
+      attachmentId: Number(attachment?.attachmentId) || null,
+      destinationUrl: nonEmptyString(attachment?.destinationUrl),
+      parentId: Number(attachment?.parentId) || null,
+      mime: nonEmptyString(attachment?.mime),
+      sourceFileSha256: nonEmptyString(attachment?.sourceFileSha256),
+      width: Number(attachment?.width) || null,
+      height: Number(attachment?.height) || null,
+    })),
+    pages: pageReports.sort((left, right) => (left.migrationId || "").localeCompare(right.migrationId || "")),
+    destinationUrls: [...destinationUrls].sort(),
+    failures,
+  };
+}
+
+export function assertMediaVerificationPass(report) {
+  if (report?.pass) return report;
+  const details = (report?.failures || [])
+    .slice(0, 8)
+    .map(
+      (failure) =>
+        `${failure.kind}${failure.migrationId ? ` [${failure.migrationId}]` : ""}: ${failure.message || "diagnostic recorded"}`,
+    )
+    .join("; ");
+  throw new VerificationError(
+    `Media verification failed with ${(report?.failures || []).length} diagnostic(s). ${details}`,
+    report,
+  );
+}
+
 export function assertVerificationPass(report) {
   if (report?.pass) return report;
   const details = (report?.failures || [])
@@ -473,4 +624,62 @@ foreach ($posts as $post) {
     );
 }
 echo wp_json_encode($records, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+`;
+
+/** Structural media evidence emitted by WP-CLI; no post content is returned. */
+export const WORDPRESS_MEDIA_VERIFICATION_EVAL = String.raw`
+$meta_key = '${MIGRATION_ID_META_KEY}';
+$extract_media_urls = function ($content) {
+    $urls = array();
+    preg_match_all('/\\s(?:src|data-src|data-lazy-src|data-original)\\s*=\\s*(["\\x27])([^"\\x27]+)\\1/i', (string) $content, $matches);
+    foreach ($matches[2] ?? array() as $value) {
+        $decoded = html_entity_decode((string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if ($decoded !== '') $urls[] = $decoded;
+    }
+    preg_match_all('/\\ssrcset\\s*=\\s*(["\\x27])([^"\\x27]+)\\1/i', (string) $content, $srcset_matches);
+    foreach ($srcset_matches[2] ?? array() as $srcset) {
+        foreach (explode(',', html_entity_decode((string) $srcset, ENT_QUOTES | ENT_HTML5, 'UTF-8')) as $candidate) {
+            $parts = preg_split('/\\s+/', trim($candidate));
+            if (!empty($parts[0])) $urls[] = $parts[0];
+        }
+    }
+    $urls = array_values(array_unique($urls));
+    sort($urls);
+    return $urls;
+};
+$pages = get_posts(array(
+    'post_type' => 'page',
+    'post_status' => 'any',
+    'numberposts' => -1,
+    'orderby' => 'ID',
+    'order' => 'ASC',
+    'suppress_filters' => true,
+    'meta_query' => array(array('key' => $meta_key, 'compare' => 'EXISTS')),
+));
+$page_records = array();
+foreach ($pages as $post) {
+    $content = (string) $post->post_content;
+    $page_records[] = array(
+        'migrationId' => (string) get_post_meta($post->ID, $meta_key, true),
+        'postId' => (int) $post->ID,
+        'contentSha256' => hash('sha256', $content),
+        'mediaUrls' => $extract_media_urls($content),
+    );
+}
+$attachment_posts = get_posts(array('post_type' => 'attachment', 'post_status' => 'any', 'numberposts' => -1, 'orderby' => 'ID', 'order' => 'ASC', 'suppress_filters' => true));
+$attachment_records = array();
+foreach ($attachment_posts as $attachment) {
+    $file = get_attached_file($attachment->ID);
+    $metadata = wp_get_attachment_metadata($attachment->ID);
+    $attachment_records[] = array(
+        'attachmentId' => (int) $attachment->ID,
+        'destinationUrl' => (string) wp_get_attachment_url($attachment->ID),
+        'parentId' => (int) $attachment->post_parent,
+        'mime' => (string) $attachment->post_mime_type,
+        'sourceFileSha256' => $file && is_file($file) ? hash_file('sha256', $file) : null,
+        'width' => isset($metadata['width']) ? (int) $metadata['width'] : null,
+        'height' => isset($metadata['height']) ? (int) $metadata['height'] : null,
+    );
+}
+echo wp_json_encode(array('pages' => $page_records, 'attachments' => $attachment_records), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 `;

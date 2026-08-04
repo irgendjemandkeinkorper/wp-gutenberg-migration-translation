@@ -71,6 +71,17 @@ describe("bundle-wide media registry", () => {
       { author: "admin", postType: "page", status: "draft", emitAttachments: true, mediaRegistry: registry },
     );
     expect(packageResult.xml.match(/<wp:post_type>attachment<\/wp:post_type>/g)).toHaveLength(1);
+    expect(packageResult.xml).toContain(
+      "<wp:attachment_url>https://cdn.example.test/photos/hero.jpg?w=1600&amp;fit=crop</wp:attachment_url>",
+    );
+    const pageContents = [
+      ...packageResult.xml.matchAll(/<content:encoded><!\[CDATA\[([\s\S]*?)\]\]><\/content:encoded>/g),
+    ]
+      .map((match) => match[1])
+      .filter((content) => content.includes("<!-- wp:image -->"));
+    expect(pageContents).toHaveLength(2);
+    expect(pageContents.every((content) => content.includes("hero.jpg?w=1600&amp;fit=crop"))).toBe(true);
+    expect(pageContents.every((content) => !content.includes("images.example.test"))).toBe(true);
   });
 
   it("keeps changed bytes at one URL separate and raises a blocking conflict", () => {
