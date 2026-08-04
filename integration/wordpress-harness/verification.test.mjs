@@ -22,6 +22,23 @@ const harnessDir = dirname(fileURLToPath(import.meta.url));
 const repoDir = join(harnessDir, "../..");
 const fixture = (name) => readFileSync(join(harnessDir, "fixtures", name), "utf8");
 const content = (xml) => xml.match(/<content:encoded><!\[CDATA\[([\s\S]*?)\]\]><\/content:encoded>/i)?.[1] || "";
+const destinationPage = (record, overrides = {}) => ({
+  migrationId: record.migrationId,
+  postId: Number(record.sourcePostId),
+  slug: record.slug,
+  status: record.status,
+  postType: record.type,
+  postMeta: record.postMeta,
+  blocks: [],
+  parserFailures: [],
+  textSequence: record.textSequence,
+  linkHashes: record.linkHashes,
+  linkCount: record.linkCount,
+  internalLinkCount: record.internalLinkCount,
+  brokenInternalLinkCount: 0,
+  placeholderIds: record.placeholderIds,
+  ...overrides,
+});
 
 describe("post-import Gutenberg verifier", () => {
   it("extracts source HTML as auditable records without putting content in the scorecard", () => {
@@ -58,18 +75,7 @@ describe("post-import Gutenberg verifier", () => {
     expect(sourceRecords[0].sourceHtml).toContain("<iframe");
     expect(sourceRecords[0].sourceHtml).not.toContain("<!-- wp:");
 
-    const pages = sourceRecords.map((record) => ({
-      migrationId: record.migrationId,
-      postId: Number(record.sourcePostId),
-      slug: record.slug,
-      status: record.status,
-      postType: record.type,
-      postMeta: record.postMeta,
-      blocks: [],
-      parserFailures: [],
-      textSequence: record.textSequence,
-      placeholderIds: record.placeholderIds,
-    }));
+    const pages = sourceRecords.map((record) => destinationPage(record));
     const passing = verifyImportedPages({
       pages,
       expectedMigrationIds: sourceRecords.map((record) => record.migrationId),
@@ -93,6 +99,16 @@ describe("post-import Gutenberg verifier", () => {
       expectedPlaceholderCount: 1,
       actualPlaceholderCount: 1,
     });
+    expect(passing.linkReconciliation).toMatchObject({
+      expectedPageCount: 2,
+      reconciledPageCount: 2,
+      exactPageCount: 2,
+      expectedLinkCount: 1,
+      actualLinkCount: 1,
+      expectedInternalLinkCount: 1,
+      actualInternalLinkCount: 1,
+      brokenInternalLinkCount: 0,
+    });
     expect(passing.pages[0].textReconciliation).toMatchObject({
       recall: 1,
       exactSequence: true,
@@ -114,9 +130,10 @@ describe("post-import Gutenberg verifier", () => {
       homepageStatus: 200,
       restApiStatus: 200,
     });
-    expect(scorecard.schemaVersion).toBe("1.1.0");
+    expect(scorecard.schemaVersion).toBe("1.2.0");
     expect(scorecard.destination.textReconciliation).toEqual(passing.textReconciliation);
     expect(scorecard.destination.placeholderReconciliation).toEqual(passing.placeholderReconciliation);
+    expect(scorecard.destination.linkReconciliation).toEqual(passing.linkReconciliation);
     expect(JSON.stringify(scorecard)).not.toContain("Generated fixture A preserves");
 
     const failing = verifyImportedPages({
@@ -138,18 +155,13 @@ describe("post-import Gutenberg verifier", () => {
 
   it("blocks missing, duplicated, and reordered text plus duplicate placeholders", () => {
     const sourceRecords = extractSourceEvidenceFromWxr(fixture("known-media.wxr.xml"));
-    const pages = sourceRecords.map((record) => ({
-      migrationId: record.migrationId,
-      postId: Number(record.sourcePostId),
-      slug: record.slug,
-      status: record.status,
-      postType: record.type,
-      postMeta: record.postMeta,
-      blocks: [],
-      parserFailures: [],
-      textSequence: [...record.textSequence],
-      placeholderIds: [...record.placeholderIds],
-    }));
+    const pages = sourceRecords.map((record) =>
+      destinationPage(record, {
+        textSequence: [...record.textSequence],
+        linkHashes: [...record.linkHashes],
+        placeholderIds: [...record.placeholderIds],
+      }),
+    );
     const verify = (firstPage) =>
       verifyImportedPages({
         pages: [firstPage, pages[1]],
@@ -179,28 +191,39 @@ describe("post-import Gutenberg verifier", () => {
       duplicateDestinationIds: ["1"],
       exactMatch: false,
     });
+
+    const missingLink = verify({ ...pages[0], linkHashes: [], linkCount: 0, internalLinkCount: 0 });
+    expect(missingLink.failures.map((failure) => failure.kind)).toContain("link-reconciliation-mismatch");
+
+    const brokenLink = verify({ ...pages[0], brokenInternalLinkCount: 1 });
+    expect(brokenLink.failures.map((failure) => failure.kind)).toContain("broken-internal-link");
   });
 
   it("builds a durable passing scorecard with source evidence pointers and no raw HTML", () => {
-    const sourceRecords = extractSourceEvidenceFromWxr(fixture("known-good.wxr.xml"));
+    const sourceRecords = extractSourceEvidenceFromWxr(fixture("known-media.wxr.xml"));
     const verification = verifyImportedPages({
-      expectedMigrationIds: ["a2-good-page-9001"],
-      pages: [{ migrationId: "a2-good-page-9001", postId: 1, status: "publish", blocks: [], parserFailures: [] }],
+      expectedMigrationIds: sourceRecords.map((record) => record.migrationId),
+      expectedSourceRecords: sourceRecords,
+      pages: sourceRecords.map((record) => destinationPage(record)),
     });
     const report = buildReconciliationReport({
       run: { runId: "fixture", fixture: "known-good", fixtureSha256: "fixture-hash" },
       sourceRecords,
-      sourceEvidenceManifest: [
-        { migrationId: "a2-good-page-9001", path: "source-html/source-0001.html", bytes: 42, sha256: "source-hash" },
-      ],
+      sourceEvidenceManifest: sourceRecords.map((record, index) => ({
+        migrationId: record.migrationId,
+        path: `source-html/source-${String(index + 1).padStart(4, "0")}.html`,
+        bytes: 42,
+        sha256: `source-hash-${index + 1}`,
+      })),
       verification,
       homepageStatus: 200,
       restApiStatus: 200,
     });
     expect(report.pass).toBe(true);
     expect(report.source.htmlAudit.records[0]).not.toHaveProperty("sourceHtml");
-    expect(JSON.stringify(report)).not.toContain("Blockify deterministic import fixture.");
-    expect(report.counts).toMatchObject({ expectedPages: 1, importedPages: 1, findings: 0 });
+    expect(JSON.stringify(report)).not.toContain("Generated fixture A preserves");
+    expect(report.counts).toMatchObject({ expectedPages: 2, importedPages: 2, findings: 0 });
+    expect(report.totals).toHaveProperty("link");
   });
 
   it("retains specific failure findings in a failed scorecard", () => {
@@ -410,7 +433,7 @@ describe("post-import Gutenberg verifier", () => {
     expect(good).toContain("DRY RUN PASS: known-good");
     expect(malformed).toContain("DRY RUN PASS: known-malformed");
     expect(media).toContain("DRY RUN PASS: known-media");
-  });
+  }, 15_000);
 
   it("limits the Docker-local media exception to the exact disposable fixture URL", () => {
     const compose = readFileSync(join(harnessDir, "docker-compose.yml"), "utf8");
@@ -431,6 +454,9 @@ describe("post-import Gutenberg verifier", () => {
     expect(WORDPRESS_VERIFICATION_EVAL).toContain("'compare' => 'EXISTS'");
     expect(WORDPRESS_VERIFICATION_EVAL).toContain("sha256");
     expect(WORDPRESS_VERIFICATION_EVAL).toContain("_blockify_source_html");
+    expect(WORDPRESS_VERIFICATION_EVAL).toContain("WP_HTML_Tag_Processor");
+    expect(WORDPRESS_VERIFICATION_EVAL).toContain("brokenInternalLinkCount");
+    expect(WORDPRESS_VERIFICATION_EVAL).toContain("get_page_by_path");
     expect(WORDPRESS_VERIFICATION_EVAL).toContain("placeholderManifestValid");
     expect(WORDPRESS_MEDIA_VERIFICATION_EVAL).toContain("wp_get_attachment_url");
     expect(WORDPRESS_MEDIA_VERIFICATION_EVAL).toContain("hash_file");

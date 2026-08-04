@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "1.0.0",
+  "evidenceType": "live-wordpress-reconciliation-summary",
+  "capturedAt": "2026-08-04",
+  "source": {
+    "repository": "irgendjemandkeinkorper/wp-gutenberg-migration-translation",
+    "headCommit": "f25911e4197545d37ca3ef12e335aa61384b0dc7",
+    "branch": "codex/issue-13-scorecard-contract",
+    "localRunId": "issue13-schema-live-1785849393720",
+    "pullRequest": "https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/pull/125",
+    "workflowRun": "https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/actions/runs/30914775244",
+    "artifactId": 8894611464,
+    "artifactName": "wordpress-harness-diagnostics",
+    "fixture": "known-media",
+    "fixtureSha256": "0961ec8b91cb5007e8f33be0d37de64bb5b9796362ca3c1ba7c8b3ae21417696"
+  },
+  "target": {
+    "product": "WordPress",
+    "version": "6.8.2",
+    "importerVersion": "0.8.3",
+    "profile": "Disposable core-block integration harness"
+  },
+  "result": {
+    "reportSchemaVersion": "1.2.0",
+    "schemaValid": true,
+    "pass": true,
+    "expectedPages": 2,
+    "importedPages": 2,
+    "findings": 0,
+    "linkReconciliation": {
+      "expectedLinks": 1,
+      "actualLinks": 1,
+      "expectedInternalLinks": 1,
+      "actualInternalLinks": 1,
+      "brokenInternalLinks": 0,
+      "brokenInternalLinkRate": 0,
+      "exactPages": 2
+    },
+    "blockingGates": {
+      "applicable": 9,
+      "passing": 9,
+      "external": 3
+    }
+  },
+  "privacy": {
+    "containsRawSourceHtml": false,
+    "containsImportedText": false,
+    "containsSecretPatterns": false,
+    "retainedLinkEvidence": "Counts and SHA-256 URL-sequence hashes only; raw source HTML remains in the separate audit artifact."
+  }
+}

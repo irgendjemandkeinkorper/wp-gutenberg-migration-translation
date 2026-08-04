@@ -35,7 +35,7 @@
 <div class="blockify-unsupported-placeholder" data-asset-index="0" data-asset-type="iframe">MIGRATION PLACEHOLDER 1: iframe — https://booking.example.test/tee-times</div>
 <!-- /wp:html -->
 <!-- wp:paragraph -->
-<p>Generated fixture A preserves its closing meaningful paragraph.</p>
+<p>Generated fixture A preserves its <a href="/blockify-generated-media-b/">closing meaningful paragraph</a>.</p>
 <!-- /wp:paragraph -->
 </div>
 <!-- /wp:group -->]]></content:encoded>
@@ -62,7 +62,7 @@
         </wp:postmeta>
         <wp:postmeta>
             <wp:meta_key><![CDATA[_blockify_source_html]]></wp:meta_key>
-            <wp:meta_value><![CDATA[<main><p>Generated fixture A preserves its first meaningful paragraph.</p><img src="http://wordpress/blockify-fixture.png?fit=crop&width=600" alt="Blockify shared fixture"><iframe src="https://booking.example.test/tee-times"></iframe><p>Generated fixture A preserves its closing meaningful paragraph.</p></main>]]></wp:meta_value>
+            <wp:meta_value><![CDATA[<main><p>Generated fixture A preserves its first meaningful paragraph.</p><img src="http://wordpress/blockify-fixture.png?fit=crop&width=600" alt="Blockify shared fixture"><iframe src="https://booking.example.test/tee-times"></iframe><p>Generated fixture A preserves its <a href="/blockify-generated-media-b/">closing meaningful paragraph</a>.</p></main>]]></wp:meta_value>
         </wp:postmeta>
         <wp:postmeta>
             <wp:meta_key><![CDATA[_blockify_target_template]]></wp:meta_key>
