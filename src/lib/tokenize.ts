@@ -64,11 +64,7 @@ export function tokenizeImages(html: string, baseUrl?: string): TokenizeResult {
       }
     }
 
-    const alt = (
-      el.getAttribute("alt") ||
-      el.getAttribute("title") ||
-      ""
-    ).trim();
+    const alt = (el.getAttribute("alt") || el.getAttribute("title") || "").trim();
 
     const figure = el.closest("figure");
     // Replace the whole <figure> only when this asset is its single tokenizable target;
@@ -76,10 +72,7 @@ export function tokenizeImages(html: string, baseUrl?: string): TokenizeResult {
     const target =
       figure && figure.querySelectorAll("img, iframe, object, embed, video, audio, form").length === 1 ? figure : el;
 
-    const caption =
-      target === figure
-        ? (figure.querySelector("figcaption")?.textContent?.trim() ?? "")
-        : "";
+    const caption = target === figure ? (figure.querySelector("figcaption")?.textContent?.trim() ?? "") : "";
 
     // Extract sanitized attributes
     const attributes: Record<string, string> = {};
@@ -155,10 +148,12 @@ function isTrackingOrNoise(el: Element, type: AssetType): boolean {
 function resolveAssetSrc(el: Element, type: AssetType): string {
   let src = "";
   if (type === "image") {
-    src = el.getAttribute("src") ||
-          el.getAttribute("data-src") ||
-          el.getAttribute("data-lazy-src") ||
-          firstSrcsetUrl(el.getAttribute("srcset")) || "";
+    src =
+      el.getAttribute("src") ||
+      el.getAttribute("data-src") ||
+      el.getAttribute("data-lazy-src") ||
+      firstSrcsetUrl(el.getAttribute("srcset")) ||
+      "";
   } else if (type === "iframe" || type === "embed") {
     src = el.getAttribute("src") || "";
   } else if (type === "object") {

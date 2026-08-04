@@ -30,7 +30,10 @@ export interface BuildWorkspacePackageOptions {
   logs?: readonly string[];
 }
 
-export async function buildWorkspacePackage(store: WorkspaceStore, options: BuildWorkspacePackageOptions = {}): Promise<WorkspacePackageData> {
+export async function buildWorkspacePackage(
+  store: WorkspaceStore,
+  options: BuildWorkspacePackageOptions = {},
+): Promise<WorkspacePackageData> {
   const files: Record<string, Uint8Array | string> = {};
   const entries: WorkspacePackageFile[] = [];
   const workspaceManifest = store.getManifest();
@@ -49,7 +52,12 @@ export async function buildWorkspacePackage(store: WorkspaceStore, options: Buil
     entries.push(fileEntry(path, "redacted-log", Buffer.from(log, "utf8")));
   }
   return {
-    manifest: { schemaVersion: WORKSPACE_PACKAGE_SCHEMA_VERSION, createdAt: options.createdAt ?? new Date(0).toISOString(), workspaceManifest, files: entries.sort((left, right) => left.path.localeCompare(right.path)) },
+    manifest: {
+      schemaVersion: WORKSPACE_PACKAGE_SCHEMA_VERSION,
+      createdAt: options.createdAt ?? new Date(0).toISOString(),
+      workspaceManifest,
+      files: entries.sort((left, right) => left.path.localeCompare(right.path)),
+    },
     files,
   };
 }
@@ -70,19 +78,27 @@ export async function writeWorkspacePackage(directory: string, packageData: Work
 
 export async function readWorkspacePackage(directory: string): Promise<WorkspacePackageData> {
   const manifest = JSON.parse(await readFile(join(directory, "manifest.json"), "utf8")) as WorkspacePackageManifest;
-  if (manifest.schemaVersion !== WORKSPACE_PACKAGE_SCHEMA_VERSION) throw new Error(`Unsupported workspace package schema ${manifest.schemaVersion}.`);
+  if (manifest.schemaVersion !== WORKSPACE_PACKAGE_SCHEMA_VERSION)
+    throw new Error(`Unsupported workspace package schema ${manifest.schemaVersion}.`);
   parseWorkspaceManifest(serializeWorkspaceManifest(manifest.workspaceManifest));
   const files: Record<string, Uint8Array | string> = {};
   for (const entry of manifest.files) {
     assertSafePath(entry.path);
     const bytes = new Uint8Array(await readFile(join(directory, entry.path)));
-    if (sha256(bytes) !== entry.sha256 || bytes.byteLength !== entry.byteLength) throw new Error(`Workspace package hash mismatch for ${entry.path}.`);
-    files[entry.path] = entry.kind === "workspace-manifest" || entry.kind === "redacted-log" ? Buffer.from(bytes).toString("utf8") : bytes;
+    if (sha256(bytes) !== entry.sha256 || bytes.byteLength !== entry.byteLength)
+      throw new Error(`Workspace package hash mismatch for ${entry.path}.`);
+    files[entry.path] =
+      entry.kind === "workspace-manifest" || entry.kind === "redacted-log"
+        ? Buffer.from(bytes).toString("utf8")
+        : bytes;
   }
   return { manifest, files };
 }
 
-export async function importWorkspacePackage(packageData: WorkspacePackageData, rootDirectory: string): Promise<WorkspaceStore> {
+export async function importWorkspacePackage(
+  packageData: WorkspacePackageData,
+  rootDirectory: string,
+): Promise<WorkspaceStore> {
   const store = await WorkspaceStore.open(rootDirectory, { manifest: packageData.manifest.workspaceManifest });
   try {
     for (const entry of packageData.manifest.files.filter((file) => file.kind === "blob")) {
@@ -102,7 +118,10 @@ export function upgradeWorkspacePackage(input: unknown): WorkspacePackageManifes
   const value = input as Record<string, unknown>;
   if (value.schemaVersion === WORKSPACE_PACKAGE_SCHEMA_VERSION) return input as WorkspacePackageManifest;
   if (value.schemaVersion === "0.1.0" && value.workspaceManifest && Array.isArray(value.files)) {
-    return { ...(input as Omit<WorkspacePackageManifest, "schemaVersion">), schemaVersion: WORKSPACE_PACKAGE_SCHEMA_VERSION };
+    return {
+      ...(input as Omit<WorkspacePackageManifest, "schemaVersion">),
+      schemaVersion: WORKSPACE_PACKAGE_SCHEMA_VERSION,
+    };
   }
   throw new Error(`Unsupported workspace package schema ${String(value.schemaVersion)}.`);
 }
@@ -120,5 +139,11 @@ function redactLog(log: string): string {
 }
 
 function assertSafePath(path: string): void {
-  if (!path || path.includes("\0") || path.split(/[\\/]/).some((segment) => segment === "..") || relative(".", path).startsWith(`..${sep}`)) throw new Error(`Unsafe workspace package path ${path}.`);
+  if (
+    !path ||
+    path.includes("\0") ||
+    path.split(/[\\/]/).some((segment) => segment === "..") ||
+    relative(".", path).startsWith(`..${sep}`)
+  )
+    throw new Error(`Unsafe workspace package path ${path}.`);
 }

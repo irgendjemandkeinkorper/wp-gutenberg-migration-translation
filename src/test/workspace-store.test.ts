@@ -67,7 +67,9 @@ describe("filesystem and SQLite workspace recovery", () => {
     expect(recovered.getManifest().entities.page_snapshot.map((entity) => entity.identity)).toEqual([
       "https://fixture.test/page/1",
     ]);
-    expect(await readFile(join(root, "manifest.json"), "utf8")).toBe(serializeWorkspaceManifest(recovered.getManifest()));
+    expect(await readFile(join(root, "manifest.json"), "utf8")).toBe(
+      serializeWorkspaceManifest(recovered.getManifest()),
+    );
     expect((await readdir(root)).filter((name) => name.startsWith("manifest.json.tmp-")).length).toBe(0);
     recovered.close();
   });
@@ -114,7 +116,9 @@ describe("indexed workspace entity queries", () => {
       }),
     );
     const root = await temporaryRoot();
-    const store = await WorkspaceStore.open(root, { manifest: baseManifest({ page_snapshot: pages, asset: assets, qa_finding: findings }) });
+    const store = await WorkspaceStore.open(root, {
+      manifest: baseManifest({ page_snapshot: pages, asset: assets, qa_finding: findings }),
+    });
 
     const sitePages = await store.listPages({ filters: { site: "site-7" }, limit: 7, offset: 3 });
     expect(sitePages.total).toBe(100);
@@ -128,7 +132,11 @@ describe("indexed workspace entity queries", () => {
     const highFindings = await store.listFindings({ filters: { severity: "high", status: "open" }, limit: 11 });
     expect(highFindings.total).toBe(100);
     expect(highFindings.entities).toHaveLength(11);
-    expect((await store.explainQuery("qa_finding", { filters: { severity: "high" } })).some((detail) => detail.includes("idx_entity_fields_lookup"))).toBe(true);
+    expect(
+      (await store.explainQuery("qa_finding", { filters: { severity: "high" } })).some((detail) =>
+        detail.includes("idx_entity_fields_lookup"),
+      ),
+    ).toBe(true);
     store.close();
   });
 });

@@ -53,9 +53,7 @@ describe("migration workspace manifest contract", () => {
     const current = manifest();
     expect(Object.keys(current.entities).sort()).toEqual([...WORKSPACE_ENTITY_KINDS].sort());
     expect(current.entities.workspace).toHaveLength(1);
-    expect(current.entities.page_snapshot[0].id).toBe(
-      stableEntityId("page_snapshot", "https://example.test/about"),
-    );
+    expect(current.entities.page_snapshot[0].id).toBe(stableEntityId("page_snapshot", "https://example.test/about"));
     expect(current.entities.page_snapshot[0]).toMatchObject({
       schemaVersion: "1.0.0",
       contentHash: "page-v1",
@@ -95,9 +93,7 @@ describe("migration workspace manifest contract", () => {
 
     const parsed = parseWorkspaceManifest(JSON.stringify(raw));
     expect(parsed.workspaceId).toBe("fixture-workspace");
-    expect(parsed.entities.page_snapshot[0].id).toBe(
-      stableEntityId("page_snapshot", "https://example.test/about"),
-    );
+    expect(parsed.entities.page_snapshot[0].id).toBe(stableEntityId("page_snapshot", "https://example.test/about"));
   });
 
   it("fails closed for malformed JSON and corrupt content", () => {
@@ -157,25 +153,13 @@ describe("migration workspace stage dependency graph", () => {
     });
     const invalidated = plan.stages.filter((stage) => stage.invalidated).map((stage) => stage.stage);
 
-    expect(invalidated).toEqual([
-      "extraction",
-      "media",
-      "placement",
-      "conversion",
-      "delivery",
-      "reconciliation",
-      "qa",
-    ]);
+    expect(invalidated).toEqual(["extraction", "media", "placement", "conversion", "delivery", "reconciliation", "qa"]);
     expect(plan.stages.find((stage) => stage.stage === "profile")).toMatchObject({
       invalidated: false,
       reasons: [],
     });
-    expect(plan.stages.find((stage) => stage.stage === "extraction")?.reasons).toEqual([
-      "input-hash-changed",
-    ]);
-    expect(plan.stages.find((stage) => stage.stage === "delivery")?.reasons).toEqual([
-      "dependency-invalidated",
-    ]);
+    expect(plan.stages.find((stage) => stage.stage === "extraction")?.reasons).toEqual(["input-hash-changed"]);
+    expect(plan.stages.find((stage) => stage.stage === "delivery")?.reasons).toEqual(["dependency-invalidated"]);
   });
 
   it("handles implementation-version changes, producer changes, forcing, and no-op plans", () => {
@@ -207,9 +191,7 @@ describe("migration workspace stage dependency graph", () => {
     expect(producerChange.stages.find((stage) => stage.stage === "profile")?.reasons).toEqual([
       "input-producer-version-changed",
     ]);
-    expect(producerChange.stages.find((stage) => stage.stage === "acquisition")?.reasons).toEqual([
-      "forced",
-    ]);
+    expect(producerChange.stages.find((stage) => stage.stage === "acquisition")?.reasons).toEqual(["forced"]);
     expect(producerChange.stages.every((stage) => stage.reasons.every((reason) => reason.length > 0))).toBe(true);
   });
 });

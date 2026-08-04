@@ -76,7 +76,13 @@ export class CheckpointStore {
       status: "running",
       createdAt: now,
       updatedAt: now,
-      items: identities.map((identity) => ({ identity, status: "pending", attempts: 0, outputEntityIds: [], updatedAt: now })),
+      items: identities.map((identity) => ({
+        identity,
+        status: "pending",
+        attempts: 0,
+        outputEntityIds: [],
+        updatedAt: now,
+      })),
       auditEvents: [{ type: "initialized", at: now, message: `Initialized ${identities.length} checkpoint items.` }],
       integrityHash: "",
     });
@@ -97,7 +103,12 @@ export class CheckpointStore {
     } catch {
       throw new CheckpointError("invalid", "Checkpoint JSON is invalid.");
     }
-    if (!parsed || parsed.runId !== this.options.runId || parsed.stage !== this.options.stage || parsed.integrityHash !== this.hash(parsed)) {
+    if (
+      !parsed ||
+      parsed.runId !== this.options.runId ||
+      parsed.stage !== this.options.stage ||
+      parsed.integrityHash !== this.hash(parsed)
+    ) {
       throw new CheckpointError("invalid", "Checkpoint integrity or identity verification failed.");
     }
     this.snapshot = parsed;
@@ -107,7 +118,8 @@ export class CheckpointStore {
   async markRunning(identity: string): Promise<CheckpointSnapshot> {
     const snapshot = await this.ensureLoaded();
     const item = itemFor(snapshot, identity);
-    if (item.status === "committed") throw new CheckpointError("unsafe-transition", `Committed item ${identity} cannot run again.`);
+    if (item.status === "committed")
+      throw new CheckpointError("unsafe-transition", `Committed item ${identity} cannot run again.`);
     item.status = "in-progress";
     item.attempts += 1;
     item.error = undefined;
@@ -127,7 +139,12 @@ export class CheckpointStore {
     item.outputEntityIds = [...new Set(outputEntityIds)];
     item.updatedAt = now;
     snapshot.updatedAt = now;
-    snapshot.auditEvents.push({ type: "committed", at: now, message: `Committed ${identity}.`, data: { outputCount: item.outputEntityIds.length } });
+    snapshot.auditEvents.push({
+      type: "committed",
+      at: now,
+      message: `Committed ${identity}.`,
+      data: { outputCount: item.outputEntityIds.length },
+    });
     if (snapshot.items.every((candidate) => candidate.status === "committed")) snapshot.status = "complete";
     await this.persist();
     return this.getSnapshot();
@@ -136,7 +153,8 @@ export class CheckpointStore {
   async fail(identity: string, error: string): Promise<CheckpointSnapshot> {
     const snapshot = await this.ensureLoaded();
     const item = itemFor(snapshot, identity);
-    if (item.status === "committed") throw new CheckpointError("unsafe-transition", `Committed item ${identity} cannot fail.`);
+    if (item.status === "committed")
+      throw new CheckpointError("unsafe-transition", `Committed item ${identity} cannot fail.`);
     const now = this.now();
     item.status = "failed";
     item.error = error;
@@ -182,13 +200,20 @@ export class CheckpointStore {
     }
     snapshot.status = "running";
     snapshot.updatedAt = now;
-    snapshot.auditEvents.push({ type: "recovered", at: now, message: `Recovered ${interrupted.length} in-progress item(s) as pending.`, data: { count: interrupted.length } });
+    snapshot.auditEvents.push({
+      type: "recovered",
+      at: now,
+      message: `Recovered ${interrupted.length} in-progress item(s) as pending.`,
+      data: { count: interrupted.length },
+    });
     await this.persist();
     return this.getSnapshot();
   }
 
   get resumableIdentities(): string[] {
-    return (this.snapshot?.items ?? []).filter((item) => item.status === "pending" || item.status === "failed").map((item) => item.identity);
+    return (this.snapshot?.items ?? [])
+      .filter((item) => item.status === "pending" || item.status === "failed")
+      .map((item) => item.identity);
   }
 
   getSnapshot(): CheckpointSnapshot {
@@ -218,7 +243,11 @@ export class CheckpointStore {
   }
 
   private seal(snapshot: CheckpointSnapshot): CheckpointSnapshot {
-    const sealed = { ...snapshot, items: snapshot.items.map((item) => ({ ...item, outputEntityIds: [...item.outputEntityIds] })), integrityHash: "" };
+    const sealed = {
+      ...snapshot,
+      items: snapshot.items.map((item) => ({ ...item, outputEntityIds: [...item.outputEntityIds] })),
+      integrityHash: "",
+    };
     return { ...sealed, integrityHash: this.hash(sealed) };
   }
 

@@ -24,11 +24,16 @@ describe("ErrorBoundary", () => {
     root = createRoot(host);
     let broken = true;
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
-    const render = () => root?.render(
-      <ErrorBoundary onReset={() => { broken = false; }}>
-        <ExplodingResult broken={broken} />
-      </ErrorBoundary>,
-    );
+    const render = () =>
+      root?.render(
+        <ErrorBoundary
+          onReset={() => {
+            broken = false;
+          }}
+        >
+          <ExplodingResult broken={broken} />
+        </ErrorBoundary>,
+      );
 
     await act(async () => render());
     expect(host.textContent).toContain("could not be displayed");

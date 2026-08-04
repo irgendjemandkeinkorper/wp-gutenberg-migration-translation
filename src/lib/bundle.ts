@@ -21,11 +21,7 @@ export function saveBundle(pages: BundlePage[]): void {
   }
 }
 
-export function downloadFile(
-  filename: string,
-  content: string,
-  mime: string,
-): void {
+export function downloadFile(filename: string, content: string, mime: string): void {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

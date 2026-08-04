@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { genericFallback, selectSourceAdapter, validateAdapterExtraction, type AdapterInput, type SourceAdapter } from "../lib/adapters/interface";
+import {
+  genericFallback,
+  selectSourceAdapter,
+  validateAdapterExtraction,
+  type AdapterInput,
+  type SourceAdapter,
+} from "../lib/adapters/interface";
 
 const input: AdapterInput = { url: "https://example.test/page", html: "<html><body>fixture</body></html>" };
 
@@ -27,9 +33,11 @@ describe("bounded source-adapter interface", () => {
   });
 
   it("rejects adapter output that bypasses the IR boundary", () => {
-    expect(() => validateAdapterExtraction({
-      ...genericFallback(input),
-      blocks: "<!-- wp:paragraph -->bad<!-- /wp:paragraph -->",
-    } as never)).toThrow(/Gutenberg output field blocks/);
+    expect(() =>
+      validateAdapterExtraction({
+        ...genericFallback(input),
+        blocks: "<!-- wp:paragraph -->bad<!-- /wp:paragraph -->",
+      } as never),
+    ).toThrow(/Gutenberg output field blocks/);
   });
 });

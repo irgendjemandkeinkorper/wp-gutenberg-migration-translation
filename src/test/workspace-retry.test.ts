@@ -13,7 +13,9 @@ describe("selective workspace retry", () => {
     expect(stages).toContain("conversion");
     expect(stages).toContain("qa");
     expect(stages).not.toContain("acquisition");
-    expect(plan.scopes.every((scope) => scope.entityIds.length === 1 && scope.entityIds[0] === "profile:golfnow")).toBe(true);
+    expect(plan.scopes.every((scope) => scope.entityIds.length === 1 && scope.entityIds[0] === "profile:golfnow")).toBe(
+      true,
+    );
     expect(plan.auditEvent.type).toBe("selective-retry-planned");
   });
 

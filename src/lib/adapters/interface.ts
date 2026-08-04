@@ -48,13 +48,24 @@ const GENERIC_DETECTION: DetectionSignal = {
 
 /** Deterministically chooses the strongest adapter and exposes conflicts. */
 export function selectSourceAdapter(input: AdapterInput, adapters: readonly SourceAdapter[]): AdapterSelection {
-  const candidates = adapters.map((adapter) => adapter.detect(input)).sort((left, right) => right.confidence - left.confidence || left.adapterId.localeCompare(right.adapterId));
+  const candidates = adapters
+    .map((adapter) => adapter.detect(input))
+    .sort((left, right) => right.confidence - left.confidence || left.adapterId.localeCompare(right.adapterId));
   const top = candidates[0];
-  if (!top || top.confidence <= 0) return { adapter: null, detection: GENERIC_DETECTION, candidates, diagnostics: ["generic-fallback"] };
+  if (!top || top.confidence <= 0)
+    return { adapter: null, detection: GENERIC_DETECTION, candidates, diagnostics: ["generic-fallback"] };
   const diagnostics: string[] = [];
-  const conflicts = candidates.filter((candidate) => candidate.adapterId !== top.adapterId && candidate.confidence === top.confidence);
-  if (conflicts.length) diagnostics.push(`adapter-conflict:${[top, ...conflicts].map((candidate) => candidate.adapterId).join(",")}`);
-  return { adapter: adapters.find((adapter) => adapter.id === top.adapterId) ?? null, detection: top, candidates, diagnostics };
+  const conflicts = candidates.filter(
+    (candidate) => candidate.adapterId !== top.adapterId && candidate.confidence === top.confidence,
+  );
+  if (conflicts.length)
+    diagnostics.push(`adapter-conflict:${[top, ...conflicts].map((candidate) => candidate.adapterId).join(",")}`);
+  return {
+    adapter: adapters.find((adapter) => adapter.id === top.adapterId) ?? null,
+    detection: top,
+    candidates,
+    diagnostics,
+  };
 }
 
 /** Enforce the adapter boundary: adapters may provide hints or validated IR, never Gutenberg markup. */

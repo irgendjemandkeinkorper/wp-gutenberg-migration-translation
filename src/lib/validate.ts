@@ -2,9 +2,29 @@ import { TOKEN_RE, hasToken, isLoneToken, token, tokenIndices } from "./tokens";
 
 // The tag whitelist the LLM is prompted with, enforced here in code.
 const WHITELIST = new Set([
-  "h2", "h3", "h4", "p", "ul", "ol", "li", "blockquote", "pre", "code",
-  "table", "thead", "tbody", "tr", "th", "td", "strong", "em", "a", "br",
-  "hr", "sup", "sub",
+  "h2",
+  "h3",
+  "h4",
+  "p",
+  "ul",
+  "ol",
+  "li",
+  "blockquote",
+  "pre",
+  "code",
+  "table",
+  "thead",
+  "tbody",
+  "tr",
+  "th",
+  "td",
+  "strong",
+  "em",
+  "a",
+  "br",
+  "hr",
+  "sup",
+  "sub",
 ]);
 
 // Elements the model sometimes wraps the whole answer in; unwrap silently.
@@ -15,9 +35,25 @@ const WRAPPERS = new Set(["div", "article", "section", "main"]);
 // into content. This matters most in skip-LLM mode, where raw extracted HTML
 // reaches the validator without a model pass to judge boilerplate.
 const DROP = new Set([
-  "script", "style", "noscript", "template", "iframe", "object", "embed",
-  "svg", "canvas", "video", "audio", "form", "button", "input", "select",
-  "textarea", "nav", "aside", "footer",
+  "script",
+  "style",
+  "noscript",
+  "template",
+  "iframe",
+  "object",
+  "embed",
+  "svg",
+  "canvas",
+  "video",
+  "audio",
+  "form",
+  "button",
+  "input",
+  "select",
+  "textarea",
+  "nav",
+  "aside",
+  "footer",
 ]);
 
 // Off-whitelist tags that should keep their role, not just their text.
@@ -44,10 +80,7 @@ export interface ValidateResult {
  * wrapper elements, normalize/unwrap off-whitelist tags, strip attributes,
  * isolate image tokens into their own paragraphs, and report token drift.
  */
-export function validateFragment(
-  html: string,
-  expectedIndices: number[],
-): ValidateResult {
+export function validateFragment(html: string, expectedIndices: number[]): ValidateResult {
   const doc = new DOMParser().parseFromString(html, "text/html");
   const body = doc.body;
 
@@ -64,10 +97,7 @@ export function validateFragment(
  * paragraphs, append missing tokens as trailing paragraphs. Returns the
  * repaired HTML and the indices whose position was lost.
  */
-export function repairTokens(
-  html: string,
-  expectedIndices: number[],
-): { html: string; lostPositions: number[] } {
+export function repairTokens(html: string, expectedIndices: number[]): { html: string; lostPositions: number[] } {
   const doc = new DOMParser().parseFromString(html, "text/html");
   const body = doc.body;
 
@@ -100,9 +130,7 @@ export function describeViolation(report: TokenReport): string {
     parts.push(`missing: ${report.missing.map((i) => token(i)).join(", ")}`);
   }
   if (report.extra.length) {
-    parts.push(
-      `duplicated or invented: ${report.extra.map((i) => token(i)).join(", ")}`,
-    );
+    parts.push(`duplicated or invented: ${report.extra.map((i) => token(i)).join(", ")}`);
   }
   return (
     "Your previous attempt violated rule 4. These tokens were " +

@@ -1,19 +1,9 @@
-import type {
-  AcquisitionRecord,
-  ContentReference,
-  RedirectHop,
-} from "../acquisition/contract";
+import type { AcquisitionRecord, ContentReference, RedirectHop } from "../acquisition/contract";
 import type { BundlePage } from "../types";
 
 export const MEDIA_REGISTRY_CONTRACT_VERSION = "1.0.0" as const;
 
-export type MediaImportState =
-  | "unresolved"
-  | "ready"
-  | "queued"
-  | "imported"
-  | "reconciled"
-  | "failed";
+export type MediaImportState = "unresolved" | "ready" | "queued" | "imported" | "reconciled" | "failed";
 
 export type MediaFindingCode =
   | "relative-url-without-context"
@@ -176,11 +166,7 @@ export class MediaPreflightError extends Error {
   readonly findings: MediaFinding[];
 
   constructor(findings: MediaFinding[]) {
-    super(
-      `Media preflight failed with ${findings.length} blocking finding${
-        findings.length === 1 ? "" : "s"
-      }.`,
-    );
+    super(`Media preflight failed with ${findings.length} blocking finding${findings.length === 1 ? "" : "s"}.`);
     this.name = "MediaPreflightError";
     this.findings = findings;
   }
@@ -203,8 +189,10 @@ export function normalizeMediaUrl(sourceUrl: string, baseUrl?: string): string {
 
   parsed.hash = "";
   parsed.hostname = parsed.hostname.toLowerCase();
-  if ((parsed.protocol === "http:" && parsed.port === "80") ||
-      (parsed.protocol === "https:" && parsed.port === "443")) {
+  if (
+    (parsed.protocol === "http:" && parsed.port === "80") ||
+    (parsed.protocol === "https:" && parsed.port === "443")
+  ) {
     parsed.port = "";
   }
   // Parameter order is not resource identity. Parameter values are retained so
@@ -293,8 +281,7 @@ export function buildMediaRegistry(
     for (const reference of extractContentMediaReferences(page.contentBlocks)) {
       const known = imageInputs.some((image) => {
         try {
-          return normalizeMediaUrl(image.src, page.link) ===
-            normalizeMediaUrl(reference.sourceUrl, page.link);
+          return normalizeMediaUrl(image.src, page.link) === normalizeMediaUrl(reference.sourceUrl, page.link);
         } catch {
           return image.src === reference.sourceUrl;
         }
@@ -348,8 +335,8 @@ export function createMediaRegistry(
     const evidence = normalizeEvidence(observation, canonicalUrl);
     const contentHash = observation.contentHash ?? evidence.content?.sha256 ?? evidence.contentHash;
     const sameUrl = byUrl.get(canonicalUrl) ?? [];
-    const conflict = sameUrl.find((candidate) =>
-      candidate.contentHash !== null && contentHash !== null && candidate.contentHash !== contentHash,
+    const conflict = sameUrl.find(
+      (candidate) => candidate.contentHash !== null && contentHash !== null && candidate.contentHash !== contentHash,
     );
     let record = contentHash ? byHash.get(contentHash) : sameUrl[0];
 
@@ -602,7 +589,9 @@ function replaceOneMediaUrl(
   return sourceUrl;
 }
 
-function extractContentMediaReferences(content: string): Array<{ sourceUrl: string; field: MediaUse["fields"][number] }> {
+function extractContentMediaReferences(
+  content: string,
+): Array<{ sourceUrl: string; field: MediaUse["fields"][number] }> {
   const refs: Array<{ sourceUrl: string; field: MediaUse["fields"][number] }> = [];
   const attributePattern = /\s(src|data-src|data-lazy-src|data-original|srcset)\s*=\s*(["'])([\s\S]*?)\2/gi;
   for (const match of content.matchAll(attributePattern)) {
@@ -643,11 +632,15 @@ function newRecord(
     dimensions: observation.dimensions ?? evidence?.dimensions ?? null,
     filename: observation.filename ?? evidence?.filename ?? filenameFromUrl(sourceUrl),
     provenance: {
-      alt: [], caption: [], title: [], credit: [], linkTarget: [],
+      alt: [],
+      caption: [],
+      title: [],
+      credit: [],
+      linkTarget: [],
     },
     uses: [],
     import: {
-      state: contentHash && !(evidence?.errors.length) ? "ready" : "unresolved",
+      state: contentHash && !evidence?.errors.length ? "ready" : "unresolved",
       attempts: 0,
       attachmentId: null,
       destinationUrl: null,
@@ -671,9 +664,12 @@ function mergeObservation(
     record.sourceUrls.push(canonicalUrl);
     record.aliases.push({
       url: canonicalUrl,
-      kind: contentHash && record.contentHash === contentHash
-        ? (isCdnTransformationAlias(canonicalUrl) ? "cdn-transformation" : "content-hash")
-        : "observed",
+      kind:
+        contentHash && record.contentHash === contentHash
+          ? isCdnTransformationAlias(canonicalUrl)
+            ? "cdn-transformation"
+            : "content-hash"
+          : "observed",
     });
   }
   if (evidence) {
@@ -697,8 +693,11 @@ function mergeObservation(
     normalizedSourceUrl: canonicalUrl,
     fields: [observation.field ?? "other"],
   };
-  const existingUse = record.uses.find((candidate) =>
-    candidate.pageUrl === use.pageUrl && candidate.nodeIndex === use.nodeIndex && candidate.sourceUrl === use.sourceUrl,
+  const existingUse = record.uses.find(
+    (candidate) =>
+      candidate.pageUrl === use.pageUrl &&
+      candidate.nodeIndex === use.nodeIndex &&
+      candidate.sourceUrl === use.sourceUrl,
   );
   if (existingUse) {
     for (const field of use.fields) if (!existingUse.fields.includes(field)) existingUse.fields.push(field);
@@ -712,7 +711,10 @@ function mergeObservation(
   addProvenance(record.provenance.linkTarget, observation.linkTarget, observation.pageUrl, "page");
 }
 
-function normalizeEvidence(observation: MediaObservation, canonicalUrl: string): MediaAcquisitionEvidence & { contentHash?: string | null } {
+function normalizeEvidence(
+  observation: MediaObservation,
+  canonicalUrl: string,
+): MediaAcquisitionEvidence & { contentHash?: string | null } {
   const input = observation.acquisition ?? {};
   return {
     requestedUrl: input.requestedUrl ?? canonicalUrl,
@@ -743,7 +745,13 @@ function addProvenance(
 
 function addFinding(findings: MediaFinding[], finding: MediaFinding): void {
   const key = [finding.code, finding.recordId, finding.pageUrl, finding.sourceUrl, finding.message].join("|");
-  if (!findings.some((candidate) => [candidate.code, candidate.recordId, candidate.pageUrl, candidate.sourceUrl, candidate.message].join("|") === key)) {
+  if (
+    !findings.some(
+      (candidate) =>
+        [candidate.code, candidate.recordId, candidate.pageUrl, candidate.sourceUrl, candidate.message].join("|") ===
+        key,
+    )
+  ) {
     findings.push(finding);
   }
 }
@@ -782,7 +790,10 @@ function filenameFromUrl(sourceUrl: string): string | null {
 }
 
 function decodeHtmlEntities(value: string): string {
-  return value.replace(/&amp;/gi, "&").replace(/&quot;/gi, '"').replace(/&#x27;|&#39;/gi, "'");
+  return value
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#x27;|&#39;/gi, "'");
 }
 
 function escapeHtmlAttribute(value: string): string {

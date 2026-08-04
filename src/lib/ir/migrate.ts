@@ -1,4 +1,13 @@
-import { IR_SCHEMA_VERSION, LEGACY_IR_SCHEMA_VERSION, type ClassificationMethod, type JsonObject, type SemanticDocument, type SemanticNode, type SourceEvidence, type NodeKind } from "./types";
+import {
+  IR_SCHEMA_VERSION,
+  LEGACY_IR_SCHEMA_VERSION,
+  type ClassificationMethod,
+  type JsonObject,
+  type SemanticDocument,
+  type SemanticNode,
+  type SourceEvidence,
+  type NodeKind,
+} from "./types";
 import { assertValidSemanticDocument, isSupportedVersion } from "./validate";
 import { stableNodeId } from "./ids";
 
@@ -78,7 +87,8 @@ export function migrateToCurrentIr(input: unknown): IrMigrationResult {
 
 function migrateLegacyDocument(input: Record<string, unknown>): SemanticDocument {
   if (typeof input.documentId !== "string" || !input.documentId) throw new Error("Legacy documentId is required.");
-  if (typeof input.sourceSnapshotId !== "string" || !input.sourceSnapshotId) throw new Error("Legacy sourceSnapshotId is required.");
+  if (typeof input.sourceSnapshotId !== "string" || !input.sourceSnapshotId)
+    throw new Error("Legacy sourceSnapshotId is required.");
   if (!Array.isArray(input.nodes)) throw new Error("Legacy nodes must be an array.");
 
   const source = legacyEvidence(
@@ -103,7 +113,7 @@ function migrateLegacyDocument(input: Record<string, unknown>): SemanticDocument
     schemaVersion: IR_SCHEMA_VERSION,
     documentId: input.documentId,
     source,
-    title: input.title === null || typeof input.title === "string" ? input.title ?? null : null,
+    title: input.title === null || typeof input.title === "string" ? (input.title ?? null) : null,
     root: root as SemanticDocument["root"],
     compatibility: {
       reader: "forward-compatible",
@@ -121,11 +131,14 @@ function legacyNode(input: unknown, parentSource: SourceEvidence, fallbackPath: 
   const htmlExcerpt = typeof input.htmlExcerpt === "string" ? input.htmlExcerpt : "";
   const originalKind = typeof input.type === "string" ? input.type : "unknown";
   const kind = mapLegacyKind(originalKind);
-  const id = typeof input.id === "string" && input.id ? input.id : stableNodeId({
-    snapshotId: parentSource.snapshotId,
-    structuralPath: sourcePath,
-    kind,
-  });
+  const id =
+    typeof input.id === "string" && input.id
+      ? input.id
+      : stableNodeId({
+          snapshotId: parentSource.snapshotId,
+          structuralPath: sourcePath,
+          kind,
+        });
   const children = Array.isArray(input.children)
     ? input.children.map((child, index) => legacyNode(child, parentSource, `${sourcePath}/child[${index}]`))
     : [];
@@ -143,13 +156,14 @@ function legacyNode(input: unknown, parentSource: SourceEvidence, fallbackPath: 
     kind,
     source,
     children,
-    text: input.text === null || typeof input.text === "string" ? input.text ?? null : null,
+    text: input.text === null || typeof input.text === "string" ? (input.text ?? null) : null,
     attributes: isStringMap(input.attributes) ? clone(input.attributes) : {},
     assetRefs: assets,
     classification: {
-      confidence: typeof input.confidence === "number" && Number.isFinite(input.confidence)
-        ? Math.min(1, Math.max(0, input.confidence))
-        : 0.5,
+      confidence:
+        typeof input.confidence === "number" && Number.isFinite(input.confidence)
+          ? Math.min(1, Math.max(0, input.confidence))
+          : 0.5,
       method: isMethod(input.method) ? input.method : "rule",
       rationale: "Migrated from semantic IR 0.1.0.",
     },
@@ -197,9 +211,33 @@ function mapLegacyKind(value: string): NodeKind {
   };
   const mapped = aliases[value] ?? value;
   return [
-    "document", "section", "heading", "paragraph", "rich-text-span", "list", "list-item", "quote", "code", "table",
-    "image", "gallery", "figure", "caption", "cta", "button-group", "button", "columns", "group", "embed", "media", "form", "widget", "unknown",
-  ].includes(mapped) ? mapped as NodeKind : "unknown";
+    "document",
+    "section",
+    "heading",
+    "paragraph",
+    "rich-text-span",
+    "list",
+    "list-item",
+    "quote",
+    "code",
+    "table",
+    "image",
+    "gallery",
+    "figure",
+    "caption",
+    "cta",
+    "button-group",
+    "button",
+    "columns",
+    "group",
+    "embed",
+    "media",
+    "form",
+    "widget",
+    "unknown",
+  ].includes(mapped)
+    ? (mapped as NodeKind)
+    : "unknown";
 }
 
 function migrationEvent(code: string) {

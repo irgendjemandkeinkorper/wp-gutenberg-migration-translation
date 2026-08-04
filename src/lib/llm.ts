@@ -257,11 +257,7 @@ export async function cleanHtml(opts: CleanHtmlOptions): Promise<string> {
     response = await postJson(request.providerName, request.url, request.init);
   }
 
-  return adapter
-    .extractResponse(response)
-    .replace(FENCE_OPEN_RE, "")
-    .replace(FENCE_CLOSE_RE, "")
-    .trim();
+  return adapter.extractResponse(response).replace(FENCE_OPEN_RE, "").replace(FENCE_CLOSE_RE, "").trim();
 }
 
 function extractAnthropicText(response: unknown): string {
@@ -279,13 +275,9 @@ function extractOpenAiText(response: unknown): string {
   if (!Array.isArray(response.output)) return "";
   return response.output
     .filter(isRecord)
-    .flatMap((item) => Array.isArray(item.content) ? item.content : [])
+    .flatMap((item) => (Array.isArray(item.content) ? item.content : []))
     .filter(isRecord)
-    .filter(
-      (block) =>
-        (block.type === "output_text" || block.type === "text") &&
-        typeof block.text === "string",
-    )
+    .filter((block) => (block.type === "output_text" || block.type === "text") && typeof block.text === "string")
     .map((block) => block.text as string)
     .join("");
 }
@@ -294,11 +286,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object";
 }
 
-async function postJson<T>(
-  providerName: string,
-  url: string,
-  init: Pick<RequestInit, "headers" | "body">,
-): Promise<T> {
+async function postJson<T>(providerName: string, url: string, init: Pick<RequestInit, "headers" | "body">): Promise<T> {
   let response: Response;
   try {
     response = await fetch(url, { method: "POST", ...init });
@@ -324,8 +312,7 @@ async function postJson<T>(
   if (!response.ok) {
     const detail = apiErrorMessage(data);
     throw new Error(
-      `${providerName} API error ${response.status}` +
-        (detail ? `: ${detail}` : ` (${response.statusText})`),
+      `${providerName} API error ${response.status}` + (detail ? `: ${detail}` : ` (${response.statusText})`),
     );
   }
 

@@ -136,10 +136,7 @@ export function emitSemanticIr(options: SemanticIrEmitterOptions): SemanticDocum
   try {
     assertValidSemanticDocument(document);
   } catch (error) {
-    throw new SemanticIrEmissionError(
-      "invalid-emitted-ir",
-      error instanceof Error ? error.message : String(error),
-    );
+    throw new SemanticIrEmissionError("invalid-emitted-ir", error instanceof Error ? error.message : String(error));
   }
   return document;
 }
@@ -193,15 +190,10 @@ function countTokens(html: string): Map<number, number> {
   return counts;
 }
 
-function assertTokenAccountability(
-  tokenCounts: Map<number, number>,
-  assets: Map<number, IndexedAsset>,
-): void {
+function assertTokenAccountability(tokenCounts: Map<number, number>, assets: Map<number, IndexedAsset>): void {
   const missing = [...assets.keys()].filter((index) => tokenCounts.get(index) !== 1);
   const extra = [...tokenCounts.keys()].filter((index) => !assets.has(index));
-  const duplicated = [...tokenCounts.entries()]
-    .filter(([, count]) => count > 1)
-    .map(([index]) => index);
+  const duplicated = [...tokenCounts.entries()].filter(([, count]) => count > 1).map(([index]) => index);
   if (missing.length || extra.length || duplicated.length) {
     throw new SemanticIrEmissionError(
       "asset-token-drift",
@@ -217,22 +209,24 @@ function createAssetReferences(
   pageUrl: string,
   options: SemanticIrEmitterOptions,
 ): ResolvedAssetReference[] {
-  return [...assets.values()].sort((a, b) => a.index - b.index).map(({ asset, index }) => {
-    const assetId = resolveAssetId(index, asset, snapshot, pageUrl, options);
-    return {
-      index,
-      ref: {
-        assetId,
-        role: asset.type === "image" ? "content-image" : `unsupported-${asset.type}`,
-        ordinal: index,
-        extensions: {
-          tokenizerIndex: index,
-          assetType: asset.type,
-          tagName: asset.tagName,
+  return [...assets.values()]
+    .sort((a, b) => a.index - b.index)
+    .map(({ asset, index }) => {
+      const assetId = resolveAssetId(index, asset, snapshot, pageUrl, options);
+      return {
+        index,
+        ref: {
+          assetId,
+          role: asset.type === "image" ? "content-image" : `unsupported-${asset.type}`,
+          ordinal: index,
+          extensions: {
+            tokenizerIndex: index,
+            assetType: asset.type,
+            tagName: asset.tagName,
+          },
         },
-      },
-    };
-  });
+      };
+    });
 }
 
 function resolveAssetId(
@@ -260,14 +254,9 @@ function resolveAssetId(
   }).replace("ir-node-v1-", "asset-unresolved-v1-");
 }
 
-function lookupAssetId(
-  input: SemanticIrEmitterOptions["assetIds"],
-  index: number,
-): string | null {
+function lookupAssetId(input: SemanticIrEmitterOptions["assetIds"], index: number): string | null {
   if (!input) return null;
-  const value = input instanceof Map
-    ? input.get(index)
-    : (input as Readonly<Record<number, string>>)[index];
+  const value = input instanceof Map ? input.get(index) : (input as Readonly<Record<number, string>>)[index];
   if (value === undefined) return null;
   if (typeof value !== "string" || !value.trim()) {
     throw new SemanticIrEmissionError(
@@ -346,25 +335,20 @@ function emitElementNode(element: Element, path: string, context: EmitContext): 
     return emitUnknownNode(element, path, source, attrs, context);
   }
 
-  const children = shouldEmitChildren(kind, element)
-    ? emitChildNodes(element, path, context)
-    : [];
+  const children = shouldEmitChildren(kind, element) ? emitChildNodes(element, path, context) : [];
   const text = textForNode(kind, element, children);
   return createTypedNode(kind, path, source, context, {
     text,
     attributes: attrs,
     children,
     extensions: extensionsForElement(element, kind),
-    auditEvents: [event("extracted", `element-${kind}`, `Mapped <${element.tagName.toLowerCase()}> to ${kind}.`, context.auditAt)],
+    auditEvents: [
+      event("extracted", `element-${kind}`, `Mapped <${element.tagName.toLowerCase()}> to ${kind}.`, context.auditAt),
+    ],
   });
 }
 
-function emitAssetNode(
-  element: Element,
-  path: string,
-  index: number,
-  context: EmitContext,
-): SemanticNode {
+function emitAssetNode(element: Element, path: string, index: number, context: EmitContext): SemanticNode {
   const asset = context.assets.get(index);
   const reference = context.assetRefsByIndex.get(index);
   if (!asset || !reference) {
@@ -382,13 +366,15 @@ function emitAssetNode(
     children: [],
     assetRefs: [reference],
     extensions: { sourceTag: asset.asset.tagName.toLowerCase() },
-    auditEvents: [event(
-      "extracted",
-      "asset-token-resolved",
-      `Resolved ASSET_${index} to an ID-only ${kind} reference.`,
-      context.auditAt,
-      { tokenizerIndex: index },
-    )],
+    auditEvents: [
+      event(
+        "extracted",
+        "asset-token-resolved",
+        `Resolved ASSET_${index} to an ID-only ${kind} reference.`,
+        context.auditAt,
+        { tokenizerIndex: index },
+      ),
+    ],
   });
 }
 
@@ -456,13 +442,15 @@ function emitUnknownNode(
       method: "adapter",
       rationale: `No semantic IR v1 mapping exists for <${element.tagName.toLowerCase()}>; raw content is preserved.`,
     },
-    auditEvents: [event(
-      "preserved",
-      "unknown-content-preserved",
-      `Preserved unsupported <${element.tagName.toLowerCase()}> content without dropping it.`,
-      context.auditAt,
-      { originalKind: element.tagName.toLowerCase() },
-    )],
+    auditEvents: [
+      event(
+        "preserved",
+        "unknown-content-preserved",
+        `Preserved unsupported <${element.tagName.toLowerCase()}> content without dropping it.`,
+        context.auditAt,
+        { originalKind: element.tagName.toLowerCase() },
+      ),
+    ],
     extensions: {},
     unknown: {
       originalKind: element.tagName.toLowerCase(),
@@ -527,9 +515,11 @@ function nodeKindForTag(tag: string): NodeKind {
 function isGalleryElement(element: Element): boolean {
   const className = element.getAttribute("class") ?? "";
   const role = element.getAttribute("role") ?? "";
-  return /(?:^|[\s_-])(?:gallery|slideshow|carousel)(?:$|[\s_-])/i.test(className) ||
+  return (
+    /(?:^|[\s_-])(?:gallery|slideshow|carousel)(?:$|[\s_-])/i.test(className) ||
     /(?:^|[\s_-])wp-block-gallery(?:$|[\s_-])/i.test(className) ||
-    (role === "list" && element.querySelector("img, [data-gallery-item], [data-slide]") !== null);
+    (role === "list" && element.querySelector("img, [data-gallery-item], [data-slide]") !== null)
+  );
 }
 
 function assetKind(asset: AssetRef): Exclude<NodeKind, "document" | "unknown"> {
@@ -575,9 +565,9 @@ function loneToken(element: Element): number | null {
 }
 
 function attributesFor(element: Element): Record<string, string> {
-  return sortedStringMap(Object.fromEntries(
-    Array.from(element.attributes).map((attribute) => [attribute.name, attribute.value]),
-  ));
+  return sortedStringMap(
+    Object.fromEntries(Array.from(element.attributes).map((attribute) => [attribute.name, attribute.value])),
+  );
 }
 
 function extensionsForElement(element: Element, kind: NodeKind): JsonObject {
@@ -607,16 +597,9 @@ function classificationFor(kind: NodeKind): Classification {
   };
 }
 
-function evidenceFor(
-  snapshot: ArchivedPageSnapshot,
-  path: string,
-  excerpt: string,
-  tag: string,
-): SourceEvidence {
+function evidenceFor(snapshot: ArchivedPageSnapshot, path: string, excerpt: string, tag: string): SourceEvidence {
   const raw = snapshot.decodedHtml;
-  const boundedExcerpt = tag === "unknown"
-    ? excerpt
-    : excerpt.slice(0, MAX_SEARCH_EXCERPT);
+  const boundedExcerpt = tag === "unknown" ? excerpt : excerpt.slice(0, MAX_SEARCH_EXCERPT);
   const exactStart = raw.indexOf(boundedExcerpt);
   const startOffset = exactStart >= 0 ? exactStart : 0;
   const endOffset = exactStart >= 0 ? exactStart + boundedExcerpt.length : raw.length;
@@ -635,36 +618,52 @@ function rootAuditEvents(
   auditAt: string,
 ): TransformationEvent[] {
   const events: TransformationEvent[] = [
-    event("extracted", "pipeline-extraction", "Semantic IR was emitted from the existing extraction/tokenization pipeline.", auditAt),
-    event("normalized", "deterministic-conversion", "The deterministic intermediate HTML is the source of truth for node order and content.", auditAt),
+    event(
+      "extracted",
+      "pipeline-extraction",
+      "Semantic IR was emitted from the existing extraction/tokenization pipeline.",
+      auditAt,
+    ),
+    event(
+      "normalized",
+      "deterministic-conversion",
+      "The deterministic intermediate HTML is the source of truth for node order and content.",
+      auditAt,
+    ),
   ];
   if (exclusions.length) {
-    events.push(event(
-      "normalized",
-      "boilerplate-exclusion",
-      `Recorded ${exclusions.length} explicit boilerplate exclusion audit record${exclusions.length === 1 ? "" : "s"}.`,
-      auditAt,
-      { exclusions: exclusions.map((exclusion) => ({ ...exclusion })) },
-    ));
+    events.push(
+      event(
+        "normalized",
+        "boilerplate-exclusion",
+        `Recorded ${exclusions.length} explicit boilerplate exclusion audit record${exclusions.length === 1 ? "" : "s"}.`,
+        auditAt,
+        { exclusions: exclusions.map((exclusion) => ({ ...exclusion })) },
+      ),
+    );
   } else {
-    events.push(event(
-      "warning",
-      "boilerplate-exclusion-not-reported",
-      "The upstream pipeline did not provide explicit boilerplate exclusion records for this emission.",
-      auditAt,
-    ));
+    events.push(
+      event(
+        "warning",
+        "boilerplate-exclusion-not-reported",
+        "The upstream pipeline did not provide explicit boilerplate exclusion records for this emission.",
+        auditAt,
+      ),
+    );
   }
   for (const warning of page.warnings) {
     events.push(event("warning", "pipeline-warning", warning, auditAt));
   }
   if (page.lostPositions.length) {
-    events.push(event(
-      "warning",
-      "asset-position-repaired",
-      "The deterministic validator repaired asset positions before IR emission.",
-      auditAt,
-      { tokenizerIndices: [...page.lostPositions] },
-    ));
+    events.push(
+      event(
+        "warning",
+        "asset-position-repaired",
+        "The deterministic validator repaired asset positions before IR emission.",
+        auditAt,
+        { tokenizerIndices: [...page.lostPositions] },
+      ),
+    );
   }
   return events;
 }

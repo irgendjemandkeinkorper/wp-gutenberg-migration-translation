@@ -14,9 +14,7 @@ export function stableNodeId(input: StableNodeIdInput): string {
 }
 
 function canonicalIdentity({ snapshotId, structuralPath, kind }: StableNodeIdInput): string {
-  return [snapshotId, structuralPath, kind]
-    .map((part) => `${part.length}:${part}`)
-    .join("|");
+  return [snapshotId, structuralPath, kind].map((part) => `${part.length}:${part}`).join("|");
 }
 
 function fnv1a64(value: string): string {
@@ -31,10 +29,6 @@ function fnv1a64(value: string): string {
 }
 
 /** A small helper for callers that need the input shape without repeating the kind cast. */
-export function stableNodeIdFor(
-  snapshotId: string,
-  structuralPath: string,
-  kind: NodeKind,
-): string {
+export function stableNodeIdFor(snapshotId: string, structuralPath: string, kind: NodeKind): string {
   return stableNodeId({ snapshotId, structuralPath, kind });
 }

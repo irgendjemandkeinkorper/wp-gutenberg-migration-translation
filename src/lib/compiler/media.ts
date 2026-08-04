@@ -32,9 +32,8 @@ export interface MediaCompilerOptions {
 export function compileMediaNode(node: SemanticNode, options: MediaCompilerOptions): MediaCompilation {
   const findings: MediaCompilationFinding[] = [];
   const assetIds = node.assetRefs.map((ref) => ref.assetId);
-  const markup = node.kind === "gallery"
-    ? compileGallery(node, options, findings)
-    : compileImage(node, options, findings);
+  const markup =
+    node.kind === "gallery" ? compileGallery(node, options, findings) : compileImage(node, options, findings);
   return {
     markup,
     sourceNodeId: node.id,
@@ -44,22 +43,23 @@ export function compileMediaNode(node: SemanticNode, options: MediaCompilerOptio
   };
 }
 
-function compileImage(
-  node: SemanticNode,
-  options: MediaCompilerOptions,
-  findings: MediaCompilationFinding[],
-): string {
+function compileImage(node: SemanticNode, options: MediaCompilerOptions, findings: MediaCompilationFinding[]): string {
   const assetId = node.assetRefs[0]?.assetId;
   if (!assetId) return unresolved(node, "Image has no reconciled media identity.", findings, "image-asset-missing");
   const identity = resolveIdentity(assetId, options);
-  if (!identity?.url) return unresolved(node, `Media identity ${assetId} has no delivery URL.`, findings, "image-asset-unresolved");
+  if (!identity?.url)
+    return unresolved(node, `Media identity ${assetId} has no delivery URL.`, findings, "image-asset-unresolved");
   const attachmentId = identity.attachmentId;
   const attrs: Record<string, string | number> = {};
   if (attachmentId !== undefined) attrs.id = attachmentId;
   attrs.sizeSlug = "large";
   attrs.linkDestination = "none";
   const alt = identity.alt ?? node.attributes.alt ?? "";
-  const captionMarkup = renderCaption(identity.caption ?? node.attributes.caption, node.attributes.credit, node.attributes.creditUrl);
+  const captionMarkup = renderCaption(
+    identity.caption ?? node.attributes.caption,
+    node.attributes.credit,
+    node.attributes.creditUrl,
+  );
   const blockAttrs = JSON.stringify(attrs);
   return `<!-- wp:image ${blockAttrs} -->\n<figure class="wp-block-image size-large"><img src="${escapeAttr(identity.url)}" alt="${escapeAttr(alt)}"/>${captionMarkup}</figure>\n<!-- /wp:image -->`;
 }
@@ -70,25 +70,41 @@ function compileGallery(
   findings: MediaCompilationFinding[],
 ): string {
   const items = node.children.length ? node.children : [node];
-  const rendered = items.map((item, index) => {
-    const assetId = item.assetRefs[0]?.assetId ?? node.assetRefs[index]?.assetId;
-    if (!assetId) {
-      return unresolved(item, `Gallery item ${index + 1} has no reconciled media identity.`, findings, "gallery-item-unresolved");
-    }
-    const identity = resolveIdentity(assetId, options);
-    if (!identity?.url) {
-      return unresolved(item, `Gallery item ${index + 1} media identity ${assetId} has no delivery URL.`, findings, "gallery-item-unresolved");
-    }
-    const attachmentId = identity.attachmentId;
-    const blockAttrs = JSON.stringify({
-      ...(attachmentId === undefined ? {} : { id: attachmentId }),
-      sizeSlug: "large",
-      linkDestination: "none",
-    });
-    const alt = identity.alt ?? item.attributes.alt ?? "";
-    const captionMarkup = renderCaption(identity.caption ?? item.attributes.caption, item.attributes.credit, item.attributes.creditUrl);
-    return `<!-- wp:image ${blockAttrs} -->\n<figure class="wp-block-image size-large"><img src="${escapeAttr(identity.url)}" alt="${escapeAttr(alt)}"/>${captionMarkup}</figure>\n<!-- /wp:image -->`;
-  }).join("\n");
+  const rendered = items
+    .map((item, index) => {
+      const assetId = item.assetRefs[0]?.assetId ?? node.assetRefs[index]?.assetId;
+      if (!assetId) {
+        return unresolved(
+          item,
+          `Gallery item ${index + 1} has no reconciled media identity.`,
+          findings,
+          "gallery-item-unresolved",
+        );
+      }
+      const identity = resolveIdentity(assetId, options);
+      if (!identity?.url) {
+        return unresolved(
+          item,
+          `Gallery item ${index + 1} media identity ${assetId} has no delivery URL.`,
+          findings,
+          "gallery-item-unresolved",
+        );
+      }
+      const attachmentId = identity.attachmentId;
+      const blockAttrs = JSON.stringify({
+        ...(attachmentId === undefined ? {} : { id: attachmentId }),
+        sizeSlug: "large",
+        linkDestination: "none",
+      });
+      const alt = identity.alt ?? item.attributes.alt ?? "";
+      const captionMarkup = renderCaption(
+        identity.caption ?? item.attributes.caption,
+        item.attributes.credit,
+        item.attributes.creditUrl,
+      );
+      return `<!-- wp:image ${blockAttrs} -->\n<figure class="wp-block-image size-large"><img src="${escapeAttr(identity.url)}" alt="${escapeAttr(alt)}"/>${captionMarkup}</figure>\n<!-- /wp:image -->`;
+    })
+    .join("\n");
   return `<!-- wp:gallery {"linkTo":"none"} -->\n<figure class="wp-block-gallery has-nested-images columns-default is-cropped">${rendered}</figure>\n<!-- /wp:gallery -->`;
 }
 
@@ -98,7 +114,9 @@ function renderCaption(caption?: string, credit?: string, creditUrl?: string): s
   if (credit) {
     const creditText = escapeHtml(credit);
     const safeUrl = creditUrl && /^(?:https?:)\/\//i.test(creditUrl) ? ` href="${escapeAttr(creditUrl)}"` : "";
-    parts.push(`<span class="blockify-media-credit">Credit: ${safeUrl ? `<a${safeUrl}>${creditText}</a>` : creditText}</span>`);
+    parts.push(
+      `<span class="blockify-media-credit">Credit: ${safeUrl ? `<a${safeUrl}>${creditText}</a>` : creditText}</span>`,
+    );
   }
   return parts.length ? `<figcaption class="wp-element-caption">${parts.join(" ")}</figcaption>` : "";
 }
@@ -112,12 +130,7 @@ function resolveIdentity(assetId: string, options: MediaCompilerOptions): MediaI
   return records[rewritten] ?? records[assetId];
 }
 
-function unresolved(
-  node: SemanticNode,
-  message: string,
-  findings: MediaCompilationFinding[],
-  code: string,
-): string {
+function unresolved(node: SemanticNode, message: string, findings: MediaCompilationFinding[], code: string): string {
   findings.push({ code, message, severity: "blocking", sourceNodeId: node.id });
   const exceptionId = `blockify-${node.id}`;
   return `<!-- wp:html {"blockifyExceptionId":"${escapeAttr(exceptionId)}"} -->\n<div class="blockify-migration-placeholder" data-exception-id="${escapeAttr(exceptionId)}">${escapeHtml(message)}</div>\n<!-- /wp:html -->`;

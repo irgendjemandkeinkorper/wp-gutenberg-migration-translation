@@ -1,10 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { convertPage } from "../lib/pipeline";
 import { ImmutableSourceArchive } from "../lib/acquisition/archive";
-import {
-  ACQUISITION_CONTRACT_VERSION,
-  archivedSnapshotSource,
-} from "../lib/acquisition/contract";
+import { ACQUISITION_CONTRACT_VERSION, archivedSnapshotSource } from "../lib/acquisition/contract";
 import type { AcquisitionRecord, ArchivedPageSnapshot } from "../lib/acquisition/contract";
 
 function record(id: string): AcquisitionRecord {
@@ -65,9 +62,12 @@ describe("versioned acquisition archive", () => {
       snapshotId: "offline",
       finalUrl: "https://example.test/about/",
     });
-    vi.stubGlobal("fetch", vi.fn(() => {
-      throw new Error("network must not be used");
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => {
+        throw new Error("network must not be used");
+      }),
+    );
 
     const result = await convertPage(
       {

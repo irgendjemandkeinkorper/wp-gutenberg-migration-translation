@@ -21,12 +21,7 @@ export function sourceEvidenceFromSnapshot(
   const content = snapshot.record.content.decodedHtml;
   const startOffset = range.startOffset ?? 0;
   const endOffset = range.endOffset ?? snapshot.decodedHtml.length;
-  if (
-    !Number.isInteger(startOffset) ||
-    !Number.isInteger(endOffset) ||
-    startOffset < 0 ||
-    endOffset < startOffset
-  ) {
+  if (!Number.isInteger(startOffset) || !Number.isInteger(endOffset) || startOffset < 0 || endOffset < startOffset) {
     throw new Error("IR evidence offsets must be ordered, non-negative integers.");
   }
 

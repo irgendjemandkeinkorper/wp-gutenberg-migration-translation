@@ -98,8 +98,7 @@ export interface ArchivedPageSnapshot {
 export function assertCompatibleRecord(record: AcquisitionRecord): void {
   if (record.contractVersion !== ACQUISITION_CONTRACT_VERSION) {
     throw new Error(
-      `Unsupported acquisition contract ${record.contractVersion}; ` +
-        `expected ${ACQUISITION_CONTRACT_VERSION}.`,
+      `Unsupported acquisition contract ${record.contractVersion}; ` + `expected ${ACQUISITION_CONTRACT_VERSION}.`,
     );
   }
   if (record.compatibility.reader !== "forward-compatible") {

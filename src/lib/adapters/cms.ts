@@ -7,8 +7,16 @@ interface CmsDefinition {
 }
 
 const DEFINITIONS: CmsDefinition[] = [
-  { id: "drupal", patterns: [/name=["']generator["'][^>]+Drupal/i, /data-drupal-selector|drupalSettings|sites\/default/i], rootSelectors: ["main", ".region-content", "article", ".node__content"] },
-  { id: "joomla", patterns: [/name=["']generator["'][^>]+Joomla/i, /com_content|option=com_|media\/system/i], rootSelectors: ["main", ".item-page", ".article-body", "article"] },
+  {
+    id: "drupal",
+    patterns: [/name=["']generator["'][^>]+Drupal/i, /data-drupal-selector|drupalSettings|sites\/default/i],
+    rootSelectors: ["main", ".region-content", "article", ".node__content"],
+  },
+  {
+    id: "joomla",
+    patterns: [/name=["']generator["'][^>]+Joomla/i, /com_content|option=com_|media\/system/i],
+    rootSelectors: ["main", ".item-page", ".article-body", "article"],
+  },
 ];
 
 export function createDrupalSourceAdapter(): SourceAdapter {
@@ -24,11 +32,18 @@ function createCmsAdapter(definition: CmsDefinition): SourceAdapter {
     id: definition.id,
     version: "1.0.0",
     detect(input): DetectionSignal {
-      const evidence = definition.patterns.flatMap((pattern) => pattern.test(input.html) ? [pattern.source] : []);
+      const evidence = definition.patterns.flatMap((pattern) => (pattern.test(input.html) ? [pattern.source] : []));
       return {
         adapterId: definition.id,
         cms: definition.id,
-        confidence: evidence.length >= 2 ? 0.95 : evidence.length && evidence[0].includes("generator") ? 0.92 : evidence.length ? 0.75 : 0,
+        confidence:
+          evidence.length >= 2
+            ? 0.95
+            : evidence.length && evidence[0].includes("generator")
+              ? 0.92
+              : evidence.length
+                ? 0.75
+                : 0,
         evidence,
         diagnostics: [],
       };
@@ -38,9 +53,19 @@ function createCmsAdapter(definition: CmsDefinition): SourceAdapter {
       const contentRoot = definition.rootSelectors.find((selector) => document.querySelector(selector)) ?? "body";
       return {
         contentRoot,
-        boilerplateSelectors: ["nav", "footer", ".breadcrumb", ".menu", ".region-sidebar-first", ".region-sidebar-second"],
+        boilerplateSelectors: [
+          "nav",
+          "footer",
+          ".breadcrumb",
+          ".menu",
+          ".region-sidebar-first",
+          ".region-sidebar-second",
+        ],
         mediaExpansions: [
-          { selector: "img[data-src], img[data-lazy-src], img[srcset]", attributes: ["data-src", "data-lazy-src", "srcset"] },
+          {
+            selector: "img[data-src], img[data-lazy-src], img[srcset]",
+            attributes: ["data-src", "data-lazy-src", "srcset"],
+          },
         ],
         structuredPageHints: { cms: definition.id, contentRoot },
         evidence: [...detection.evidence, `content-root:${contentRoot}`],

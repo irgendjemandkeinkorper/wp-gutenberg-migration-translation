@@ -30,10 +30,7 @@ const CONTAINER_CANDIDATES = [
  * visible text, in which case the densest known content container is used —
  * then the whole <body> as a last resort.
  */
-export function extractContent(
-  rawHtml: string,
-  opts: { url?: string; selector?: string } = {},
-): ExtractResult {
+export function extractContent(rawHtml: string, opts: { url?: string; selector?: string } = {}): ExtractResult {
   const doc = new DOMParser().parseFromString(rawHtml, "text/html");
 
   let contentHtml = "";
@@ -54,8 +51,7 @@ export function extractContent(
   if (!contentHtml) {
     const bodyLen = visibleTextLength(doc.body);
 
-    let article: { content?: string | null; title?: string | null; textContent?: string | null } | null =
-      null;
+    let article: { content?: string | null; title?: string | null; textContent?: string | null } | null = null;
     try {
       article = new Readability(doc.cloneNode(true) as Document).parse();
     } catch {
@@ -88,9 +84,7 @@ export function extractContent(
   };
 }
 
-function densestContainer(
-  doc: Document,
-): { el: Element; selector: string } | null {
+function densestContainer(doc: Document): { el: Element; selector: string } | null {
   let best: { el: Element; selector: string } | null = null;
   let bestLen = 0;
   for (const selector of CONTAINER_CANDIDATES) {
@@ -109,9 +103,7 @@ function densestContainer(
 function visibleTextLength(el: Element | null): number {
   if (!el) return 0;
   const clone = el.cloneNode(true) as Element;
-  for (const junk of Array.from(
-    clone.querySelectorAll("script, style, noscript, template, iframe"),
-  )) {
+  for (const junk of Array.from(clone.querySelectorAll("script, style, noscript, template, iframe"))) {
     junk.remove();
   }
   return normalizedLength(clone.textContent ?? "");
@@ -128,10 +120,7 @@ function deriveTitle(doc: Document, readabilityTitle: string): string {
     const first = docTitle.split(TITLE_SPLIT_RE)[0].trim();
     if (first) return first;
   }
-  const og = doc
-    .querySelector('meta[property="og:title"]')
-    ?.getAttribute("content")
-    ?.trim();
+  const og = doc.querySelector('meta[property="og:title"]')?.getAttribute("content")?.trim();
   if (og) return og;
   const heading = doc.querySelector("h1, h2")?.textContent?.trim();
   if (heading) return heading;

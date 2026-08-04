@@ -76,23 +76,19 @@ describe("bundle-wide media registry", () => {
   it("keeps changed bytes at one URL separate and raises a blocking conflict", () => {
     const { registry, findings } = createMediaRegistry(sameUrlChangedBytesFixture());
     expect(registry.records).toHaveLength(2);
-    expect(registry.records.map((record) => record.contentHash)).toEqual([
-      SAME_BYTES_HASH,
-      CHANGED_BYTES_HASH,
-    ]);
-    expect(findings.some((finding) => finding.code === "source-url-content-conflict" && finding.severity === "blocking")).toBe(true);
+    expect(registry.records.map((record) => record.contentHash)).toEqual([SAME_BYTES_HASH, CHANGED_BYTES_HASH]);
+    expect(
+      findings.some((finding) => finding.code === "source-url-content-conflict" && finding.severity === "blocking"),
+    ).toBe(true);
     expect(() =>
-      buildWxrPackage(
-        [page(MEDIA_FIXTURE_PAGE_A, "https://cdn.example.test/photos/hero.jpg")],
-        {
-          author: "admin",
-          postType: "page",
-          status: "draft",
-          emitAttachments: true,
-          mediaRegistry: registry,
-          strictMedia: true,
-        },
-      ),
+      buildWxrPackage([page(MEDIA_FIXTURE_PAGE_A, "https://cdn.example.test/photos/hero.jpg")], {
+        author: "admin",
+        postType: "page",
+        status: "draft",
+        emitAttachments: true,
+        mediaRegistry: registry,
+        strictMedia: true,
+      }),
     ).toThrow("Media preflight failed");
   });
 
@@ -123,9 +119,7 @@ describe("bundle-wide media registry", () => {
   });
 
   it("does not guess when a relative URL has no source context", () => {
-    const { registry, findings } = createMediaRegistry([
-      { pageUrl: "", sourceUrl: "/uploads/hero.jpg" },
-    ]);
+    const { registry, findings } = createMediaRegistry([{ pageUrl: "", sourceUrl: "/uploads/hero.jpg" }]);
     expect(registry.records[0].sourceUrls).toEqual([]);
     expect(findings[0]).toMatchObject({ code: "relative-url-without-context", severity: "blocking" });
     expect(normalizeMediaUrl("//cdn.example.test/hero.jpg", "https://legacy.example.test/page")).toBe(
@@ -135,19 +129,23 @@ describe("bundle-wide media registry", () => {
 
   it("rewrites a WXR page only from reconciled destination evidence", () => {
     const { registry } = createMediaRegistry(duplicateUrlFixture());
-    const reconciled = reconcileMediaRegistry(registry, [{
-      attachmentId: 91,
-      contentHash: SAME_BYTES_HASH,
-      destinationUrl: "https://target.example.test/wp-content/uploads/logo.jpg",
-      sourceUrls: registry.records[0].sourceUrls,
-    }]);
-    const built = buildWxrPackage(
-      [page(MEDIA_FIXTURE_PAGE_A, "https://cdn.example.test/photos/logo.jpg")],
-      { author: "admin", postType: "page", status: "draft", mediaRegistry: registry },
-    );
+    const reconciled = reconcileMediaRegistry(registry, [
+      {
+        attachmentId: 91,
+        contentHash: SAME_BYTES_HASH,
+        destinationUrl: "https://target.example.test/wp-content/uploads/logo.jpg",
+        sourceUrls: registry.records[0].sourceUrls,
+      },
+    ]);
+    const built = buildWxrPackage([page(MEDIA_FIXTURE_PAGE_A, "https://cdn.example.test/photos/logo.jpg")], {
+      author: "admin",
+      postType: "page",
+      status: "draft",
+      mediaRegistry: registry,
+    });
     const result = reconcileWxrContent(built.xml, reconciled.registry);
     expect(result.findings).toEqual([]);
     expect(result.xml).toContain("https://target.example.test/wp-content/uploads/logo.jpg");
-    expect(result.xml).not.toContain("https://cdn.example.test/photos/logo.jpg\" alt");
+    expect(result.xml).not.toContain('https://cdn.example.test/photos/logo.jpg" alt');
   });
 });

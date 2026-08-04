@@ -173,10 +173,7 @@ export interface ManifestValidationResult {
 }
 
 export type WorkspaceManifestErrorCode =
-  | "invalid-json"
-  | "corrupt-manifest"
-  | "unsupported-schema"
-  | "incompatible-reader";
+  "invalid-json" | "corrupt-manifest" | "unsupported-schema" | "incompatible-reader";
 
 export class WorkspaceManifestError extends Error {
   readonly code: WorkspaceManifestErrorCode;
@@ -344,13 +341,7 @@ const STAGE_DEFINITIONS: { [K in WorkspaceStageName]: StageDefinition } = {
   qa: {
     name: "qa",
     dependsOn: ["extraction", "profile", "conversion", "delivery", "reconciliation"],
-    inputEntityKinds: [
-      "semantic_document",
-      "template_profile",
-      "conversion_run",
-      "delivery_record",
-      "exception",
-    ],
+    inputEntityKinds: ["semantic_document", "template_profile", "conversion_run", "delivery_record", "exception"],
     outputEntityKinds: ["qa_finding"],
     invalidationRules: [
       "input-hash-changed",
@@ -363,8 +354,7 @@ const STAGE_DEFINITIONS: { [K in WorkspaceStageName]: StageDefinition } = {
   },
 };
 
-export const WORKSPACE_STAGE_GRAPH: Readonly<{ [K in WorkspaceStageName]: StageDefinition }> =
-  STAGE_DEFINITIONS;
+export const WORKSPACE_STAGE_GRAPH: Readonly<{ [K in WorkspaceStageName]: StageDefinition }> = STAGE_DEFINITIONS;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -420,11 +410,7 @@ function defaultProvenance(source: string, method: string): Provenance {
   return { source, method, sourceEntityIds: [], evidence: [] };
 }
 
-function completeProvenance(
-  source: string,
-  method: string,
-  provenance: Partial<Provenance> | undefined,
-): Provenance {
+function completeProvenance(source: string, method: string, provenance: Partial<Provenance> | undefined): Provenance {
   return {
     source: provenance?.source ?? source,
     method: provenance?.method ?? method,
@@ -715,10 +701,7 @@ export function planInvalidation(request: InvalidationRequest = {}): Invalidatio
     previous !== undefined || current !== undefined ? previous !== current : false;
   for (const change of changedEntities) {
     const hashChanged = valuesDiffer(change.previousHash, change.currentHash);
-    const producerChanged = valuesDiffer(
-      change.previousProducerVersion,
-      change.currentProducerVersion,
-    );
+    const producerChanged = valuesDiffer(change.previousProducerVersion, change.currentProducerVersion);
     for (const stage of WORKSPACE_STAGE_NAMES) {
       if (!STAGE_DEFINITIONS[stage].inputEntityKinds.includes(change.kind)) continue;
       if (hashChanged) addReason(reasons, stage, "input-hash-changed");
@@ -825,10 +808,7 @@ function validateArtifactMetadata(value: Record<string, unknown>, path: string, 
   }
 }
 
-function validateEntities(
-  value: unknown,
-  issues: ManifestIssue[],
-): value is WorkspaceEntityCollections {
+function validateEntities(value: unknown, issues: ManifestIssue[]): value is WorkspaceEntityCollections {
   if (!isRecord(value)) {
     issues.push({ path: "entities", code: "missing", message: "Entity collections are required." });
     return false;
@@ -897,12 +877,20 @@ function validateStages(value: unknown, issues: ManifestIssue[]): value is Stage
         issues.push({ path: `${path}.inputHashes`, code: "invalid", message: "Input hashes must be strings." });
       }
       if (Object.values(rawRecord.dependencyStageFingerprints).some((hash) => !nonEmptyString(hash))) {
-        issues.push({ path: `${path}.dependencyStageFingerprints`, code: "invalid", message: "Stage fingerprints must be strings." });
+        issues.push({
+          path: `${path}.dependencyStageFingerprints`,
+          code: "invalid",
+          message: "Stage fingerprints must be strings.",
+        });
       }
       const allowedDependencies = new Set(STAGE_DEFINITIONS[stage].dependsOn);
       for (const dependency of Object.keys(rawRecord.dependencyStageFingerprints)) {
         if (!allowedDependencies.has(dependency as WorkspaceStageName)) {
-          issues.push({ path: `${path}.dependencyStageFingerprints.${dependency}`, code: "mismatch", message: "Stage dependency is not declared in the graph." });
+          issues.push({
+            path: `${path}.dependencyStageFingerprints.${dependency}`,
+            code: "mismatch",
+            message: "Stage dependency is not declared in the graph.",
+          });
         }
       }
       const expectedFingerprint = computeStageFingerprint(
@@ -912,7 +900,11 @@ function validateStages(value: unknown, issues: ManifestIssue[]): value is Stage
         rawRecord.dependencyStageFingerprints as Record<string, string>,
       );
       if (rawRecord.fingerprint !== expectedFingerprint) {
-        issues.push({ path: `${path}.fingerprint`, code: "mismatch", message: "Stage fingerprint is not reproducible." });
+        issues.push({
+          path: `${path}.fingerprint`,
+          code: "mismatch",
+          message: "Stage fingerprint is not reproducible.",
+        });
       }
     }
     if (!Array.isArray(rawRecord.outputEntityIds) || rawRecord.outputEntityIds.some((id) => !nonEmptyString(id))) {
@@ -937,7 +929,8 @@ export function validateWorkspaceManifest(value: unknown): ManifestValidationRes
   const schemaIssue = schemaCompatibilityIssue(value.schemaVersion, "schemaVersion");
   if (schemaIssue !== null) issues.push(schemaIssue);
   for (const key of ["manifestId", "workspaceId", "contentHash"]) {
-    if (!nonEmptyString(value[key])) issues.push({ path: key, code: "missing", message: "Required non-empty string is missing." });
+    if (!nonEmptyString(value[key]))
+      issues.push({ path: key, code: "missing", message: "Required non-empty string is missing." });
   }
   if (nonEmptyString(value.workspaceId) && value.manifestId !== stableEntityId("workspace", value.workspaceId)) {
     issues.push({ path: "manifestId", code: "mismatch", message: "Manifest ID must be stable for workspace ID." });
@@ -949,7 +942,10 @@ export function validateWorkspaceManifest(value: unknown): ManifestValidationRes
     if (value.compatibility.reader !== "forward-compatible" || value.compatibility.unknownFields !== "ignore") {
       issues.push({ path: "compatibility", code: "invalid", message: "Unsupported compatibility policy." });
     }
-    const minimumReader = schemaCompatibilityIssue(value.compatibility.minimumReaderVersion, "compatibility.minimumReaderVersion");
+    const minimumReader = schemaCompatibilityIssue(
+      value.compatibility.minimumReaderVersion,
+      "compatibility.minimumReaderVersion",
+    );
     if (minimumReader !== null) issues.push(minimumReader);
   }
   validateEntities(value.entities, issues);
@@ -961,7 +957,11 @@ export function validateWorkspaceManifest(value: unknown): ManifestValidationRes
         issues.push({ path: "contentHash", code: "mismatch", message: "Manifest content hash is not reproducible." });
       }
     } catch (error) {
-      issues.push({ path: "contentHash", code: "invalid", message: error instanceof Error ? error.message : "Manifest cannot be hashed." });
+      issues.push({
+        path: "contentHash",
+        code: "invalid",
+        message: error instanceof Error ? error.message : "Manifest cannot be hashed.",
+      });
     }
   }
   return { valid: issues.length === 0, issues };

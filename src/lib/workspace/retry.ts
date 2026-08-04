@@ -56,7 +56,7 @@ export function planSelectiveRetry(request: SelectiveRetryRequest = {}): Selecti
     forceStages: request.forceStages,
   });
   const scopes: RetryScope[] = [];
-  const changedIds = new Set(changedEntities.flatMap((entity) => entity.id ? [entity.id] : []));
+  const changedIds = new Set(changedEntities.flatMap((entity) => (entity.id ? [entity.id] : [])));
   const failedByStage = new Map<WorkspaceStageName, Set<string>>();
   for (const failed of request.failedItems ?? []) {
     const ids = failedByStage.get(failed.stage) ?? new Set<string>();
@@ -77,11 +77,17 @@ export function planSelectiveRetry(request: SelectiveRetryRequest = {}): Selecti
       .filter((entity) => entity.id && definition.inputEntityKinds.includes(entity.kind as WorkspaceEntityKind))
       .map((entity) => entity.id as string);
     const dependencyFailureIds = stageResult.reasons.includes("dependency-invalidated") ? [...allFailedIds] : [];
-    const entityIds = [...new Set(directIds.length ? directIds : dependencyFailureIds.length ? dependencyFailureIds : [...changedIds])].sort();
+    const entityIds = [
+      ...new Set(directIds.length ? directIds : dependencyFailureIds.length ? dependencyFailureIds : [...changedIds]),
+    ].sort();
     scopes.push({
       stage: stageResult.stage,
       entityIds,
-      reason: request.forceStages?.includes(stageResult.stage) ? "forced" : stageResult.reasons.includes("dependency-invalidated") ? "dependency-invalidated" : "changed-input",
+      reason: request.forceStages?.includes(stageResult.stage)
+        ? "forced"
+        : stageResult.reasons.includes("dependency-invalidated")
+          ? "dependency-invalidated"
+          : "changed-input",
     });
   }
   const stageNames = scopes.map((scope) => scope.stage);

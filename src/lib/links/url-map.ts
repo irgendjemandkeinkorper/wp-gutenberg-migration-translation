@@ -1,4 +1,5 @@
-export type UrlKind = "requested" | "canonical" | "redirected" | "fragment" | "download" | "mailto" | "tel" | "external" | "malformed";
+export type UrlKind =
+  "requested" | "canonical" | "redirected" | "fragment" | "download" | "mailto" | "tel" | "external" | "malformed";
 
 export interface UrlObservation {
   requestedUrl: string;
@@ -32,7 +33,8 @@ export function classifyUrl(raw: string, baseUrl: string): UrlRecord {
   const requested = raw.trim();
   if (/^mailto:/i.test(requested)) return simple(requested, "mailto");
   if (/^tel:/i.test(requested)) return simple(requested, "tel");
-  if (/%(?![0-9a-f]{2})/i.test(requested)) return { requested, normalized: null, target: null, fragment: null, kind: "malformed", redirectChain: [] };
+  if (/%(?![0-9a-f]{2})/i.test(requested))
+    return { requested, normalized: null, target: null, fragment: null, kind: "malformed", redirectChain: [] };
   let parsed: URL;
   let base: URL;
   try {
@@ -48,7 +50,9 @@ export function classifyUrl(raw: string, baseUrl: string): UrlRecord {
     ? "fragment"
     : parsed.origin !== base.origin
       ? "external"
-      : isDownload(parsed) ? "download" : "requested";
+      : isDownload(parsed)
+        ? "download"
+        : "requested";
   return { requested, normalized: target, target, fragment, kind, redirectChain: [] };
 }
 
@@ -59,35 +63,60 @@ export function buildCanonicalUrlMap(observations: readonly UrlObservation[], ba
   for (const observation of observations) {
     const initial = classifyUrl(observation.requestedUrl, baseUrl);
     if (initial.kind === "malformed") {
-      findings.push({ code: "malformed-url", message: `Malformed URL: ${observation.requestedUrl}`, url: observation.requestedUrl });
+      findings.push({
+        code: "malformed-url",
+        message: `Malformed URL: ${observation.requestedUrl}`,
+        url: observation.requestedUrl,
+      });
       byRequested.set(observation.requestedUrl, initial);
       continue;
     }
     const final = observation.finalUrl ? classifyUrl(observation.finalUrl, baseUrl) : initial;
     const canonical = observation.canonicalUrl ? classifyUrl(observation.canonicalUrl, baseUrl) : final;
-    const redirectChain = [initial.target, ...(observation.finalUrl && final.target !== initial.target ? [final.target] : [])].filter((value): value is string => value !== null);
+    const redirectChain = [
+      initial.target,
+      ...(observation.finalUrl && final.target !== initial.target ? [final.target] : []),
+    ].filter((value): value is string => value !== null);
     const record: UrlRecord = {
       ...initial,
       normalized: canonical.target,
       target: canonical.target,
-      kind: observation.finalUrl && final.target !== initial.target ? "redirected" : canonical.kind === "fragment" ? "fragment" : initial.kind,
+      kind:
+        observation.finalUrl && final.target !== initial.target
+          ? "redirected"
+          : canonical.kind === "fragment"
+            ? "fragment"
+            : initial.kind,
       redirectChain,
     };
     const existing = byRequested.get(observation.requestedUrl);
     if (existing && existing.target !== record.target) {
-      findings.push({ code: "redirect-conflict", message: `URL has conflicting targets: ${existing.target} and ${record.target}.`, url: observation.requestedUrl });
+      findings.push({
+        code: "redirect-conflict",
+        message: `URL has conflicting targets: ${existing.target} and ${record.target}.`,
+        url: observation.requestedUrl,
+      });
     }
     byRequested.set(observation.requestedUrl, record);
     if (initial.target && record.target) {
       const prior = redirectTargets.get(initial.target);
-      if (prior && prior !== record.target) findings.push({ code: "redirect-conflict", message: `Redirect target conflict for ${initial.target}.`, url: initial.target });
+      if (prior && prior !== record.target)
+        findings.push({
+          code: "redirect-conflict",
+          message: `Redirect target conflict for ${initial.target}.`,
+          url: initial.target,
+        });
       redirectTargets.set(initial.target, record.target);
     }
   }
   const records = [...byRequested.values()].sort((left, right) => left.requested.localeCompare(right.requested));
   for (const record of records) {
     if (record.redirectChain.length > 1 && new Set(record.redirectChain).size !== record.redirectChain.length) {
-      findings.push({ code: "redirect-cycle", message: `Redirect chain contains a cycle: ${record.redirectChain.join(" -> ")}.`, url: record.requested });
+      findings.push({
+        code: "redirect-cycle",
+        message: `Redirect chain contains a cycle: ${record.redirectChain.join(" -> ")}.`,
+        url: record.requested,
+      });
     }
   }
   return { records, findings: dedupeFindings(findings) };
@@ -98,7 +127,10 @@ function simple(requested: string, kind: UrlKind): UrlRecord {
 }
 
 function isDownload(url: URL): boolean {
-  return /\.(?:pdf|docx?|xlsx?|zip|csv|txt|json|xml)(?:$|\?)/i.test(url.pathname + url.search) || /(?:download|attachment)=/i.test(url.search);
+  return (
+    /\.(?:pdf|docx?|xlsx?|zip|csv|txt|json|xml)(?:$|\?)/i.test(url.pathname + url.search) ||
+    /(?:download|attachment)=/i.test(url.search)
+  );
 }
 
 function dedupeFindings(findings: UrlMapFinding[]): UrlMapFinding[] {

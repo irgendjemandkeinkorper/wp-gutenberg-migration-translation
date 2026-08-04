@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createMediaRegistry } from "../lib/media/registry";
-import {
-  emitSemanticIr,
-  SemanticIrEmissionError,
-  serializeSemanticDocument,
-} from "../lib/ir";
+import { emitSemanticIr, SemanticIrEmissionError, serializeSemanticDocument } from "../lib/ir";
 import type { ArchivedPageSnapshot } from "../lib/acquisition/contract";
 import type { AssetRef, PageResult } from "../lib/types";
 
@@ -122,29 +118,31 @@ describe("semantic IR emitter", () => {
     expect(document.root.children[1].children[0].text).toBe("bold");
     expect(document.root.children[0].extensions.sourceTag).toBe("h2");
     expect(document.root.children[6].extensions.sourceTag).toBe("img");
-    expect(document.root.children[5].extensions.rows).toEqual([
-      { cells: [{ text: "Cell", header: false }] },
-    ]);
+    expect(document.root.children[5].extensions.rows).toEqual([{ cells: [{ text: "Cell", header: false }] }]);
     expect(document.root.auditEvents.map((event) => event.code)).toContain("boilerplate-exclusion");
   });
 
   it("resolves tokenized assets to media-registry IDs without URL references", () => {
-    const registry = createMediaRegistry([{
-      pageUrl,
-      sourceUrl: imageUrl,
-      baseUrl: pageUrl,
-      nodeIndex: 0,
-      alt: "Hero",
-      field: "src",
-    }]).registry;
+    const registry = createMediaRegistry([
+      {
+        pageUrl,
+        sourceUrl: imageUrl,
+        baseUrl: pageUrl,
+        nodeIndex: 0,
+        alt: "Hero",
+        field: "src",
+      },
+    ]).registry;
     const document = emitSemanticIr({ snapshot: snapshot(), page: page(), mediaRegistry: registry });
     const imageNode = document.root.children.find((node) => node.kind === "image");
     if (!imageNode) throw new Error("image node missing");
 
-    expect(imageNode.assetRefs).toEqual([expect.objectContaining({
-      assetId: registry.records[0].recordId,
-      ordinal: 0,
-    })]);
+    expect(imageNode.assetRefs).toEqual([
+      expect.objectContaining({
+        assetId: registry.records[0].recordId,
+        ordinal: 0,
+      }),
+    ]);
     expect(JSON.stringify(imageNode.assetRefs)).not.toContain(imageUrl);
     expect(imageNode.auditEvents[0].code).toBe("asset-token-resolved");
   });
@@ -170,20 +168,24 @@ describe("semantic IR emitter", () => {
   });
 
   it("fails closed on token drift and un-tokenized media", () => {
-    expect(() => emitSemanticIr({
-      snapshot: snapshot(),
-      page: page("<p>No issued token</p>"),
-    })).toThrowError(SemanticIrEmissionError);
+    expect(() =>
+      emitSemanticIr({
+        snapshot: snapshot(),
+        page: page("<p>No issued token</p>"),
+      }),
+    ).toThrowError(SemanticIrEmissionError);
     try {
       emitSemanticIr({ snapshot: snapshot(), page: page("<p>No issued token</p>") });
     } catch (error) {
       expect(error).toMatchObject({ code: "asset-token-drift" });
     }
 
-    expect(() => emitSemanticIr({
-      snapshot: snapshot(),
-      page: page('<p><img src="https://example.test/un-tokenized.jpg"></p>', []),
-    })).toThrowError(/was not represented by an asset token/);
+    expect(() =>
+      emitSemanticIr({
+        snapshot: snapshot(),
+        page: page('<p><img src="https://example.test/un-tokenized.jpg"></p>', []),
+      }),
+    ).toThrowError(/was not represented by an asset token/);
   });
 
   it("preserves ordered gallery/slideshow collections as first-class IR", () => {

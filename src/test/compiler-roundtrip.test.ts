@@ -11,7 +11,14 @@ function node(kind: SemanticNode["kind"], overrides: Partial<SemanticNode> = {})
     source: {
       snapshotId: "snapshot-roundtrip",
       locator: { kind: "structural-path", value: "/body[1]/p[1]" },
-      htmlExcerpt: { contentKind: "decoded-html", contentSha256: "sha", storageKey: "html/roundtrip", startOffset: 0, endOffset: 1, excerpt: "fixture" },
+      htmlExcerpt: {
+        contentKind: "decoded-html",
+        contentSha256: "sha",
+        storageKey: "html/roundtrip",
+        startOffset: 0,
+        endOffset: 1,
+        excerpt: "fixture",
+      },
     },
     children: [],
     text: "fixture",
@@ -27,9 +34,12 @@ function node(kind: SemanticNode["kind"], overrides: Partial<SemanticNode> = {})
 describe("compiler parser round trips", () => {
   it("parses generated core and media blocks with stable trees", () => {
     const paragraph = compileCoreNode(node("paragraph", { text: "Hello" }));
-    const image = compileMediaNode(node("image", {
-      assetRefs: [{ assetId: "asset-1", role: "content-image", ordinal: 0, extensions: {} }],
-    }), { identities: { "asset-1": { assetId: "asset-1", url: "https://cdn.example.test/a.jpg", attachmentId: 7 } } });
+    const image = compileMediaNode(
+      node("image", {
+        assetRefs: [{ assetId: "asset-1", role: "content-image", ordinal: 0, extensions: {} }],
+      }),
+      { identities: { "asset-1": { assetId: "asset-1", url: "https://cdn.example.test/a.jpg", attachmentId: 7 } } },
+    );
     const first = verifyCompiledMarkup(`${paragraph.markup}\n${image.markup}`);
     const second = verifyCompiledMarkup(`${paragraph.markup}\n${image.markup}`);
     expect(first.valid).toBe(true);
@@ -40,7 +50,9 @@ describe("compiler parser round trips", () => {
 
   it("detects malformed delimiters and unsafe HTML clearly", () => {
     expect(parseGutenbergBlocks("<!-- wp:paragraph -->bad").valid).toBe(false);
-    const unsafe = verifyCompiledMarkup('<!-- wp:html -->\n<div onclick="evil()"><script>x</script></div>\n<!-- /wp:html -->');
+    const unsafe = verifyCompiledMarkup(
+      '<!-- wp:html -->\n<div onclick="evil()"><script>x</script></div>\n<!-- /wp:html -->',
+    );
     expect(unsafe.valid).toBe(false);
     expect(unsafe.errors).toContain("Unsafe HTML in block /block[1].");
   });

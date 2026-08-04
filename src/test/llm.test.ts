@@ -1,10 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  cleanHtml,
-  getProviderConfig,
-  LLM_PROVIDERS,
-  SYSTEM_PROMPT,
-} from "../lib/llm";
+import { cleanHtml, getProviderConfig, LLM_PROVIDERS, SYSTEM_PROMPT } from "../lib/llm";
 
 function mockResponse(body: unknown, status = 200): Response {
   return {
@@ -19,27 +14,23 @@ describe("LLM providers", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("offers current model choices for every provider", () => {
-    expect(LLM_PROVIDERS.map((provider) => provider.id)).toEqual([
-      "gemini",
-      "anthropic",
-      "openai",
-    ]);
+    expect(LLM_PROVIDERS.map((provider) => provider.id)).toEqual(["gemini", "anthropic", "openai"]);
     expect(getProviderConfig("gemini").defaultModel).toBe("gemini-3.6-flash");
     expect(getProviderConfig("anthropic").defaultModel).toBe("claude-sonnet-5");
-    expect(getProviderConfig("openai").models.map((model) => model.id)).toContain(
-      "gpt-5.6-sol",
-    );
+    expect(getProviderConfig("openai").models.map((model) => model.id)).toContain("gpt-5.6-sol");
   });
 
   it("gives every provider the shared request/extraction adapter contract", () => {
     for (const provider of LLM_PROVIDERS) {
       expect(typeof provider.adapter.buildRequest).toBe("function");
       expect(typeof provider.adapter.extractResponse).toBe("function");
-      expect(provider.adapter.buildRequest({
-        apiKey: "adapter-test-key",
-        model: provider.defaultModel,
-        user: "<p>fixture</p>",
-      })).toHaveProperty("transport");
+      expect(
+        provider.adapter.buildRequest({
+          apiKey: "adapter-test-key",
+          model: provider.defaultModel,
+          user: "<p>fixture</p>",
+        }),
+      ).toHaveProperty("transport");
     }
   });
 
@@ -113,12 +104,7 @@ describe("LLM providers", () => {
   });
 
   it("surfaces provider error messages without exposing credentials", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        mockResponse({ error: { message: "Invalid API key" } }, 401),
-      ),
-    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse({ error: { message: "Invalid API key" } }, 401)));
 
     await expect(
       cleanHtml({

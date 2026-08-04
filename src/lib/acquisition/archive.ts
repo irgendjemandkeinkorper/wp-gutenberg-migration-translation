@@ -10,10 +10,7 @@ export class ImmutableSourceArchive {
   private readonly entries: AcquisitionRecord[];
   private readonly htmlByRecordId: Map<string, string>;
 
-  constructor(
-    records: readonly AcquisitionRecord[] = [],
-    htmlByRecordId: ReadonlyMap<string, string> = new Map(),
-  ) {
+  constructor(records: readonly AcquisitionRecord[] = [], htmlByRecordId: ReadonlyMap<string, string> = new Map()) {
     records.forEach(assertCompatibleRecord);
     this.entries = records.map((record) => structuredClone(record));
     this.htmlByRecordId = new Map(htmlByRecordId);

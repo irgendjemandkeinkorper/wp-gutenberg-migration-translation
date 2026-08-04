@@ -1,9 +1,4 @@
-import {
-  IR_NODE_KINDS,
-  type JsonObject,
-  type JsonValue,
-  type SemanticDocument,
-} from "./types";
+import { IR_NODE_KINDS, type JsonObject, type JsonValue, type SemanticDocument } from "./types";
 
 const LOCATOR_KINDS = ["css", "xpath", "structural-path"] as const;
 const CONTENT_KINDS = ["decoded-html", "raw-bytes"] as const;
@@ -185,8 +180,7 @@ function validateSource(input: unknown, path: string, errors: IrValidationIssue[
   if (
     typeof input.htmlExcerpt.startOffset === "number" &&
     typeof input.htmlExcerpt.endOffset === "number" &&
-    (input.htmlExcerpt.startOffset < 0 ||
-      input.htmlExcerpt.endOffset < input.htmlExcerpt.startOffset)
+    (input.htmlExcerpt.startOffset < 0 || input.htmlExcerpt.endOffset < input.htmlExcerpt.startOffset)
   ) {
     errors.push(issue(`${path}.htmlExcerpt`, "range", "Excerpt offsets must be ordered and non-negative."));
   }
@@ -194,7 +188,9 @@ function validateSource(input: unknown, path: string, errors: IrValidationIssue[
     errors.push(issue(`${path}.htmlExcerpt.excerpt`, "type", "Inline excerpt must be a string."));
   }
   if (typeof input.snapshotId === "string" && input.htmlExcerpt.snapshotId !== undefined) {
-    errors.push(issue(`${path}.htmlExcerpt.snapshotId`, "type", "Use source.snapshotId, not a second excerpt snapshot ID."));
+    errors.push(
+      issue(`${path}.htmlExcerpt.snapshotId`, "type", "Use source.snapshotId, not a second excerpt snapshot ID."),
+    );
   }
 }
 
@@ -203,11 +199,15 @@ function validateCompatibility(input: unknown, path: string, errors: IrValidatio
     errors.push(issue(path, "required", "compatibility policy is required."));
     return;
   }
-  if (input.reader !== "forward-compatible") errors.push(issue(`${path}.reader`, "enum", "reader must be forward-compatible."));
+  if (input.reader !== "forward-compatible")
+    errors.push(issue(`${path}.reader`, "enum", "reader must be forward-compatible."));
   if (typeof input.minimumReaderVersion !== "string" || !isSupportedVersion(input.minimumReaderVersion)) {
-    errors.push(issue(`${path}.minimumReaderVersion`, "version", "minimumReaderVersion must be a supported 1.x.y version."));
+    errors.push(
+      issue(`${path}.minimumReaderVersion`, "version", "minimumReaderVersion must be a supported 1.x.y version."),
+    );
   }
-  if (input.unknownFields !== "preserve") errors.push(issue(`${path}.unknownFields`, "enum", "unknownFields must be preserve."));
+  if (input.unknownFields !== "preserve")
+    errors.push(issue(`${path}.unknownFields`, "enum", "unknownFields must be preserve."));
 }
 
 function validateAssets(input: unknown, path: string, errors: IrValidationIssue[]): void {
@@ -258,7 +258,8 @@ function validateEvents(input: unknown, path: string, errors: IrValidationIssue[
       errors.push(issue(eventPath, "type", "Audit event must be an object."));
       return;
     }
-    if (!includes(EVENT_TYPES, event.type)) errors.push(issue(`${eventPath}.type`, "enum", "Invalid audit event type."));
+    if (!includes(EVENT_TYPES, event.type))
+      errors.push(issue(`${eventPath}.type`, "enum", "Invalid audit event type."));
     requireString(event, "code", `${eventPath}.code`, errors);
     requireString(event, "message", `${eventPath}.message`, errors);
     requireString(event, "at", `${eventPath}.at`, errors);
@@ -312,13 +313,9 @@ function isJsonValue(input: unknown, seen = new Set<object>()): input is JsonVal
   return valid;
 }
 
-function requireString(
-  input: Record<string, unknown>,
-  key: string,
-  path: string,
-  errors: IrValidationIssue[],
-): void {
-  if (typeof input[key] !== "string" || input[key].length === 0) errors.push(issue(path, "required", `${key} must be a non-empty string.`));
+function requireString(input: Record<string, unknown>, key: string, path: string, errors: IrValidationIssue[]): void {
+  if (typeof input[key] !== "string" || input[key].length === 0)
+    errors.push(issue(path, "required", `${key} must be a non-empty string.`));
 }
 
 function requireStringOrNull(
@@ -327,16 +324,13 @@ function requireStringOrNull(
   path: string,
   errors: IrValidationIssue[],
 ): void {
-  if (input[key] !== null && typeof input[key] !== "string") errors.push(issue(path, "type", `${key} must be a string or null.`));
+  if (input[key] !== null && typeof input[key] !== "string")
+    errors.push(issue(path, "type", `${key} must be a string or null.`));
 }
 
-function requireInteger(
-  input: Record<string, unknown>,
-  key: string,
-  path: string,
-  errors: IrValidationIssue[],
-): void {
-  if (typeof input[key] !== "number" || !Number.isInteger(input[key])) errors.push(issue(path, "type", `${key} must be an integer.`));
+function requireInteger(input: Record<string, unknown>, key: string, path: string, errors: IrValidationIssue[]): void {
+  if (typeof input[key] !== "number" || !Number.isInteger(input[key]))
+    errors.push(issue(path, "type", `${key} must be an integer.`));
 }
 
 function isRecord(input: unknown): input is Record<string, unknown> {

@@ -120,7 +120,12 @@ function jsonValue(value: JsonPrimitive): string {
 }
 
 function isJsonPrimitive(value: unknown): value is JsonPrimitive {
-  return value === null || typeof value === "string" || typeof value === "boolean" || (typeof value === "number" && Number.isFinite(value));
+  return (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "boolean" ||
+    (typeof value === "number" && Number.isFinite(value))
+  );
 }
 
 function collectIndexedFields(value: unknown, prefix = "", depth = 0, fields: FieldValue[] = []): FieldValue[] {
@@ -148,13 +153,15 @@ function collectIndexedFields(value: unknown, prefix = "", depth = 0, fields: Fi
 
 function normalizePageSize(value: number | undefined, fallback: number): number {
   if (value === undefined) return fallback;
-  if (!Number.isInteger(value) || value < 0) throw new RangeError("Workspace query limits must be non-negative integers.");
+  if (!Number.isInteger(value) || value < 0)
+    throw new RangeError("Workspace query limits must be non-negative integers.");
   return Math.min(value, 10_000);
 }
 
 function normalizeOffset(value: number | undefined): number {
   if (value === undefined) return 0;
-  if (!Number.isInteger(value) || value < 0) throw new RangeError("Workspace query offsets must be non-negative integers.");
+  if (!Number.isInteger(value) || value < 0)
+    throw new RangeError("Workspace query offsets must be non-negative integers.");
   return value;
 }
 
@@ -172,11 +179,7 @@ async function syncDirectory(directory: string): Promise<void> {
   }
 }
 
-async function atomicWriteFile(
-  filePath: string,
-  content: string,
-  faultInjector?: StoreFaultInjector,
-): Promise<void> {
+async function atomicWriteFile(filePath: string, content: string, faultInjector?: StoreFaultInjector): Promise<void> {
   await mkdir(dirname(filePath), { recursive: true });
   const temporaryPath = `${filePath}.tmp-${process.pid}-${randomUUID()}`;
   let handle: Awaited<ReturnType<typeof openFile>> | undefined;
@@ -250,8 +253,10 @@ function databaseSchema(database: DatabaseSync): void {
 }
 
 function assertWorkspaceEntity(entity: WorkspaceEntity): void {
-  if (!WORKSPACE_ENTITY_KINDS.includes(entity.kind)) throw new TypeError(`Unknown workspace entity kind: ${entity.kind}`);
-  if (!entity.id || !entity.identity || !entity.contentHash) throw new TypeError("Workspace entities require id, identity, and contentHash.");
+  if (!WORKSPACE_ENTITY_KINDS.includes(entity.kind))
+    throw new TypeError(`Unknown workspace entity kind: ${entity.kind}`);
+  if (!entity.id || !entity.identity || !entity.contentHash)
+    throw new TypeError("Workspace entities require id, identity, and contentHash.");
 }
 
 function entityCollectionsWithReplacements(
@@ -289,10 +294,12 @@ export class WorkspaceStore {
     databaseSchema(database);
     const store = new WorkspaceStore(rootDir, database, options.faultInjector);
     try {
-      const existing = database.prepare("SELECT serialized_json FROM store_manifest WHERE id = 1").get() as ManifestRow | undefined;
+      const existing = database.prepare("SELECT serialized_json FROM store_manifest WHERE id = 1").get() as
+        ManifestRow | undefined;
       if (existing === undefined) {
         const initial = options.manifest ?? (await recoverManifestFile(store.manifestPath));
-        if (initial === undefined) throw new WorkspaceStoreError("missing-manifest", `No workspace manifest exists at ${rootDir}.`);
+        if (initial === undefined)
+          throw new WorkspaceStoreError("missing-manifest", `No workspace manifest exists at ${rootDir}.`);
         await store.commitManifest(initial, false);
       } else {
         const parsed = parseStoredManifest(existing.serialized_json);
@@ -311,7 +318,8 @@ export class WorkspaceStore {
   }
 
   getManifest(): WorkspaceManifest {
-    const row = this.database.prepare("SELECT serialized_json FROM store_manifest WHERE id = 1").get() as ManifestRow | undefined;
+    const row = this.database.prepare("SELECT serialized_json FROM store_manifest WHERE id = 1").get() as
+      ManifestRow | undefined;
     if (row === undefined) throw new WorkspaceStoreError("missing-manifest", "Workspace manifest row is missing.");
     return parseStoredManifest(row.serialized_json);
   }
@@ -339,7 +347,9 @@ export class WorkspaceStore {
     }
     const relativePath = blobRelativePath(hash);
     const absolutePath = join(this.rootDir, relativePath);
-    const existing = this.database.prepare("SELECT hash, size, verified, relative_path, created_at FROM blobs WHERE hash = ?").get(hash) as BlobRow | undefined;
+    const existing = this.database
+      .prepare("SELECT hash, size, verified, relative_path, created_at FROM blobs WHERE hash = ?")
+      .get(hash) as BlobRow | undefined;
     if (existing !== undefined) {
       await this.verifyBlobFile(existing);
       return { hash, size: existing.size, created: false, relativePath: existing.relative_path };
@@ -348,7 +358,9 @@ export class WorkspaceStore {
     const now = new Date().toISOString();
     try {
       beginTransaction(this.database);
-      this.database.prepare("INSERT OR IGNORE INTO blobs(hash, size, verified, relative_path, created_at) VALUES (?, ?, 1, ?, ?)").run(hash, bytes.byteLength, relativePath, now);
+      this.database
+        .prepare("INSERT OR IGNORE INTO blobs(hash, size, verified, relative_path, created_at) VALUES (?, ?, 1, ?, ?)")
+        .run(hash, bytes.byteLength, relativePath, now);
       this.database.exec("COMMIT");
     } catch (error) {
       rollback(this.database);
@@ -364,15 +376,32 @@ export class WorkspaceStore {
   }
 
   getBlobInfo(hash: string): BlobInfo {
-    if (!SHA256_HEX.test(hash)) throw new WorkspaceStoreError("invalid-blob-hash", `Invalid SHA-256 blob hash: ${hash}.`);
-    const row = this.database.prepare("SELECT hash, size, verified, relative_path, created_at FROM blobs WHERE hash = ?").get(hash) as BlobRow | undefined;
+    if (!SHA256_HEX.test(hash))
+      throw new WorkspaceStoreError("invalid-blob-hash", `Invalid SHA-256 blob hash: ${hash}.`);
+    const row = this.database
+      .prepare("SELECT hash, size, verified, relative_path, created_at FROM blobs WHERE hash = ?")
+      .get(hash) as BlobRow | undefined;
     if (row === undefined) throw new WorkspaceStoreError("blob-missing", `Blob ${hash} is not registered.`);
-    return { hash: row.hash, size: row.size, verified: row.verified === 1, relativePath: row.relative_path, createdAt: row.created_at };
+    return {
+      hash: row.hash,
+      size: row.size,
+      verified: row.verified === 1,
+      relativePath: row.relative_path,
+      createdAt: row.created_at,
+    };
   }
 
   listBlobs(): BlobInfo[] {
-    const rows = this.database.prepare("SELECT hash, size, verified, relative_path, created_at FROM blobs ORDER BY hash ASC").all() as unknown as BlobRow[];
-    return rows.map((row) => ({ hash: row.hash, size: row.size, verified: row.verified === 1, relativePath: row.relative_path, createdAt: row.created_at }));
+    const rows = this.database
+      .prepare("SELECT hash, size, verified, relative_path, created_at FROM blobs ORDER BY hash ASC")
+      .all() as unknown as BlobRow[];
+    return rows.map((row) => ({
+      hash: row.hash,
+      size: row.size,
+      verified: row.verified === 1,
+      relativePath: row.relative_path,
+      createdAt: row.created_at,
+    }));
   }
 
   blobPath(hash: string): string {
@@ -395,8 +424,14 @@ export class WorkspaceStore {
     const { where, params } = entityWhere(kind, options);
     const limit = normalizePageSize(options.limit, 100);
     const offset = normalizeOffset(options.offset);
-    const totalRow = this.database.prepare(`SELECT COUNT(*) AS total FROM entities e WHERE ${where}`).get(...params) as { total: number | bigint };
-    const rows = this.database.prepare(`SELECT e.serialized_json FROM entities e WHERE ${where} ORDER BY e.identity COLLATE NOCASE ASC, e.id ASC LIMIT ? OFFSET ?`).all(...params, limit, offset) as unknown as EntityRow[];
+    const totalRow = this.database
+      .prepare(`SELECT COUNT(*) AS total FROM entities e WHERE ${where}`)
+      .get(...params) as { total: number | bigint };
+    const rows = this.database
+      .prepare(
+        `SELECT e.serialized_json FROM entities e WHERE ${where} ORDER BY e.identity COLLATE NOCASE ASC, e.id ASC LIMIT ? OFFSET ?`,
+      )
+      .all(...params, limit, offset) as unknown as EntityRow[];
     return {
       entities: rows.map((row) => JSON.parse(row.serialized_json) as WorkspaceEntity),
       total: Number(totalRow.total),
@@ -407,7 +442,9 @@ export class WorkspaceStore {
 
   async explainQuery(kind: WorkspaceEntityKind, options: EntityQueryOptions = {}): Promise<string[]> {
     const { where, params } = entityWhere(kind, options);
-    const rows = this.database.prepare(`EXPLAIN QUERY PLAN SELECT e.id FROM entities e WHERE ${where}`).all(...params) as Array<{ detail: string }>;
+    const rows = this.database
+      .prepare(`EXPLAIN QUERY PLAN SELECT e.id FROM entities e WHERE ${where}`)
+      .all(...params) as Array<{ detail: string }>;
     return rows.map((row) => row.detail);
   }
 
@@ -417,21 +454,37 @@ export class WorkspaceStore {
     const timestamp = parsed.timestamps.updatedAt;
     try {
       beginTransaction(this.database);
-      this.database.prepare(`
+      this.database
+        .prepare(
+          `
         INSERT INTO store_manifest(id, manifest_id, workspace_id, content_hash, serialized_json, updated_at)
         VALUES (1, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET manifest_id=excluded.manifest_id, workspace_id=excluded.workspace_id,
           content_hash=excluded.content_hash, serialized_json=excluded.serialized_json, updated_at=excluded.updated_at
-      `).run(parsed.manifestId, parsed.workspaceId, parsed.contentHash, serialized, timestamp);
+      `,
+        )
+        .run(parsed.manifestId, parsed.workspaceId, parsed.contentHash, serialized, timestamp);
       this.database.exec("DELETE FROM entity_fields");
       this.database.exec("DELETE FROM entities");
-      const entityStatement = this.database.prepare("INSERT INTO entities(id, kind, identity, content_hash, serialized_json, updated_at) VALUES (?, ?, ?, ?, ?, ?)");
-      const fieldStatement = this.database.prepare("INSERT OR IGNORE INTO entity_fields(entity_id, kind, field, value_json) VALUES (?, ?, ?, ?)");
+      const entityStatement = this.database.prepare(
+        "INSERT INTO entities(id, kind, identity, content_hash, serialized_json, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+      );
+      const fieldStatement = this.database.prepare(
+        "INSERT OR IGNORE INTO entity_fields(entity_id, kind, field, value_json) VALUES (?, ?, ?, ?)",
+      );
       for (const kind of WORKSPACE_ENTITY_KINDS) {
         for (const entity of parsed.entities[kind]) {
           const entitySerialized = JSON.stringify(entity);
-          entityStatement.run(entity.id, entity.kind, entity.identity, entity.contentHash, entitySerialized, entity.timestamps.updatedAt);
-          for (const field of collectIndexedFields(entity.data)) fieldStatement.run(entity.id, entity.kind, field.field, field.valueJson);
+          entityStatement.run(
+            entity.id,
+            entity.kind,
+            entity.identity,
+            entity.contentHash,
+            entitySerialized,
+            entity.timestamps.updatedAt,
+          );
+          for (const field of collectIndexedFields(entity.data))
+            fieldStatement.run(entity.id, entity.kind, field.field, field.valueJson);
         }
       }
       this.database.exec("COMMIT");
@@ -443,7 +496,10 @@ export class WorkspaceStore {
       await atomicWriteFile(this.manifestPath, serialized, useFaultInjector ? this.faultInjector : undefined);
     } catch (error) {
       if (error instanceof WorkspaceStoreError) throw error;
-      throw new WorkspaceStoreError("interrupted-write", `Manifest snapshot could not be committed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new WorkspaceStoreError(
+        "interrupted-write",
+        `Manifest snapshot could not be committed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -474,7 +530,10 @@ export class WorkspaceStore {
     try {
       bytes = new Uint8Array(await readFile(join(this.rootDir, relativePath)));
     } catch (error) {
-      throw new WorkspaceStoreError("blob-missing", `Blob ${row.hash} is missing: ${error instanceof Error ? error.message : String(error)}.`);
+      throw new WorkspaceStoreError(
+        "blob-missing",
+        `Blob ${row.hash} is missing: ${error instanceof Error ? error.message : String(error)}.`,
+      );
     }
     if (bytes.byteLength !== row.size || sha256(bytes) !== row.hash) {
       this.database.prepare("UPDATE blobs SET verified = 0 WHERE hash = ?").run(row.hash);
@@ -491,11 +550,16 @@ export class WorkspaceStore {
       for (const file of files) {
         if (!file.isFile() || !SHA256_HEX.test(file.name) || file.name.slice(0, 2) !== entry.name) continue;
         const hash = file.name;
-        const registered = this.database.prepare("SELECT hash FROM blobs WHERE hash = ?").get(hash) as { hash: string } | undefined;
+        const registered = this.database.prepare("SELECT hash FROM blobs WHERE hash = ?").get(hash) as
+          { hash: string } | undefined;
         if (registered !== undefined) continue;
         const bytes = new Uint8Array(await readFile(join(directory, file.name)));
         if (sha256(bytes) !== hash) continue;
-        this.database.prepare("INSERT OR IGNORE INTO blobs(hash, size, verified, relative_path, created_at) VALUES (?, ?, 1, ?, ?)").run(hash, bytes.byteLength, blobRelativePath(hash), new Date().toISOString());
+        this.database
+          .prepare(
+            "INSERT OR IGNORE INTO blobs(hash, size, verified, relative_path, created_at) VALUES (?, ?, 1, ?, ?)",
+          )
+          .run(hash, bytes.byteLength, blobRelativePath(hash), new Date().toISOString());
       }
     }
   }
@@ -505,7 +569,10 @@ function parseStoredManifest(serialized: string): WorkspaceManifest {
   try {
     return parseWorkspaceManifest(serialized);
   } catch (error) {
-    throw new WorkspaceStoreError("invalid-manifest", `Persisted workspace manifest is invalid: ${error instanceof Error ? error.message : String(error)}.`);
+    throw new WorkspaceStoreError(
+      "invalid-manifest",
+      `Persisted workspace manifest is invalid: ${error instanceof Error ? error.message : String(error)}.`,
+    );
   }
 }
 
@@ -518,7 +585,10 @@ async function recoverManifestFile(manifestPath: string): Promise<WorkspaceManif
   }
   try {
     const files = await readdir(dirname(manifestPath));
-    for (const file of files.filter((name) => name.startsWith(`${MANIFEST_FILE}.tmp-`)).sort().reverse()) {
+    for (const file of files
+      .filter((name) => name.startsWith(`${MANIFEST_FILE}.tmp-`))
+      .sort()
+      .reverse()) {
       try {
         candidates.push(await readFile(join(dirname(manifestPath), file), "utf8"));
       } catch {
@@ -552,7 +622,10 @@ async function atomicWriteBytes(filePath: string, data: Uint8Array): Promise<voi
   await syncDirectory(dirname(filePath));
 }
 
-function entityWhere(kind: WorkspaceEntityKind, options: EntityQueryOptions): { where: string; params: Array<string | number> } {
+function entityWhere(
+  kind: WorkspaceEntityKind,
+  options: EntityQueryOptions,
+): { where: string; params: Array<string | number> } {
   const clauses = ["e.kind = ?"];
   const params: Array<string | number> = [kind];
   if (options.identity !== undefined) {
@@ -563,8 +636,12 @@ function entityWhere(kind: WorkspaceEntityKind, options: EntityQueryOptions): { 
     clauses.push("e.content_hash = ?");
     params.push(options.contentHash);
   }
-  for (const [field, value] of Object.entries(options.filters ?? {}).sort(([left], [right]) => left.localeCompare(right))) {
-    clauses.push("EXISTS (SELECT 1 FROM entity_fields f WHERE f.entity_id = e.id AND f.kind = e.kind AND f.field = ? AND f.value_json = ?)");
+  for (const [field, value] of Object.entries(options.filters ?? {}).sort(([left], [right]) =>
+    left.localeCompare(right),
+  )) {
+    clauses.push(
+      "EXISTS (SELECT 1 FROM entity_fields f WHERE f.entity_id = e.id AND f.kind = e.kind AND f.field = ? AND f.value_json = ?)",
+    );
     params.push(field, jsonValue(value));
   }
   return { where: clauses.join(" AND "), params };

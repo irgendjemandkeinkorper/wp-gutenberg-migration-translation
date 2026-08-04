@@ -46,14 +46,22 @@ export function rewriteInternalLinks(html: string, options: LinkRewriteOptions):
     }
     const destination = bySource.get(normalize(record.target));
     if (!destination) {
-      findings.push({ code: "unresolved-internal", message: `No destination record exists for ${record.target}.`, sourceHref });
+      findings.push({
+        code: "unresolved-internal",
+        message: `No destination record exists for ${record.target}.`,
+        sourceHref,
+      });
       unchanged += 1;
       continue;
     }
     let target = destination.destinationUrl;
     if (record.fragment) {
       if (!destination.anchors.has(record.fragment)) {
-        findings.push({ code: "missing-anchor", message: `Destination ${destination.stableId} has no anchor ${record.fragment}.`, sourceHref });
+        findings.push({
+          code: "missing-anchor",
+          message: `Destination ${destination.stableId} has no anchor ${record.fragment}.`,
+          sourceHref,
+        });
       } else {
         target += `#${encodeURIComponent(record.fragment)}`;
       }

@@ -27,7 +27,7 @@ const fixtures: ReliabilityFixture[] = [
     forbiddenOutput: ["Builder chrome", "<script", "window.copyThisWidget"],
     assetTypes: ["image", "iframe"],
     placeholderTypes: ["iframe"],
-    requiredBlocks: ["wp:heading", "wp:image", "blockifyAsset", "assetType\":\"iframe"],
+    requiredBlocks: ["wp:heading", "wp:image", "blockifyAsset", 'assetType":"iframe'],
   },
   {
     id: "static-table",
@@ -45,7 +45,13 @@ const fixtures: ReliabilityFixture[] = [
     file: "invalid-nesting.html",
     url: "https://legacy.example.test/notice",
     selector: "#content",
-    requiredText: ["Opening notice", "Nested legacy detail", "First retained item", "Second retained item", "Closing notice"],
+    requiredText: [
+      "Opening notice",
+      "Nested legacy detail",
+      "First retained item",
+      "Second retained item",
+      "Closing notice",
+    ],
     forbiddenOutput: [],
     assetTypes: [],
     placeholderTypes: [],

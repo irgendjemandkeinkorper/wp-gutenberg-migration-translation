@@ -4,11 +4,7 @@ import { extractContent } from "./extract";
 import { cleanHtml, DEFAULT_PROVIDER, SYSTEM_PROMPT } from "./llm";
 import { TOKEN_PREFIX } from "./tokens";
 import { tokenizeImages } from "./tokenize";
-import {
-  describeViolation,
-  repairTokens,
-  validateFragment,
-} from "./validate";
+import { describeViolation, repairTokens, validateFragment } from "./validate";
 import type { PageResult, StepUpdate } from "./types";
 import type { LlmProvider } from "./llm";
 import type { ArchivedPageSnapshot } from "./acquisition/contract";
@@ -29,14 +25,9 @@ export interface ConvertInput {
   skipLlm?: boolean;
 }
 
-export async function convertPage(
-  input: ConvertInput,
-  onStep: (u: StepUpdate) => void,
-): Promise<PageResult> {
+export async function convertPage(input: ConvertInput, onStep: (u: StepUpdate) => void): Promise<PageResult> {
   const warnings: string[] = [];
-  const archiveSource = input.archivedSnapshot
-    ? archivedSnapshotSource(input.archivedSnapshot)
-    : undefined;
+  const archiveSource = input.archivedSnapshot ? archivedSnapshotSource(input.archivedSnapshot) : undefined;
   const rawHtml = archiveSource?.decodedHtml ?? input.rawHtml ?? "";
   const sourceUrl = archiveSource?.finalUrl ?? input.url;
   if (!rawHtml.trim()) throw new Error("No source HTML was provided.");
@@ -61,9 +52,7 @@ export async function convertPage(
       index: asset.index,
       kind: asset.type,
       source: asset.src,
-      label:
-        `MIGRATION PLACEHOLDER ${asset.index + 1}: ${asset.type}` +
-        (asset.src ? ` — ${asset.src}` : ""),
+      label: `MIGRATION PLACEHOLDER ${asset.index + 1}: ${asset.type}` + (asset.src ? ` — ${asset.src}` : ""),
     }));
   onStep({
     step: "Images",
@@ -80,10 +69,7 @@ export async function convertPage(
   if (input.skipLlm) {
     onStep({ step: "Clean (LLM)", status: "done", note: "skipped — no API call" });
     onStep({ step: "Validate", status: "active" });
-    ({ html: validatedHtml, lostPositions } = enforceTokens(
-      tokenized.html,
-      expected,
-    ));
+    ({ html: validatedHtml, lostPositions } = enforceTokens(tokenized.html, expected));
     onStep({
       step: "Validate",
       status: lostPositions.length ? "warn" : "done",
@@ -91,12 +77,7 @@ export async function convertPage(
     });
   } else {
     // The prompt is part of the key so editing it invalidates old entries.
-    const cacheKey = cleanCacheKey(
-      input.provider ?? DEFAULT_PROVIDER,
-      input.model,
-      SYSTEM_PROMPT,
-      tokenized.html,
-    );
+    const cacheKey = cleanCacheKey(input.provider ?? DEFAULT_PROVIDER, input.model, SYSTEM_PROMPT, tokenized.html);
     const cached = readCleanCache(cacheKey);
     if (cached) {
       onStep({ step: "Clean (LLM)", status: "done", note: "cached — no API call" });
@@ -105,7 +86,7 @@ export async function convertPage(
       lostPositions = cached.lostPositions;
     } else {
       ({ html: validatedHtml, lostPositions } = await cleanWithRetries(
-      input,
+        input,
         extracted.title,
         tokenized.html,
         expected,
@@ -135,8 +116,7 @@ export async function convertPage(
   if (!blocks.trim()) throw new Error("Empty output after block conversion.");
   if (blocks.includes(TOKEN_PREFIX)) {
     throw new Error(
-      "Internal error: an asset token leaked into the final markup. " +
-        "Please report this page's HTML as a bug.",
+      "Internal error: an asset token leaked into the final markup. " + "Please report this page's HTML as a bug.",
     );
   }
   onStep({ step: "Blocks", status: "done" });
@@ -205,10 +185,7 @@ async function cleanWithRetries(
 }
 
 /** Validate + (if tokens drifted) repair, without any model involvement. */
-function enforceTokens(
-  html: string,
-  expected: number[],
-): { html: string; lostPositions: number[] } {
+function enforceTokens(html: string, expected: number[]): { html: string; lostPositions: number[] } {
   const { html: validated, report } = validateFragment(html, expected);
   if (!report.missing.length && !report.extra.length) {
     return { html: validated, lostPositions: [] };

@@ -26,10 +26,7 @@ const DEFAULT_LINK_ATTRIBUTES = new Set(["href", "title", "target", "rel"]);
  * markup. The compiler never trusts source HTML as markup; it reconstructs
  * escaped text and a small, explicit inline allowlist from semantic nodes.
  */
-export function compileCoreNode(
-  node: SemanticNode,
-  options: CoreCompilerOptions = {},
-): CoreCompilation {
+export function compileCoreNode(node: SemanticNode, options: CoreCompilerOptions = {}): CoreCompilation {
   const findings: CompilerFinding[] = [];
   const markup = compileBlock(node, findings, {
     allowedLinkAttributes: options.allowedLinkAttributes ?? DEFAULT_LINK_ATTRIBUTES,
@@ -54,18 +51,19 @@ function compileBlock(node: SemanticNode, findings: CompilerFinding[], options: 
       return block("paragraph", renderInline(node, options));
     case "heading": {
       const level = headingLevel(node);
-      return block(
-        "heading",
-        `<h${level} class="wp-block-heading">${renderInline(node, options)}</h${level}>`,
-        { level },
-      );
+      return block("heading", `<h${level} class="wp-block-heading">${renderInline(node, options)}</h${level}>`, {
+        level,
+      });
     }
     case "list":
       return compileList(node, options);
     case "quote":
       return block("quote", `<blockquote class="wp-block-quote">${renderChildrenAsFlow(node, options)}</blockquote>`);
     case "code":
-      return block("code", `<pre class="wp-block-code"><code>${escapeHtml(node.text ?? renderPlainText(node))}</code></pre>`);
+      return block(
+        "code",
+        `<pre class="wp-block-code"><code>${escapeHtml(node.text ?? renderPlainText(node))}</code></pre>`,
+      );
     case "table":
       return compileTable(node, options);
     case "rich-text-span":
@@ -85,26 +83,28 @@ function compileBlock(node: SemanticNode, findings: CompilerFinding[], options: 
 function compileList(node: SemanticNode, options: RenderContext): string {
   const ordered = node.attributes.ordered === "true" || node.attributes.type === "ordered";
   const tag = ordered ? "ol" : "ul";
-  const inner = node.children.map((child) => {
-    if (child.kind !== "list-item") {
-      options.findings.push({
-        code: "list-child-not-item",
-        message: `List child ${child.kind} was preserved as a nested block.`,
-        severity: "warning",
-        sourceNodeId: child.id,
-      });
-      return compileBlock(child, options.findings, options);
-    }
-    const nested = child.children
-      .filter((nestedChild) => nestedChild.kind === "list")
-      .map((nestedChild) => compileList(nestedChild, options))
-      .join("\n");
-    const inlineChildren = child.children.filter((nestedChild) => nestedChild.kind !== "list");
-    const text = inlineChildren.length
-      ? inlineChildren.map((nestedChild) => renderInline(nestedChild, options)).join("")
-      : escapeHtml(child.text ?? "");
-    return `<li>${text}${nested ? `\n${nested}` : ""}</li>`;
-  }).join("\n");
+  const inner = node.children
+    .map((child) => {
+      if (child.kind !== "list-item") {
+        options.findings.push({
+          code: "list-child-not-item",
+          message: `List child ${child.kind} was preserved as a nested block.`,
+          severity: "warning",
+          sourceNodeId: child.id,
+        });
+        return compileBlock(child, options.findings, options);
+      }
+      const nested = child.children
+        .filter((nestedChild) => nestedChild.kind === "list")
+        .map((nestedChild) => compileList(nestedChild, options))
+        .join("\n");
+      const inlineChildren = child.children.filter((nestedChild) => nestedChild.kind !== "list");
+      const text = inlineChildren.length
+        ? inlineChildren.map((nestedChild) => renderInline(nestedChild, options)).join("")
+        : escapeHtml(child.text ?? "");
+      return `<li>${text}${nested ? `\n${nested}` : ""}</li>`;
+    })
+    .join("\n");
   const attributes = ordered ? ` {"ordered":true}` : "";
   return `<!-- wp:list${attributes} -->\n<${tag} class="wp-block-list">${inner}</${tag}>\n<!-- /wp:list -->`;
 }
@@ -119,14 +119,18 @@ function compileTable(node: SemanticNode, options: RenderContext): string {
       sourceNodeId: node.id,
     });
   }
-  const html = rows.map((row) => {
-    const cells = row.cells.map((cell) => {
-      const tag = cell.header ? "th" : "td";
-      return `<${tag}>${escapeHtml(cell.text)}</${tag}>`;
-    }).join("");
-    return `<tr>${cells}</tr>`;
-  }).join("");
-      return block("table", `<figure class="wp-block-table"><table><tbody>${html}</tbody></table></figure>`);
+  const html = rows
+    .map((row) => {
+      const cells = row.cells
+        .map((cell) => {
+          const tag = cell.header ? "th" : "td";
+          return `<${tag}>${escapeHtml(cell.text)}</${tag}>`;
+        })
+        .join("");
+      return `<tr>${cells}</tr>`;
+    })
+    .join("");
+  return block("table", `<figure class="wp-block-table"><table><tbody>${html}</tbody></table></figure>`);
 }
 
 interface TableRow {
@@ -148,10 +152,13 @@ function tableRows(node: SemanticNode): TableRow[] {
 
 function renderChildrenAsFlow(node: SemanticNode, options: RenderContext): string {
   if (!node.children.length) return escapeHtml(node.text ?? "");
-  return node.children.map((child) => {
-    if (child.kind === "paragraph" || child.kind === "rich-text-span") return `<p>${renderInline(child, options)}</p>`;
-    return renderInline(child, options);
-  }).join("\n");
+  return node.children
+    .map((child) => {
+      if (child.kind === "paragraph" || child.kind === "rich-text-span")
+        return `<p>${renderInline(child, options)}</p>`;
+      return renderInline(child, options);
+    })
+    .join("\n");
 }
 
 function renderInline(node: SemanticNode, options: RenderContext): string {

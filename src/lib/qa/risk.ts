@@ -49,7 +49,8 @@ export function scoreRiskFinding(input: RiskFindingInput): RiskFinding {
 export function buildRiskQueue(findings: readonly RiskFindingInput[], filters: RiskQueueFilters = {}): RiskFinding[] {
   const allowedSeverities = filters.severities ? new Set(filters.severities) : null;
   const allowedStatuses = filters.statuses ? new Set(filters.statuses) : null;
-  return findings.map(scoreRiskFinding)
+  return findings
+    .map(scoreRiskFinding)
     .filter((finding) => filters.minimumScore === undefined || finding.score >= filters.minimumScore)
     .filter((finding) => !allowedSeverities || allowedSeverities.has(finding.severity))
     .filter((finding) => !allowedStatuses || allowedStatuses.has(finding.status))

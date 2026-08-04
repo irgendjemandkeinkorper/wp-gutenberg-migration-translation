@@ -16,8 +16,11 @@ export function preserveUnsupported(html: string): {
     const index = placeholders.length;
     const kind = el.tagName.toLowerCase();
     const source =
-      el.getAttribute("src") || el.getAttribute("data-src") ||
-      el.getAttribute("action") || el.getAttribute("data") || "";
+      el.getAttribute("src") ||
+      el.getAttribute("data-src") ||
+      el.getAttribute("action") ||
+      el.getAttribute("data") ||
+      "";
     const label = `MIGRATION PLACEHOLDER ${index + 1}: ${kind}${source ? ` — ${source}` : ""}`;
     placeholders.push({ index, kind, source, label });
     const p = doc.createElement("p");

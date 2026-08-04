@@ -20,7 +20,9 @@ export interface MigrationException {
   };
 }
 
-export function createException(input: Omit<MigrationException, "status" | "updatedAt"> & { updatedAt?: string }): MigrationException {
+export function createException(
+  input: Omit<MigrationException, "status" | "updatedAt"> & { updatedAt?: string },
+): MigrationException {
   return { ...input, status: "open", updatedAt: input.updatedAt ?? input.createdAt };
 }
 
@@ -30,14 +32,21 @@ export function transitionException(
   at: string,
   resolution?: MigrationException["resolution"],
 ): MigrationException {
-  if (!allowedTransition(exception.status, next)) throw new Error(`Invalid exception transition ${exception.status} -> ${next}.`);
-  if (next === "resolved" && !resolution) throw new Error("Resolved exceptions require actor, method, timestamp, and destination artifact.");
+  if (!allowedTransition(exception.status, next))
+    throw new Error(`Invalid exception transition ${exception.status} -> ${next}.`);
+  if (next === "resolved" && !resolution)
+    throw new Error("Resolved exceptions require actor, method, timestamp, and destination artifact.");
   return { ...exception, status: next, updatedAt: at, ...(resolution ? { resolution } : {}) };
 }
 
 export function assertReleaseReady(exceptions: readonly MigrationException[]): void {
-  const blocking = exceptions.filter((exception) => exception.severity === "blocking" && exception.status !== "resolved");
-  if (blocking.length) throw new Error(`Release blocked by unresolved exceptions: ${blocking.map((exception) => exception.id).join(", ")}.`);
+  const blocking = exceptions.filter(
+    (exception) => exception.severity === "blocking" && exception.status !== "resolved",
+  );
+  if (blocking.length)
+    throw new Error(
+      `Release blocked by unresolved exceptions: ${blocking.map((exception) => exception.id).join(", ")}.`,
+    );
 }
 
 function allowedTransition(from: ExceptionStatus, to: ExceptionStatus): boolean {

@@ -38,16 +38,16 @@ function node(kind: NodeKind, path: string, children: SemanticNode[] = []): Sema
     children,
     text: kind === "image" ? null : kind,
     attributes: { role: kind },
-    assetRefs: kind === "image"
-      ? [{ assetId: "asset-1", role: "content", ordinal: 0, extensions: {} }]
-      : [],
+    assetRefs: kind === "image" ? [{ assetId: "asset-1", role: "content", ordinal: 0, extensions: {} }] : [],
     classification: { confidence: 0.92, method: "rule" as const },
-    auditEvents: [{
-      type: "extracted" as const,
-      code: "fixture",
-      message: "Fixture extraction.",
-      at: "2026-08-03T00:00:00.000Z",
-    }],
+    auditEvents: [
+      {
+        type: "extracted" as const,
+        code: "fixture",
+        message: "Fixture extraction.",
+        at: "2026-08-03T00:00:00.000Z",
+      },
+    ],
     extensions: {},
   };
   if (kind === "unknown") {
@@ -121,10 +121,16 @@ describe("semantic IR v1", () => {
       decodedHtml: "<p>Archived</p>",
     };
 
-    expect(sourceEvidenceFromSnapshot(snapshot, { kind: "css", value: "main p" }, {
-      startOffset: 3,
-      endOffset: 12,
-    })).toEqual({
+    expect(
+      sourceEvidenceFromSnapshot(
+        snapshot,
+        { kind: "css", value: "main p" },
+        {
+          startOffset: 3,
+          endOffset: 12,
+        },
+      ),
+    ).toEqual({
       snapshotId: "archived-1",
       locator: { kind: "css", value: "main p" },
       htmlExcerpt: {

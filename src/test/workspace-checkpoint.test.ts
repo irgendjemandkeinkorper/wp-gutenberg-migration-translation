@@ -9,7 +9,12 @@ describe("workspace checkpoints", () => {
     const directory = await mkdtemp(join(tmpdir(), "blockify-checkpoint-"));
     try {
       const identities = Array.from({ length: 100 }, (_, index) => `page-${String(index).padStart(3, "0")}`);
-      const first = new CheckpointStore({ directory, runId: "run-100", stage: "conversion", now: () => "2026-08-03T00:00:00.000Z" });
+      const first = new CheckpointStore({
+        directory,
+        runId: "run-100",
+        stage: "conversion",
+        now: () => "2026-08-03T00:00:00.000Z",
+      });
       await first.initialize(identities);
       for (const identity of identities.slice(0, 50)) {
         await first.markRunning(identity);
@@ -17,7 +22,12 @@ describe("workspace checkpoints", () => {
       }
       await first.markRunning(identities[50]);
 
-      const recoveredStore = new CheckpointStore({ directory, runId: "run-100", stage: "conversion", now: () => "2026-08-03T00:01:00.000Z" });
+      const recoveredStore = new CheckpointStore({
+        directory,
+        runId: "run-100",
+        stage: "conversion",
+        now: () => "2026-08-03T00:01:00.000Z",
+      });
       const recovered = await recoveredStore.recover();
       expect(recovered.items.filter((item) => item.status === "committed")).toHaveLength(50);
       expect(recovered.items[50].status).toBe("pending");
@@ -60,7 +70,9 @@ describe("workspace checkpoints", () => {
       const path = join(directory, "run-corrupt.checkpoint.json");
       const raw = await readFile(path, "utf8");
       await writeFile(path, raw.replace("page-1", "tampered"));
-      await expect(new CheckpointStore({ directory, runId: "run-corrupt", stage: "qa" }).recover()).rejects.toBeInstanceOf(CheckpointError);
+      await expect(
+        new CheckpointStore({ directory, runId: "run-corrupt", stage: "qa" }).recover(),
+      ).rejects.toBeInstanceOf(CheckpointError);
     } finally {
       await rm(directory, { recursive: true, force: true });
     }

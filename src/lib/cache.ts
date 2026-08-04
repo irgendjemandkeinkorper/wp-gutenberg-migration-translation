@@ -27,12 +27,8 @@ export function cleanCacheKey(...parts: string[]): string {
     h1 = Math.imul(h1 ^ ch, 2654435761);
     h2 = Math.imul(h2 ^ ch, 1597334677);
   }
-  h1 =
-    Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^
-    Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-  h2 =
-    Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^
-    Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
   return PREFIX + (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
 }
 
@@ -50,10 +46,7 @@ export function readCleanCache(key: string): CleanCacheEntry | null {
   }
 }
 
-export function writeCleanCache(
-  key: string,
-  entry: Omit<CleanCacheEntry, "at">,
-): void {
+export function writeCleanCache(key: string, entry: Omit<CleanCacheEntry, "at">): void {
   const value = JSON.stringify({ ...entry, at: Date.now() });
   try {
     localStorage.setItem(key, value);

@@ -36,21 +36,30 @@ export function buildSourceEvidencePackage(options: BuildSourcePackageOptions): 
   const files: Record<string, Uint8Array | string> = {};
   const fileEntries: SourcePackageFile[] = [];
   const records = options.snapshots.map((snapshot) => redactRecord(snapshot.record));
-  const urlIndex = options.snapshots.map((snapshot) => ({
-    requestedUrl: snapshot.record.requestedUrl,
-    finalUrl: snapshot.record.finalUrl,
-    recordId: snapshot.record.recordId,
-    status: snapshot.record.status,
-  })).sort((left, right) => left.requestedUrl.localeCompare(right.requestedUrl) || left.recordId.localeCompare(right.recordId));
+  const urlIndex = options.snapshots
+    .map((snapshot) => ({
+      requestedUrl: snapshot.record.requestedUrl,
+      finalUrl: snapshot.record.finalUrl,
+      recordId: snapshot.record.recordId,
+      status: snapshot.record.status,
+    }))
+    .sort(
+      (left, right) =>
+        left.requestedUrl.localeCompare(right.requestedUrl) || left.recordId.localeCompare(right.recordId),
+    );
   for (const snapshot of options.snapshots) {
     const recordId = safeSegment(snapshot.record.recordId);
     const htmlPath = `html/${recordId}.html`;
     files[htmlPath] = snapshot.decodedHtml;
-    fileEntries.push(fileEntry(htmlPath, "decoded-html", snapshot.record.recordId, Buffer.from(snapshot.decodedHtml, "utf8")));
+    fileEntries.push(
+      fileEntry(htmlPath, "decoded-html", snapshot.record.recordId, Buffer.from(snapshot.decodedHtml, "utf8")),
+    );
     const recordPath = `acquisition/${recordId}.json`;
     const recordJson = JSON.stringify(redactRecord(snapshot.record), null, 2);
     files[recordPath] = recordJson;
-    fileEntries.push(fileEntry(recordPath, "acquisition-record", snapshot.record.recordId, Buffer.from(recordJson, "utf8")));
+    fileEntries.push(
+      fileEntry(recordPath, "acquisition-record", snapshot.record.recordId, Buffer.from(recordJson, "utf8")),
+    );
     const raw = options.rawBytesByRecordId?.get(snapshot.record.recordId);
     if (raw) {
       const rawPath = `raw/${recordId}.bin`;
@@ -68,7 +77,10 @@ export function buildSourceEvidencePackage(options: BuildSourcePackageOptions): 
   return { manifest, files };
 }
 
-export async function writeSourceEvidencePackage(directory: string, packageData: MaterializedSourcePackage): Promise<void> {
+export async function writeSourceEvidencePackage(
+  directory: string,
+  packageData: MaterializedSourcePackage,
+): Promise<void> {
   await mkdir(directory, { recursive: true });
   for (const [path, data] of Object.entries(packageData.files)) {
     assertSafeRelativePath(path);
@@ -85,33 +97,51 @@ export async function writeSourceEvidencePackage(directory: string, packageData:
 export async function readSourceEvidencePackage(directory: string): Promise<MaterializedSourcePackage> {
   const manifestPath = join(directory, "manifest.json");
   const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as SourceEvidencePackage;
-  if (manifest.schemaVersion !== SOURCE_PACKAGE_SCHEMA_VERSION) throw new Error(`Unsupported source package schema ${manifest.schemaVersion}.`);
+  if (manifest.schemaVersion !== SOURCE_PACKAGE_SCHEMA_VERSION)
+    throw new Error(`Unsupported source package schema ${manifest.schemaVersion}.`);
   const files: Record<string, Uint8Array | string> = {};
   for (const entry of manifest.files) {
     assertSafeRelativePath(entry.path);
     const bytes = new Uint8Array(await readFile(join(directory, entry.path)));
-    if (sha256(bytes) !== entry.sha256 || bytes.byteLength !== entry.byteLength) throw new Error(`Source package hash mismatch for ${entry.path}.`);
-    files[entry.path] = entry.kind === "decoded-html" || entry.kind === "acquisition-record" ? Buffer.from(bytes).toString("utf8") : bytes;
+    if (sha256(bytes) !== entry.sha256 || bytes.byteLength !== entry.byteLength)
+      throw new Error(`Source package hash mismatch for ${entry.path}.`);
+    files[entry.path] =
+      entry.kind === "decoded-html" || entry.kind === "acquisition-record"
+        ? Buffer.from(bytes).toString("utf8")
+        : bytes;
   }
   return { manifest, files };
 }
 
 export function snapshotsFromSourceEvidencePackage(packageData: MaterializedSourcePackage): ArchivedPageSnapshot[] {
-  return packageData.manifest.records.filter((record) => record.recordKind === "page-snapshot" && record.content && record.finalUrl).map((record) => {
-    const htmlPath = packageData.manifest.files.find((file) => file.recordId === record.recordId && file.kind === "decoded-html")?.path;
-    const html = htmlPath ? packageData.files[htmlPath] : undefined;
-    if (typeof html !== "string") throw new Error(`Missing decoded HTML for ${record.recordId}.`);
-    return { record: record as ArchivedPageSnapshot["record"], decodedHtml: html };
-  });
+  return packageData.manifest.records
+    .filter((record) => record.recordKind === "page-snapshot" && record.content && record.finalUrl)
+    .map((record) => {
+      const htmlPath = packageData.manifest.files.find(
+        (file) => file.recordId === record.recordId && file.kind === "decoded-html",
+      )?.path;
+      const html = htmlPath ? packageData.files[htmlPath] : undefined;
+      if (typeof html !== "string") throw new Error(`Missing decoded HTML for ${record.recordId}.`);
+      return { record: record as ArchivedPageSnapshot["record"], decodedHtml: html };
+    });
 }
 
 function redactRecord(record: AcquisitionRecord): AcquisitionRecord {
   const copy = structuredClone(record);
-  copy.retrieval.responseHeaders = Object.fromEntries(Object.entries(copy.retrieval.responseHeaders).filter(([key]) => !/authorization|cookie|set-cookie|proxy-authorization/i.test(key)));
+  copy.retrieval.responseHeaders = Object.fromEntries(
+    Object.entries(copy.retrieval.responseHeaders).filter(
+      ([key]) => !/authorization|cookie|set-cookie|proxy-authorization/i.test(key),
+    ),
+  );
   return copy;
 }
 
-function fileEntry(path: string, kind: SourcePackageFile["kind"], recordId: string, data: Uint8Array): SourcePackageFile {
+function fileEntry(
+  path: string,
+  kind: SourcePackageFile["kind"],
+  recordId: string,
+  data: Uint8Array,
+): SourcePackageFile {
   return { path, kind, recordId, sha256: sha256(data), byteLength: data.byteLength };
 }
 
@@ -126,7 +156,12 @@ function safeSegment(value: string): string {
 }
 
 function assertSafeRelativePath(path: string): void {
-  if (!path || path.includes("\0") || path.split(/[\\/]/).some((segment) => segment === "..") || relative(".", path).startsWith(`..${sep}`)) {
+  if (
+    !path ||
+    path.includes("\0") ||
+    path.split(/[\\/]/).some((segment) => segment === "..") ||
+    relative(".", path).startsWith(`..${sep}`)
+  ) {
     throw new Error(`Unsafe source package path ${path}.`);
   }
 }

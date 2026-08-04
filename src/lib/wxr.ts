@@ -81,9 +81,7 @@ export function buildWxrPackage(pages: BundlePage[], opts: WxrOptions): WxrPacka
     if (opts.emitAttachments) {
       for (const record of pageMedia.get(page) ?? []) {
         if (owners.get(record.recordId) !== page) continue;
-        items.push(
-          attachmentItem(record, nextId++, pageId, opts.author, pub, dateGmt),
-        );
+        items.push(attachmentItem(record, nextId++, pageId, opts.author, pub, dateGmt));
       }
     }
   }
@@ -169,11 +167,7 @@ export function cdata(text: string): string {
 }
 
 function escapeXml(text: string): string {
-  return text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
+  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 }
 
 function imgTitle(src: string): string {
@@ -195,13 +189,7 @@ function imgTitle(src: string): string {
   return name || "image";
 }
 
-function contentItem(
-  page: BundlePage,
-  postId: number,
-  opts: WxrOptions,
-  pub: string,
-  dateGmt: string,
-): string {
+function contentItem(page: BundlePage, postId: number, opts: WxrOptions, pub: string, dateGmt: string): string {
   const slug = slugify(page.title);
   return `    <item>
         <title>${escapeXml(page.title)}</title>
@@ -247,7 +235,8 @@ function attachmentItem(
   dateGmt: string,
 ): string {
   const alt = record.provenance.alt[0]?.value ?? "";
-  const src = record.observedUrls[0] ||
+  const src =
+    record.observedUrls[0] ||
     record.acquisition?.requestedUrl ||
     record.acquisition?.finalUrl ||
     record.sourceUrls[0] ||
@@ -286,10 +275,7 @@ ${postMeta("_wp_attached_file", filename)}
     </item>`;
 }
 
-function mediaRecordsForPage(
-  page: BundlePage,
-  registry: MediaRegistry,
-): MediaRegistryRecord[] {
+function mediaRecordsForPage(page: BundlePage, registry: MediaRegistry): MediaRegistryRecord[] {
   const records: MediaRegistryRecord[] = [];
   const seen = new Set<string>();
   for (const image of page.images) {
@@ -318,11 +304,7 @@ function mediaRecordsForPage(
   return records;
 }
 
-function findRecord(
-  registry: MediaRegistry,
-  source: string,
-  baseUrl: string,
-): MediaRegistryRecord | null {
+function findRecord(registry: MediaRegistry, source: string, baseUrl: string): MediaRegistryRecord | null {
   try {
     const canonical = new URL(decodeEntities(source), baseUrl);
     canonical.hash = "";
@@ -334,14 +316,23 @@ function findRecord(
 }
 
 function decodeEntities(value: string): string {
-  return value.replace(/&amp;/gi, "&").replace(/&quot;/gi, '"').replace(/&#x27;|&#39;/gi, "'");
+  return value
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#x27;|&#39;/gi, "'");
 }
 
 function uniqueFindings(findings: MediaFinding[]): MediaFinding[] {
   const result: MediaFinding[] = [];
   for (const finding of findings) {
     const key = [finding.code, finding.recordId, finding.pageUrl, finding.sourceUrl, finding.message].join("|");
-    if (!result.some((candidate) => [candidate.code, candidate.recordId, candidate.pageUrl, candidate.sourceUrl, candidate.message].join("|") === key)) {
+    if (
+      !result.some(
+        (candidate) =>
+          [candidate.code, candidate.recordId, candidate.pageUrl, candidate.sourceUrl, candidate.message].join("|") ===
+          key,
+      )
+    ) {
       result.push(finding);
     }
   }
@@ -359,8 +350,13 @@ function attachmentFilename(src: string): string {
 function imageMime(filename: string): string {
   const ext = filename.split(".").pop()?.toLowerCase();
   const types: Record<string, string> = {
-    jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif",
-    webp: "image/webp", avif: "image/avif", svg: "image/svg+xml",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    gif: "image/gif",
+    webp: "image/webp",
+    avif: "image/avif",
+    svg: "image/svg+xml",
   };
   return types[ext ?? ""] ?? "image/jpeg";
 }

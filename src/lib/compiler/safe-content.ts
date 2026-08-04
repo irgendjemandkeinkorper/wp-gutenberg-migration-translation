@@ -33,18 +33,26 @@ const DEFAULT_HOSTS = new Set([
 ]);
 const DEFAULT_PROTOCOLS = new Set(["https:"]);
 const DEFAULT_TAGS = new Set(["a", "br", "div", "iframe", "img", "p", "span", "strong", "em", "ul", "ol", "li"]);
-const DEFAULT_ATTRIBUTES = new Set(["alt", "class", "height", "href", "loading", "rel", "src", "target", "title", "width"]);
+const DEFAULT_ATTRIBUTES = new Set([
+  "alt",
+  "class",
+  "height",
+  "href",
+  "loading",
+  "rel",
+  "src",
+  "target",
+  "title",
+  "width",
+]);
 
 /**
  * Compile unknown/embed content through an allowlist sanitizer. Unsafe source
  * is represented by a stable exception placeholder; the original HTML is
  * retained only by the IR source-evidence reference.
  */
-export function compileSafeContentNode(
-  node: SemanticNode,
-  options: SafeContentOptions = {},
-): SafeContentCompilation {
-  const rawHtml = node.kind === "unknown" ? node.unknown.rawHtml : node.source.htmlExcerpt.excerpt ?? "";
+export function compileSafeContentNode(node: SemanticNode, options: SafeContentOptions = {}): SafeContentCompilation {
+  const rawHtml = node.kind === "unknown" ? node.unknown.rawHtml : (node.source.htmlExcerpt.excerpt ?? "");
   const findings: SafeContentFinding[] = [];
   const sanitized = sanitize(rawHtml, {
     allowedHosts: options.allowedHosts ?? DEFAULT_HOSTS,
@@ -93,7 +101,8 @@ interface SanitizedContent {
 }
 
 function sanitize(rawHtml: string, options: SanitizerOptions): SanitizedContent {
-  if (!rawHtml.trim()) return { safe: false, html: "", code: "empty-safe-content", reason: "Content has no source HTML to serialize." };
+  if (!rawHtml.trim())
+    return { safe: false, html: "", code: "empty-safe-content", reason: "Content has no source HTML to serialize." };
   const document = new DOMParser().parseFromString(rawHtml, "text/html");
   const body = document.body;
   for (const forbidden of Array.from(body.querySelectorAll("script,style,object,embed,form"))) forbidden.remove();
@@ -123,7 +132,11 @@ function sanitize(rawHtml: string, options: SanitizerOptions): SanitizedContent 
   };
   for (const child of Array.from(body.children)) walk(child);
   if (unsafeReason) return { safe: false, html: "", code: "unsafe-content", reason: unsafeReason };
-  const html = Array.from(body.childNodes).map((child) => child.nodeType === Node.ELEMENT_NODE ? (child as Element).outerHTML : escapeText(child.textContent ?? "")).join("");
+  const html = Array.from(body.childNodes)
+    .map((child) =>
+      child.nodeType === Node.ELEMENT_NODE ? (child as Element).outerHTML : escapeText(child.textContent ?? ""),
+    )
+    .join("");
   return { safe: true, html };
 }
 
@@ -134,7 +147,8 @@ function safeUrl(value: string, options: SanitizerOptions): { safe: boolean; rea
   } catch {
     return { safe: false, reason: `URL ${value} is malformed.` };
   }
-  if (!options.allowedProtocols.has(url.protocol)) return { safe: false, reason: `Protocol ${url.protocol} is not allowed.` };
+  if (!options.allowedProtocols.has(url.protocol))
+    return { safe: false, reason: `Protocol ${url.protocol} is not allowed.` };
   if (url.hostname !== "blockify.invalid" && !options.allowedHosts.has(url.hostname.toLowerCase())) {
     return { safe: false, reason: `Host ${url.hostname} is not in the safe-content allowlist.` };
   }

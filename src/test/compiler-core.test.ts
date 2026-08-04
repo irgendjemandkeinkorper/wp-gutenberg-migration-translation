@@ -50,14 +50,16 @@ describe("core Gutenberg compiler", () => {
     expect(result.markup).toContain("<strong>&lt;bold&gt;</strong>");
     expect(result.markup).toContain('href="https://example.test/?a=1&amp;b=2"');
     expect(result.markup).not.toContain("onclick");
-    expect(result.findings).toEqual([expect.objectContaining({ code: "unsupported-inline-attribute", severity: "warning" })]);
+    expect(result.findings).toEqual([
+      expect.objectContaining({ code: "unsupported-inline-attribute", severity: "warning" }),
+    ]);
 
     const heading = makeNode("heading", {
       id: "heading",
       source: { ...paragraph.source, locator: { kind: "structural-path", value: "/body[1]/h3[1]" } },
       text: "Heading",
     });
-    expect(compileCoreNode(heading).markup).toContain("<h3 class=\"wp-block-heading\">Heading</h3>");
+    expect(compileCoreNode(heading).markup).toContain('<h3 class="wp-block-heading">Heading</h3>');
   });
 
   it("serializes nested ordered and unordered lists deterministically", () => {
@@ -74,7 +76,7 @@ describe("core Gutenberg compiler", () => {
     const first = compileCoreNode(list);
     const second = compileCoreNode(list);
     expect(first.markup).toBe(second.markup);
-    expect(first.markup).toContain('<!-- wp:list -->');
+    expect(first.markup).toContain("<!-- wp:list -->");
     expect(first.markup).toContain('<!-- wp:list {"ordered":true} -->');
     expect(first.markup).toContain("<li>One");
     expect(first.findings).toEqual([]);
@@ -82,12 +84,19 @@ describe("core Gutenberg compiler", () => {
 
   it("preserves quote, code, and table semantics", () => {
     const quote = makeNode("quote", { children: [makeNode("paragraph", { text: "A quote" })] });
-    expect(compileCoreNode(quote).markup).toContain("<blockquote class=\"wp-block-quote\"><p>A quote</p></blockquote>");
+    expect(compileCoreNode(quote).markup).toContain('<blockquote class="wp-block-quote"><p>A quote</p></blockquote>');
 
     const code = makeNode("code", { text: "const x = 1 < 2;" });
     expect(compileCoreNode(code).markup).toContain("const x = 1 &lt; 2;");
 
-    const rows: JsonObject[] = [{ cells: [{ text: "Name", header: true }, { text: "Value", header: false }] }];
+    const rows: JsonObject[] = [
+      {
+        cells: [
+          { text: "Name", header: true },
+          { text: "Value", header: false },
+        ],
+      },
+    ];
     const table = makeNode("table", { extensions: { rows } });
     const result = compileCoreNode(table);
     expect(result.markup).toContain("<th>Name</th><td>Value</td>");

@@ -3,7 +3,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createWorkspaceManifest } from "../lib/workspace";
-import { buildWorkspacePackage, importWorkspacePackage, readWorkspacePackage, upgradeWorkspacePackage, writeWorkspacePackage } from "../lib/workspace/package";
+import {
+  buildWorkspacePackage,
+  importWorkspacePackage,
+  readWorkspacePackage,
+  upgradeWorkspacePackage,
+  writeWorkspacePackage,
+} from "../lib/workspace/package";
 import { WorkspaceStore } from "../lib/workspace/store";
 
 describe("portable workspace package", () => {
@@ -12,7 +18,10 @@ describe("portable workspace package", () => {
     const packageRoot = await mkdtemp(join(tmpdir(), "blockify-workspace-package-"));
     const targetRoot = await mkdtemp(join(tmpdir(), "blockify-workspace-target-"));
     try {
-      const manifest = createWorkspaceManifest({ workspaceId: "workspace-1", producer: { name: "test", version: "1.0.0" } });
+      const manifest = createWorkspaceManifest({
+        workspaceId: "workspace-1",
+        producer: { name: "test", version: "1.0.0" },
+      });
       const source = await WorkspaceStore.open(sourceRoot, { manifest });
       const blob = await source.putBlob(new TextEncoder().encode("offline evidence"));
       const packageData = await buildWorkspacePackage(source, { logs: ["authorization: top-secret\nfinished"] });
@@ -33,7 +42,10 @@ describe("portable workspace package", () => {
   it("rejects traversal/corruption and upgrades a prior package wrapper", async () => {
     const root = await mkdtemp(join(tmpdir(), "blockify-workspace-package-"));
     try {
-      const manifest = createWorkspaceManifest({ workspaceId: "workspace-2", producer: { name: "test", version: "1.0.0" } });
+      const manifest = createWorkspaceManifest({
+        workspaceId: "workspace-2",
+        producer: { name: "test", version: "1.0.0" },
+      });
       const sourceRoot = await mkdtemp(join(tmpdir(), "blockify-workspace-source-"));
       const source = await WorkspaceStore.open(sourceRoot, { manifest });
       const data = await buildWorkspacePackage(source);
