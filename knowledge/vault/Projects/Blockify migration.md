@@ -15,7 +15,6 @@ Local tests establish contracts; live WordPress harness results are required bef
 
 ## Open gates
 
-- live disposable WordPress import
 - target profile approval
 - branch-protected CI
 - pilot/release decision

@@ -8,6 +8,14 @@ const scriptDir = resolve(fileURLToPath(new URL(".", import.meta.url)));
 const repoDir = resolve(scriptDir, "..");
 const catalogDir = join(repoDir, "knowledge", "catalog");
 const defaultVault = join(repoDir, "knowledge", "vault");
+const capabilityStatuses = new Set([
+  "locally-verified",
+  "live-parser-verified",
+  "live-target-verified",
+  "placeholder-required",
+  "unsupported",
+]);
+const confidenceLevels = new Set(["low", "medium", "high"]);
 
 function parseArgs(argv) {
   const options = { vault: defaultVault, write: false, check: false };
@@ -24,6 +32,57 @@ function parseArgs(argv) {
 
 function readCatalog(name) {
   return JSON.parse(readFileSync(join(catalogDir, name), "utf8"));
+}
+
+function requireString(record, field, catalogName) {
+  if (typeof record[field] !== "string" || !record[field].trim()) {
+    throw new Error(`${catalogName}/${record.id || "unknown"}: ${field} must be a non-empty string.`);
+  }
+}
+
+function requireStringArray(record, field, catalogName, allowEmpty = false) {
+  if (
+    !Array.isArray(record[field]) ||
+    (!allowEmpty && record[field].length === 0) ||
+    record[field].some((value) => typeof value !== "string" || !value.trim())
+  ) {
+    throw new Error(`${catalogName}/${record.id || "unknown"}: ${field} must be a string array.`);
+  }
+}
+
+function validateCatalogs(capabilities, failures, projects) {
+  for (const [name, records] of Object.entries({ capabilities, failures, projects })) {
+    if (!Array.isArray(records)) throw new Error(`${name} catalog must be an array.`);
+    const ids = new Set();
+    for (const record of records) {
+      requireString(record, "id", name);
+      if (ids.has(record.id)) throw new Error(`${name}: duplicate id ${record.id}.`);
+      ids.add(record.id);
+    }
+  }
+
+  for (const record of capabilities) {
+    for (const field of ["label", "status", "confidence", "destination", "nextProbe"])
+      requireString(record, field, "capabilities");
+    if (!capabilityStatuses.has(record.status))
+      throw new Error(`capabilities/${record.id}: unsupported status ${record.status}.`);
+    if (!confidenceLevels.has(record.confidence))
+      throw new Error(`capabilities/${record.id}: unsupported confidence ${record.confidence}.`);
+    requireStringArray(record, "lossModes", "capabilities", true);
+    requireStringArray(record, "evidence", "capabilities");
+  }
+
+  for (const record of failures) {
+    for (const field of ["label", "severity", "symptom", "remediation"]) requireString(record, field, "failures");
+    requireStringArray(record, "evidence", "failures");
+  }
+
+  for (const record of projects) {
+    for (const field of ["name", "status", "scope", "repository", "evidencePolicy"])
+      requireString(record, field, "projects");
+    requireStringArray(record, "openGates", "projects", true);
+    requireStringArray(record, "catalogs", "projects");
+  }
 }
 
 function yaml(value) {
@@ -123,10 +182,19 @@ function buildFiles() {
   const capabilities = readCatalog("block-capabilities.json");
   const failures = readCatalog("failure-classes.json");
   const projects = readCatalog("projects.json");
+  validateCatalogs(capabilities, failures, projects);
   const files = new Map();
   files.set(
     "README.md",
-    "# Blockify migration knowledge vault\n\nThis vault is generated from knowledge/catalog/. Edit the canonical JSON records, then regenerate.\n\n- [[Block Capabilities]]\n- [[Failure Classes]]\n- [[Projects/Blockify migration]]\n",
+    "# Blockify migration knowledge vault\n\n" +
+      "This vault is generated from `knowledge/catalog/`. Edit the canonical JSON records, retain sanitized evidence, then regenerate.\n\n" +
+      "- [[Block Capabilities]] — what translates, its evidence tier, known loss modes, and next probe\n" +
+      "- [[Failure Classes]] — reusable symptoms and remediation paths\n" +
+      "- [[Projects/Blockify migration]] — project scope and open release gates\n\n" +
+      "## Evidence tiers\n\n" +
+      "`locally-verified` → `live-parser-verified` → `live-target-verified`. " +
+      "`placeholder-required` and `unsupported` remain explicit until a reviewed solution has evidence.\n\n" +
+      "Update an existing capability instead of creating a competing conclusion, preserve prior evidence links, and never store secrets or private source HTML in this vault.\n",
   );
   const capabilityRows = capabilities
     .map(
