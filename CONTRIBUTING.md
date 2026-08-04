@@ -16,7 +16,7 @@ npm run test:checkpoint
 npm run test:wordpress
 ```
 
-When the WordPress harness fails, inspect the sanitized state under `/tmp/blockify-wordpress-harness/`; its logs, Compose state, importer output, media manifest, and reconciliation report are retained for the failed run. The harness removes its containers and volumes after a successful run.
+When the WordPress harness fails, inspect the sanitized state under `/tmp/blockify-wordpress-harness/`; its logs, Compose state, importer output, media manifest, schema-versioned reconciliation JSON, and escaped HTML summary are retained for the failed run. The harness removes its containers and volumes after a successful run. Treat `reconciliation-thresholds.json` as a versioned release contract: review overrides explicitly and never weaken a gate only to make a fixture pass.
 
 For agent work, choose the next dependency-ready issue from [`handoff/implementation-handoff.md`](handoff/implementation-handoff.md), keep the issue's file scope disjoint from parallel work, and report changed files, verification commands, external validation, risks, and remaining decisions. Do not close an issue on intent or local tests when its acceptance calls for live WordPress, a real PR check, protected-main settings, authoritative target data, or pilot evidence.
 

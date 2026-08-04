@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blockify.local/schemas/reconciliation-report-1.2.0.json",
+  "title": "Blockify post-import reconciliation report",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "schema",
+    "pass",
+    "gate",
+    "run",
+    "source",
+    "destination",
+    "totals",
+    "counts",
+    "findings"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.2.0" },
+    "schema": { "const": "integration/wordpress-harness/schemas/reconciliation-report.schema.json" },
+    "pass": { "type": "boolean" },
+    "gate": {
+      "type": "object",
+      "required": ["configuration", "evaluations"],
+      "properties": {
+        "configuration": {
+          "type": "object",
+          "required": ["schemaVersion", "profile", "source", "sha256"],
+          "properties": {
+            "schemaVersion": { "type": ["string", "null"] },
+            "profile": { "type": ["string", "null"] },
+            "source": { "type": ["string", "null"] },
+            "sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+            "prdSource": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "evaluations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/gateEvaluation" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "run": { "type": "object" },
+    "source": { "type": "object" },
+    "destination": { "type": "object" },
+    "totals": {
+      "type": "object",
+      "required": ["page", "block", "text", "media", "placeholder", "link", "failure"],
+      "properties": {
+        "page": { "$ref": "#/$defs/totalsObject" },
+        "block": { "$ref": "#/$defs/totalsObject" },
+        "text": { "$ref": "#/$defs/totalsObject" },
+        "media": { "$ref": "#/$defs/totalsObject" },
+        "placeholder": { "$ref": "#/$defs/totalsObject" },
+        "link": { "$ref": "#/$defs/totalsObject" },
+        "failure": { "$ref": "#/$defs/totalsObject" }
+      },
+      "additionalProperties": false
+    },
+    "counts": { "type": "object" },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "totalsObject": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["number", "integer", "boolean", "string", "object", "null"]
+      }
+    },
+    "gateEvaluation": {
+      "type": "object",
+      "required": [
+        "metric",
+        "label",
+        "value",
+        "operator",
+        "threshold",
+        "unit",
+        "blocking",
+        "status",
+        "pass",
+        "ownerIssue"
+      ],
+      "properties": {
+        "metric": { "type": "string" },
+        "label": { "type": "string" },
+        "value": { "type": ["number", "null"] },
+        "operator": { "enum": ["eq", "gte", "lte", "lt", "gt"] },
+        "threshold": { "type": "number" },
+        "unit": { "type": "string" },
+        "blocking": { "type": "boolean" },
+        "status": { "enum": ["pass", "fail", "missing", "not-applicable", "external"] },
+        "pass": { "type": ["boolean", "null"] },
+        "ownerIssue": { "type": ["integer", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "finding": {
+      "type": "object",
+      "required": ["id", "code", "kind", "severity", "blocking", "migrationId", "message"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^m1\\.[a-z0-9-]+\\.[a-f0-9]{12}(?:\\.[1-9][0-9]*)?$" },
+        "code": { "type": "string", "pattern": "^M1-[A-Z0-9-]+$" },
+        "kind": { "type": "string" },
+        "severity": { "enum": ["blocking", "warning"] },
+        "blocking": { "type": "boolean" },
+        "migrationId": { "type": ["string", "null"] },
+        "message": { "type": "string" },
+        "details": {
+          "type": "object",
+          "additionalProperties": { "type": ["string", "number", "boolean", "null"] }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

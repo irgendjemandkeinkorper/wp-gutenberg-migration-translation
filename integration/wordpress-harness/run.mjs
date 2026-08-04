@@ -2,7 +2,7 @@
 
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, appendFileSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { createServer } from "node:net";
@@ -17,7 +17,12 @@ import {
   verifyImportedMedia,
   verifyImportedPages,
 } from "./verification.mjs";
-import { buildReconciliationReport } from "./report.mjs";
+import {
+  DEFAULT_RECONCILIATION_THRESHOLD_PATH,
+  buildReconciliationReport,
+  loadThresholdConfiguration,
+  renderReconciliationReportHtml,
+} from "./report.mjs";
 
 const harnessDir = dirname(fileURLToPath(import.meta.url));
 const repoDir = resolve(harnessDir, "../..");
@@ -57,6 +62,7 @@ Environment:
   BLOCKIFY_RUN_ID                 Safe run identifier for repeatable diagnostics
   BLOCKIFY_STATE_DIR              Failure artifact directory (default: OS temp)
   BLOCKIFY_REPORT_DIR             Durable scorecard/evidence directory (default: OS temp)
+  BLOCKIFY_RECONCILIATION_CONFIG  Versioned blocking-threshold JSON (default: PRD pilot gates)
   BLOCKIFY_WP_THEME_SLUG         Optional WordPress.org theme to install and activate
   BLOCKIFY_WP_PLUGIN_SLUGS       Optional comma-separated WordPress.org plugins to install/activate
   BLOCKIFY_IMPORTER_VERSION      Official wordpress-importer version (default: ${importerVersion})
@@ -85,9 +91,7 @@ function parseArgs(argv) {
     throw new HarnessError(`Unknown argument: ${arg}`);
   }
   if (!Object.hasOwn(fixtureFiles, options.fixture)) {
-    throw new HarnessError(
-      `Unknown fixture '${options.fixture}'. Choose ${Object.keys(fixtureFiles).join(", ")}.`,
-    );
+    throw new HarnessError(`Unknown fixture '${options.fixture}'. Choose ${Object.keys(fixtureFiles).join(", ")}.`);
   }
   return options;
 }
@@ -297,7 +301,22 @@ async function main() {
   const logPath = join(stateDir, "harness.log");
   const statePath = join(stateDir, "state.json");
   const reportPath = join(reportDir, "reconciliation-report.json");
+  const htmlReportPath = join(reportDir, "reconciliation-report.html");
   const sourceManifestPath = join(reportDir, "source-evidence.jsonl");
+  const thresholdConfigPath = resolve(
+    process.env.BLOCKIFY_RECONCILIATION_CONFIG || DEFAULT_RECONCILIATION_THRESHOLD_PATH,
+  );
+  let thresholdConfiguration;
+  try {
+    thresholdConfiguration = loadThresholdConfiguration(thresholdConfigPath);
+  } catch (error) {
+    thresholdConfiguration = {
+      source: basename(thresholdConfigPath),
+      sha256: null,
+      config: null,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
   const mediaFixturePath = join(stateDir, "blockify-fixture.png");
   writeFileSync(mediaFixturePath, Buffer.from(mediaFixturePngBase64, "base64"));
   const fixturePath = join(fixturesDir, fixtureFiles[options.fixture]);
@@ -344,7 +363,14 @@ async function main() {
     stateDir,
     reportDir,
     reportPath,
+    htmlReportPath,
     sourceManifestPath,
+    thresholdConfiguration: {
+      source: thresholdConfiguration.source,
+      sha256: thresholdConfiguration.sha256,
+      profile: thresholdConfiguration.config?.profile ?? null,
+      error: thresholdConfiguration.error ?? null,
+    },
     startedAt: new Date().toISOString(),
     optionalTargetPieces: {
       theme: process.env.BLOCKIFY_WP_THEME_SLUG || null,
@@ -391,9 +417,16 @@ async function main() {
       homepageStatus,
       restApiStatus,
       failure,
+      thresholdConfiguration,
     });
     writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
-    summary.reconciliationReport = { path: reportPath, pass: report.pass, findingCount: report.findings.length };
+    writeFileSync(htmlReportPath, renderReconciliationReportHtml(report));
+    summary.reconciliationReport = {
+      path: reportPath,
+      htmlPath: htmlReportPath,
+      pass: report.pass,
+      findingCount: report.findings.length,
+    };
     writeFileSync(statePath, `${JSON.stringify(summary, null, 2)}\n`);
     return report;
   };
@@ -495,7 +528,11 @@ async function main() {
       throw new HarnessError("WordPress returned an unreadable Gutenberg verification response.");
     }
     const expectedMigrationIds = extractMigrationIdsFromWxr(fixtureText);
-    verification = verifyImportedPages({ pages: inspectedPages, expectedMigrationIds, expectedSourceRecords: sourceRecords });
+    verification = verifyImportedPages({
+      pages: inspectedPages,
+      expectedMigrationIds,
+      expectedSourceRecords: sourceRecords,
+    });
     importedPages = verification.pages.map((page) => ({
       ID: page.postId,
       post_title: page.title,
@@ -541,6 +578,7 @@ async function main() {
       );
     }
     console.log(`Reconciliation report: ${reportPath}`);
+    console.log(`Human-readable report: ${htmlReportPath}`);
   } catch (error) {
     if (started.value) captureFailureState(error);
     throw error;

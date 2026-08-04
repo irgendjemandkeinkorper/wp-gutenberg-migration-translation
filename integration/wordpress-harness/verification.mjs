@@ -87,6 +87,21 @@ function meaningfulTextSequence(value) {
   return text.match(/[\p{L}\p{N}](?:[\p{L}\p{M}\p{N}]|['’.-](?=[\p{L}\p{N}]))*/gu) ?? [];
 }
 
+function linkEvidenceFromHtml(value) {
+  const hrefs = [...String(value ?? "").matchAll(/<a\b[^>]*\bhref\s*=\s*(["'])(.*?)\1/gi)]
+    .map((match) => decodeXmlText(match[2]).trim())
+    .filter(Boolean);
+  const isInternal = (href) => {
+    if (href.startsWith("#") || /^[a-z][a-z0-9+.-]*:/i.test(href)) return false;
+    return true;
+  };
+  return {
+    hashes: hrefs.map((href) => stableHash(href)),
+    count: hrefs.length,
+    internalCount: hrefs.filter(isInternal).length,
+  };
+}
+
 function placeholderIdsFromContent(value) {
   return [...String(value ?? "").matchAll(/MIGRATION\s+PLACEHOLDER\s+(\d+)/gi)].map((match) => match[1]);
 }
@@ -208,6 +223,23 @@ function reconcilePlaceholderIds(expected, actual) {
   };
 }
 
+function reconcileLinkHashes(expected, actual) {
+  const expectedCounts = countsFor(expected);
+  const actualCounts = countsFor(actual);
+  let matchedCount = 0;
+  for (const [hash, count] of expectedCounts) matchedCount += Math.min(count, actualCounts.get(hash) ?? 0);
+  return {
+    expectedCount: expected.length,
+    actualCount: actual.length,
+    matchedCount,
+    missingCount: expected.length - matchedCount,
+    unexpectedCount: actual.length - matchedCount,
+    exactSequence: expected.length === actual.length && expected.every((hash, index) => hash === actual[index]),
+    expectedSequenceSha256: stableHash(JSON.stringify(expected)),
+    actualSequenceSha256: stableHash(JSON.stringify(actual)),
+  };
+}
+
 function htmlSummary(value) {
   const html = String(value ?? "");
   const tags = [...html.matchAll(/<([a-z][a-z0-9:-]*)\b/gi)].map((match) => match[1].toLowerCase());
@@ -283,6 +315,8 @@ export function extractSourceEvidenceFromWxr(xml) {
         : placeholderManifestEvidence(parsedPlaceholders);
     const sourcePostId = xmlValue(item, "wp:post_id");
     if (!migrationId) continue;
+    const blockEvidence = analyzeBlockMarkup(contentHtml);
+    const linkEvidence = linkEvidenceFromHtml(contentHtml);
     records.push({
       migrationId,
       sourcePostId: sourcePostId || null,
@@ -293,6 +327,10 @@ export function extractSourceEvidenceFromWxr(xml) {
       sourceHtml,
       sourceHtmlOrigin: sourceHtmlFromMetadata === undefined ? "content-fallback" : "postmeta",
       textSequence: meaningfulTextSequence(contentHtml),
+      blockCount: blockEvidence.blocks.length,
+      linkHashes: linkEvidence.hashes,
+      linkCount: linkEvidence.count,
+      internalLinkCount: linkEvidence.internalCount,
       placeholderIds: placeholderEvidence.ids,
       placeholderManifestIssues: placeholderEvidence.issues,
       postMeta: {
@@ -447,6 +485,12 @@ function pageDiagnostics(page) {
   const placeholderIds = Array.isArray(page.placeholderIds)
     ? page.placeholderIds.map((id) => String(id)).filter(Boolean)
     : placeholderIdsFromContent(page.content);
+  const linkEvidencePresent =
+    Array.isArray(page.linkHashes) &&
+    Number.isInteger(page.linkCount) &&
+    Number.isInteger(page.internalLinkCount) &&
+    Number.isInteger(page.brokenInternalLinkCount);
+  const linkHashes = Array.isArray(page.linkHashes) ? page.linkHashes.map(String).filter(Boolean) : [];
 
   if (!Array.isArray(page.blocks)) {
     parserFailures.push({
@@ -502,6 +546,11 @@ function pageDiagnostics(page) {
     _textSequence: textSequence,
     _placeholderEvidencePresent: placeholderEvidencePresent,
     _placeholderIds: placeholderIds,
+    _linkEvidencePresent: linkEvidencePresent,
+    _linkHashes: linkHashes,
+    _linkCount: Number.isInteger(page.linkCount) ? page.linkCount : null,
+    _internalLinkCount: Number.isInteger(page.internalLinkCount) ? page.internalLinkCount : null,
+    _brokenInternalLinkCount: Number.isInteger(page.brokenInternalLinkCount) ? page.brokenInternalLinkCount : null,
   };
 }
 
@@ -627,6 +676,43 @@ export function verifyImportedPages({ pages, expectedMigrationIds, expectedSourc
           });
       }
 
+      if (!Array.isArray(sourceRecord.linkHashes))
+        failures.push({
+          kind: "invalid-source-link-evidence",
+          migrationId: page.migrationId,
+          message: "Saved source evidence has no hashed link sequence.",
+        });
+      else if (!page._linkEvidencePresent)
+        failures.push({
+          kind: "missing-destination-link-evidence",
+          migrationId: page.migrationId,
+          message: "WordPress returned no hashed link or internal-link health evidence for the imported page.",
+        });
+      else {
+        const linkReconciliation = {
+          ...reconcileLinkHashes(sourceRecord.linkHashes, page._linkHashes),
+          expectedInternalCount: Number(sourceRecord.internalLinkCount) || 0,
+          actualInternalCount: page._internalLinkCount,
+          brokenInternalCount: page._brokenInternalLinkCount,
+        };
+        page.linkReconciliation = linkReconciliation;
+        if (!linkReconciliation.exactSequence)
+          failures.push({
+            kind: "link-reconciliation-mismatch",
+            migrationId: page.migrationId,
+            message:
+              `Imported links do not match source order and identity ` +
+              `(expected ${linkReconciliation.expectedCount}, actual ${linkReconciliation.actualCount}; ` +
+              `missing ${linkReconciliation.missingCount}, unexpected ${linkReconciliation.unexpectedCount}).`,
+          });
+        if (linkReconciliation.brokenInternalCount > 0)
+          failures.push({
+            kind: "broken-internal-link",
+            migrationId: page.migrationId,
+            message: `Imported page contains ${linkReconciliation.brokenInternalCount} unresolved internal link(s).`,
+          });
+      }
+
       const manifestIssues = Array.isArray(sourceRecord.placeholderManifestIssues)
         ? sourceRecord.placeholderManifestIssues
         : [{ message: "Saved source evidence has no validated placeholder manifest." }];
@@ -706,6 +792,7 @@ export function verifyImportedPages({ pages, expectedMigrationIds, expectedSourc
   const reconciliationRecords = expected.map((migrationId) => expectedRecords.get(migrationId)).filter(Boolean);
   const textReconciliations = pageReports.map((page) => page.textReconciliation).filter(Boolean);
   const placeholderReconciliations = pageReports.map((page) => page.placeholderReconciliation).filter(Boolean);
+  const linkReconciliations = pageReports.map((page) => page.linkReconciliation).filter(Boolean);
   const textExpectedTokenCount = reconciliationRecords.reduce(
     (count, record) => count + (Array.isArray(record.textSequence) ? record.textSequence.length : 0),
     0,
@@ -741,22 +828,46 @@ export function verifyImportedPages({ pages, expectedMigrationIds, expectedSourc
         actualPlaceholderCount: pageReports.reduce((count, page) => count + page._placeholderIds.length, 0),
       }
     : null;
+  const linkReconciliation = expectedRecords.size
+    ? {
+        expectedPageCount: reconciliationRecords.length,
+        reconciledPageCount: linkReconciliations.length,
+        exactPageCount: linkReconciliations.filter((item) => item.exactSequence).length,
+        expectedLinkCount: reconciliationRecords.reduce(
+          (count, record) => count + (Array.isArray(record.linkHashes) ? record.linkHashes.length : 0),
+          0,
+        ),
+        actualLinkCount: pageReports.reduce((count, page) => count + (page._linkCount ?? 0), 0),
+        expectedInternalLinkCount: reconciliationRecords.reduce(
+          (count, record) => count + (Number(record.internalLinkCount) || 0),
+          0,
+        ),
+        actualInternalLinkCount: pageReports.reduce((count, page) => count + (page._internalLinkCount ?? 0), 0),
+        brokenInternalLinkCount: pageReports.reduce((count, page) => count + (page._brokenInternalLinkCount ?? 0), 0),
+      }
+    : null;
   for (const page of pageReports) {
     delete page._textEvidencePresent;
     delete page._textSequence;
     delete page._placeholderEvidencePresent;
     delete page._placeholderIds;
+    delete page._linkEvidencePresent;
+    delete page._linkHashes;
+    delete page._linkCount;
+    delete page._internalLinkCount;
+    delete page._brokenInternalLinkCount;
   }
   const orderedPages = [...pageReports].sort((left, right) =>
     (left.migrationId || "").localeCompare(right.migrationId || ""),
   );
   return {
-    schemaVersion: "1.1.0",
+    schemaVersion: "1.2.0",
     pass: failures.length === 0,
     expectedMigrationIds: expected,
     actualMigrationIds: actual,
     textReconciliation,
     placeholderReconciliation,
+    linkReconciliation,
     pages: orderedPages,
     failures,
   };
@@ -882,6 +993,7 @@ export function verifyImportedMedia({
     schemaVersion: "1.0.0",
     pass: failures.length === 0,
     expectedMigrationIds: expected,
+    expectedAttachmentCount: Number.isInteger(expectedCount) && expectedCount >= 0 ? expectedCount : null,
     attachmentCount: attachments.length,
     attachments: attachments.map((attachment) => ({
       attachmentId: Number(attachment?.attachmentId) || null,
@@ -1001,6 +1113,48 @@ $normalized_text_sequence = function ($html) {
     preg_match_all("/[\p{L}\p{N}](?:[\p{L}\p{M}\p{N}]|['’.-](?=[\p{L}\p{N}]))*/u", (string) $text, $matches);
     return array_values($matches[0] ?? array());
 };
+$link_evidence = function ($html) {
+    $hrefs = array();
+    if (class_exists('WP_HTML_Tag_Processor')) {
+        $processor = new WP_HTML_Tag_Processor((string) $html);
+        while ($processor->next_tag('A')) {
+            $href = $processor->get_attribute('href');
+            if (is_string($href) && trim($href) !== '') $hrefs[] = html_entity_decode(trim($href), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
+    } else {
+        preg_match_all('/<a\\b[^>]*\\bhref\\s*=\\s*["\x27]([^"\x27]+)["\x27]/i', (string) $html, $matches);
+        $hrefs = array_map(function ($href) {
+            return html_entity_decode(trim((string) $href), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }, $matches[1] ?? array());
+    }
+    $hashes = array();
+    $internal_count = 0;
+    $broken_internal_count = 0;
+    $home_host = strtolower((string) wp_parse_url(home_url('/'), PHP_URL_HOST));
+    foreach ($hrefs as $href) {
+        $hashes[] = hash('sha256', $href);
+        if (strpos($href, '#') === 0) continue;
+        $scheme = strtolower((string) wp_parse_url($href, PHP_URL_SCHEME));
+        $host = strtolower((string) wp_parse_url($href, PHP_URL_HOST));
+        $is_relative = $scheme === '' && $host === '';
+        $is_same_host = $host !== '' && $host === $home_host && ($scheme === 'http' || $scheme === 'https');
+        if (!$is_relative && !$is_same_host) continue;
+        $internal_count++;
+        $parts = wp_parse_url($href);
+        $query = array();
+        if (!empty($parts['query'])) parse_str($parts['query'], $query);
+        $target = !empty($query['page_id']) ? get_post((int) $query['page_id']) : null;
+        $path = rawurldecode(trim((string) ($parts['path'] ?? ''), '/'));
+        if (!$target && $path !== '') $target = get_page_by_path($path, OBJECT, array('page', 'post'));
+        if (!$target && $path !== '') $broken_internal_count++;
+    }
+    return array(
+        'hashes' => $hashes,
+        'count' => count($hashes),
+        'internalCount' => $internal_count,
+        'brokenInternalCount' => $broken_internal_count,
+    );
+};
 $markup_failures = function ($content) {
     $failures = array();
     $stack = array();
@@ -1049,6 +1203,7 @@ foreach ($posts as $post) {
     $content = (string) $post->post_content;
     $parsed_blocks = function_exists('parse_blocks') ? parse_blocks($content) : null;
     $meaningful_html = $parsed_blocks !== null ? $collect_meaningful_html($parsed_blocks) : '';
+    $links = $link_evidence($meaningful_html);
     preg_match_all('/MIGRATION\\s+PLACEHOLDER\\s+(\\d+)/i', $content, $placeholder_matches);
     $source_url = (string) get_post_meta($post->ID, '_blockify_source_url', true);
     $source_html = (string) get_post_meta($post->ID, '_blockify_source_html', true);
@@ -1074,6 +1229,10 @@ foreach ($posts as $post) {
         'blocks' => $parsed_blocks !== null ? $walk($parsed_blocks) : array(),
         'parserFailures' => $parsed_blocks !== null ? $markup_failures($content) : array(array('kind' => 'missing-wordpress-parser', 'message' => 'WordPress parse_blocks() is unavailable.')),
         'textSequence' => $normalized_text_sequence($meaningful_html),
+        'linkHashes' => $links['hashes'],
+        'linkCount' => $links['count'],
+        'internalLinkCount' => $links['internalCount'],
+        'brokenInternalLinkCount' => $links['brokenInternalCount'],
         'placeholderIds' => array_values($placeholder_matches[1] ?? array()),
     );
 }

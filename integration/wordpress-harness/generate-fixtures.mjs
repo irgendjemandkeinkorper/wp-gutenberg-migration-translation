@@ -72,14 +72,16 @@ export async function buildKnownMediaFixture() {
           paragraphBlock("Generated fixture A preserves its first meaningful paragraph."),
           imageBlock(KNOWN_MEDIA_PRIMARY_URL),
           unsupportedBlock(),
-          paragraphBlock("Generated fixture A preserves its closing meaningful paragraph."),
+          paragraphBlock(
+            'Generated fixture A preserves its <a href="/blockify-generated-media-b/">closing meaningful paragraph</a>.',
+          ),
         ]),
         images: [{ src: KNOWN_MEDIA_PRIMARY_URL, alt: "Blockify shared fixture" }],
         sourceHtml:
           `<main><p>Generated fixture A preserves its first meaningful paragraph.</p>` +
           `<img src="${KNOWN_MEDIA_PRIMARY_URL}" alt="Blockify shared fixture">` +
           '<iframe src="https://booking.example.test/tee-times"></iframe>' +
-          "<p>Generated fixture A preserves its closing meaningful paragraph.</p></main>",
+          '<p>Generated fixture A preserves its <a href="/blockify-generated-media-b/">closing meaningful paragraph</a>.</p></main>',
         targetTemplate: "synthetic-harness-profile",
         placeholders: [placeholder],
       },
@@ -141,7 +143,8 @@ export async function buildKnownMediaFixture() {
       },
     ]);
     const blocking = findings.filter((finding) => finding.severity === "blocking");
-    if (blocking.length) throw new Error(`Generated fixture media registry has ${blocking.length} blocking finding(s).`);
+    if (blocking.length)
+      throw new Error(`Generated fixture media registry has ${blocking.length} blocking finding(s).`);
 
     const result = buildWxrPackage(pages, {
       author: "blockify-harness",

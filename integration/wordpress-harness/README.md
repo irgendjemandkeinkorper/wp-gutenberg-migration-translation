@@ -4,11 +4,14 @@ This harness provisions an isolated WordPress and MariaDB pair, installs the
 official `wordpress-importer` plugin, imports a checked-in generated WXR fixture, checks
 the homepage/REST API and imported page state, runs the post-import Gutenberg
 verifier, then removes the containers and volumes on success.
-Every live run also writes `reconciliation-report.json`, a JSONL
-source-evidence manifest, and one raw source HTML audit file per migration
-record under the durable report directory. The scorecard contains hashes,
-paths, structural destination evidence, and findings; raw source HTML is kept
-in adjacent audit files rather than duplicated into the scorecard.
+Every live run also writes schema-versioned `reconciliation-report.json`, an
+escaped `reconciliation-report.html` companion, a JSONL source-evidence
+manifest, and one raw source HTML audit file per migration record under the
+durable report directory. The scorecard contains hashes, complete category
+totals, PRD-backed gate evaluations, structural destination evidence, and
+stable finding IDs; raw source HTML is kept in adjacent audit files rather than
+duplicated into either report. The report builder validates every emitted
+object against the checked-in draft-2020-12 schema before writing either view.
 
 ## One command
 
@@ -54,10 +57,11 @@ node integration/wordpress-harness/run.mjs --fixture known-malformed
 ```
 
 The default `known-media` fixture imports two pages that share one query-string
-image plus a visible unsupported-content marker and its postmeta manifest. It
+image, one resolvable internal link, plus a visible unsupported-content marker
+and its postmeta manifest. It
 passes only when WordPress creates exactly one attachment, preserves metadata
-and parsed blocks, and rewrites both pages to that attachment's local uploads
-URL:
+and parsed blocks, keeps the internal link healthy, and rewrites both pages to
+that attachment's local uploads URL:
 
 ```sh
 node integration/wordpress-harness/run.mjs --fixture known-media
@@ -74,11 +78,14 @@ Set `BLOCKIFY_REPORT_DIR` to choose the durable report location. The default is
 `/tmp/blockify-wordpress-harness/reports/<project>`, so successful reports are
 available to CI artifact upload even though the disposable Docker project is
 removed. `BLOCKIFY_STATE_DIR` continues to control retained operational failure
-logs and state.
+logs and state. `BLOCKIFY_RECONCILIATION_CONFIG` may point to a reviewed
+versioned threshold file; otherwise the checked-in `prd-pilot-v1` profile is
+used and its SHA-256 is recorded.
 
 The verifier reports each page's stable migration ID, block names, nesting
-paths, parser failures, invalid/unregistered blocks, recovered blocks, and
-unexpected freeform HTML. Any one of those diagnostics fails the run. Its
+paths, parser failures, invalid/unregistered blocks, recovered blocks, link
+identity/health counts, and unexpected freeform HTML. Any blocking diagnostic
+or configured gate failure fails the run. Its
 markup scanner and fixture tests run without Docker; a live run additionally
 uses WordPress `parse_blocks()` and the registered block-type registry.
 The WordPress probe selects only pages carrying `_blockify_migration_id`, so
