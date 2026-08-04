@@ -98,6 +98,7 @@ export default function App() {
   const [result, setResult] = useState<PageResult | null>(null);
   const [title, setTitle] = useState("");
   const [copied, setCopied] = useState(false);
+  const [added, setAdded] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
   const [showIntermediate, setShowIntermediate] = useState(false);
   const [showImages, setShowImages] = useState(false);
@@ -505,6 +506,8 @@ export default function App() {
     };
     setLastClearedBundle(null);
     setBundle((prev) => addOrReplaceBundleEntry(prev, entry));
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
   }
 
   function downloadWxr() {
@@ -649,8 +652,10 @@ export default function App() {
       )}
 
       <section className="panel">
-        <div className="tabs">
+        <div className="tabs" role="tablist" aria-label="Input Methods">
           <button
+            role="tab"
+            aria-selected={tab === "paste"}
             className={tab === "paste" ? "tab active" : "tab"}
             onClick={() => !batchBusy && setTab("paste")}
             disabled={batchBusy}
@@ -658,6 +663,8 @@ export default function App() {
             Paste HTML
           </button>
           <button
+            role="tab"
+            aria-selected={tab === "fetch"}
             className={tab === "fetch" ? "tab active" : "tab"}
             onClick={() => !batchBusy && setTab("fetch")}
             disabled={batchBusy}
@@ -665,6 +672,8 @@ export default function App() {
             Fetch URL
           </button>
           <button
+            role="tab"
+            aria-selected={tab === "batch"}
             className={tab === "batch" ? "tab active" : "tab"}
             onClick={() => !batchBusy && setTab("batch")}
             disabled={batchBusy}
@@ -970,7 +979,9 @@ export default function App() {
             <button className="primary" onClick={copyBlocks} aria-live="polite">
               {copied ? "Copied ✓" : "Copy to clipboard"}
             </button>
-            <button onClick={addToBundle}>Add page to WXR bundle</button>
+            <button onClick={addToBundle} aria-live="polite">
+              {added ? "Added to bundle ✓" : "Add page to WXR bundle"}
+            </button>
           </div>
           {copyError && (
             <p className="warn-box" role="alert">

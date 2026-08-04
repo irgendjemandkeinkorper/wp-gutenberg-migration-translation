@@ -23,3 +23,7 @@
 ## 2026-08-01 - Adding Accessible Interactions to Interactive UI Elements
 **Learning:** Interactive states and actions (like toggles and clipboard copying) often rely on visual cues (text changes, icons) which exclude screen reader users. Adding ARIA state attributes (`aria-expanded`, `aria-live`) drastically improves their experience without altering the visual design.
 **Action:** Audit interactive elements (buttons, inputs) for visual state changes and add corresponding ARIA attributes to communicate these states explicitly.
+
+## 2026-08-04 - Inline Feedback for Distant State Mutations
+**Learning:** When actions mutate state that is rendered far away (e.g., adding an item to a list at the bottom of a long page), users lack immediate confirmation of success. This causes repeated clicks, frustration, and confusion for both sighted and screen reader users.
+**Action:** Always provide brief, in-place visual feedback on the originating interactive element itself (e.g., momentarily changing button text to "Added ✓") and use `aria-live="polite"` to assure users the action completed successfully.

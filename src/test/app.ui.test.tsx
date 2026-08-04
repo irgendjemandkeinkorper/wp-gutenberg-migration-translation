@@ -180,7 +180,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     });
 
     expect(container.textContent).toContain(
-      "Add your Gemini API key in Settings first."
+      "Add your Gemini API key in Settings first under Private Pilot Mode."
     );
 
     // Provide an API key
@@ -188,8 +188,10 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
       setInputValue(apiKeyInput, "AIza_mock_key_123");
     });
 
-    // Key should persist in localStorage
-    expect(localStorage.getItem("blockify.apiKey")).toBe("AIza_mock_key_123");
+    // Key is held strictly in memory and NOT persisted in localStorage
+    expect(localStorage.getItem("blockify.apiKey")).toBeNull();
+    // Since it's held in state, we verify it through the UI value
+    expect(apiKeyInput.value).toBe("AIza_mock_key_123");
   });
 
   it("asserts step progress and warning and unsupported-content states", async () => {
@@ -441,13 +443,13 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
       }
     });
 
-    const convertAllBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent === "Convert all & add to bundle"
+    const startBatchBtn = Array.from(container.querySelectorAll("button")).find(
+      (btn) => btn.textContent === "Start Batch"
     ) as HTMLButtonElement;
-    expect(convertAllBtn).not.toBeNull();
+    expect(startBatchBtn).not.toBeNull();
 
     await act(async () => {
-      convertAllBtn.click();
+      startBatchBtn.click();
     });
 
     // Verify per-page ticks
