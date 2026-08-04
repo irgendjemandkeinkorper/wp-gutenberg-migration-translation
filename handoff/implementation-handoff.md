@@ -6,9 +6,9 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 
 ## Current baseline
 
-- Protected `main`: `78a44d9317bb835f00930c6812703ba02bde5e98` after merging [PR #122](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/pull/122); the earlier integration PR #111 merged as `86a5b39e28c3f0026ea869727280534d97ddd6ba`.
+- Protected `main`: `5f4375c745ec6f8cb8ec7b381e2f4250b96cf687` after merging the durable knowledge-vault [PR #123](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/pull/123). A3 verification PR #122 merged as `78a44d9317bb835f00930c6812703ba02bde5e98`; the earlier integration PR #111 merged as `86a5b39e28c3f0026ea869727280534d97ddd6ba`.
 - Issue #104 closed automatically through PR #122 after live text/order/placeholder acceptance passed. Issues #11 and #71 were also reconciled and closed after PR #111 landed.
-- Current handoff branch: `codex/knowledge-translation-observations`, based on `origin/main`. It contains only the durable knowledge/Obsidian and handoff refresh described below.
+- PR #123 is merged into protected `main`; the durable knowledge/Obsidian implementation and this handoff no longer depend on an unmerged work branch.
 - `main` branch protection is live: strict required checks `Validate` and `WordPress integration`, admin enforcement, conversation resolution, and force-push/deletion disabled. The zero-review setting is the documented single-maintainer exception; GitHub reported one direct collaborator.
 - The reusable knowledge layer is canonical JSON under `knowledge/catalog/`, validated and projected into 28 Obsidian notes. `translation-observations.json` now separates project/version-specific pass, partial, placeholder, and failure outcomes from global capability claims. External vaults can be generated with `npm run knowledge:generate -- --vault <path>`.
 - The post-merge GitHub Pages [run 30878679537](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/actions/runs/30878679537) completed successfully for `78a44d9` (both build and deploy jobs).
@@ -81,6 +81,7 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 - `npm run knowledge:check` — 28 generated Obsidian-vault files match the canonical catalogs, including five project/version-specific translation observations.
 - PR #111 CI run [30876742912](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/actions/runs/30876742912) — `Validate` and `WordPress integration` both passed before protected merge `86a5b39`.
 - PR #122 CI run [30878520899](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/actions/runs/30878520899) — both required checks passed. Retained artifact `8880415113` contains reconciliation schema `1.1.0`: 2/2 exact pages, 23/23 meaningful tokens, recall/order `1`, 1/1 placeholder IDs, one shared attachment, zero findings, and no retained imported text.
+- PR #123 CI run [30879977769](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/actions/runs/30879977769) — `Validate` passed in 44 seconds and `WordPress integration` passed in 58 seconds before protected merge `5f4375c`.
 - GitHub Pages [run 30878679537](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/actions/runs/30878679537) passed build/deploy for `78a44d9`; the HTTPS site returned HTTP 200 with title `Blockify — HTML to Gutenberg` and the expected application root.
 - Latest local live report: `/tmp/blockify-wordpress-harness/reports/blockify-wp-run-1785818364941-448322/reconciliation-report.json` — generated known-media fixture passed the same text/order/placeholder/media contract before PR #122 was pushed.
 - Sanitized A3 evidence is retained at `knowledge/evidence/wordpress/a3-text-placeholder-wordpress-6.8.2.json`; it links the protected merge, workflow run, artifact, fixture hash, metrics, and privacy boundary.
@@ -184,5 +185,5 @@ Do not start #90/#94/#96 or downstream target-profile work without authoritative
 - Preserve existing user changes and all local implementation commits.
 - Keep each agent’s write set disjoint and return changed files, tests, risks, and open questions.
 - Do not close an issue based only on intent or local unit tests when its acceptance requires external WordPress, PR, authoritative target, or pilot evidence.
-- The former remote divergence is integrated in merge commit `74a9bf9`; do not re-run the old merge/rebase investigation. Protected merges `86a5b39` (PR #111) and `78a44d9` (PR #122) are current truth.
+- The former remote divergence is integrated in merge commit `74a9bf9`; do not re-run the old merge/rebase investigation. Protected merges `86a5b39` (PR #111), `78a44d9` (PR #122), and `5f4375c` (PR #123) are current truth.
 - Fresh GitHub evidence/audit comments are on #104, #68, #70, #13, and #7. #11, #71, and #104 are closed. #68, #70, #13, #7, and #78 remain intentionally open for the exact gates documented above; #12 was already closed but does not silently satisfy the unresolved B4 contract. #42 remains open only for the unperformed history-size rewrite.
