@@ -21,6 +21,10 @@ export interface ConvertInput {
   apiKey: string;
   model: string;
   provider?: LlmProvider;
+  /** Optional provider-compatible relay base URL for production deployments. */
+  proxyUrl?: string;
+  /** Ephemeral relay credential. Callers must not persist this value. */
+  proxyToken?: string;
   /** Deterministic mode: enforce the whitelist in code only, no AI call. */
   skipLlm?: boolean;
 }
@@ -154,6 +158,8 @@ async function cleanWithRetries(
       title,
       html: tokenizedHtml,
       violationNote,
+      proxyUrl: input.proxyUrl,
+      proxyToken: input.proxyToken,
     });
     if (!cleaned.trim()) throw new Error("The model returned an empty result.");
 

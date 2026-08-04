@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { DEFAULT_PROVIDER, getProviderConfig, isLlmProvider, LLM_PROVIDERS, type LlmProvider } from "../lib/llm";
 
 type ProviderValues = Record<LlmProvider, string>;
+export type ConnectionMode = "pilot" | "proxy";
+
+function initialConnectionMode(): ConnectionMode {
+  return localStorage.getItem("blockify.connectionMode") === "proxy" ? "proxy" : "pilot";
+}
 
 function initialProvider(): LlmProvider {
   const saved = localStorage.getItem("blockify.provider");
@@ -29,12 +34,22 @@ export function useProviderSettings() {
   const [provider, setProvider] = useState<LlmProvider>(initialProvider);
   const [apiKeys, setApiKeys] = useState<ProviderValues>(initialApiKeys);
   const [models, setModels] = useState<ProviderValues>(initialModels);
+  const [connectionMode, setConnectionMode] = useState<ConnectionMode>(initialConnectionMode);
+  const [proxyUrl, setProxyUrl] = useState(() => localStorage.getItem("blockify.proxyUrl") || "");
+  const [proxyToken, setProxyToken] = useState(() => sessionStorage.getItem("blockify.proxyToken") || "");
 
   useEffect(() => {
     localStorage.removeItem("blockify.apiKey");
     localStorage.removeItem("blockify.model");
+    localStorage.removeItem("blockify.proxyToken");
   }, []);
   useEffect(() => localStorage.setItem("blockify.provider", provider), [provider]);
+  useEffect(() => localStorage.setItem("blockify.connectionMode", connectionMode), [connectionMode]);
+  useEffect(() => localStorage.setItem("blockify.proxyUrl", proxyUrl), [proxyUrl]);
+  useEffect(() => {
+    if (proxyToken) sessionStorage.setItem("blockify.proxyToken", proxyToken);
+    else sessionStorage.removeItem("blockify.proxyToken");
+  }, [proxyToken]);
   useEffect(() => {
     for (const option of LLM_PROVIDERS) {
       localStorage.setItem(`blockify.model.${option.id}`, models[option.id]);
@@ -59,5 +74,19 @@ export function useProviderSettings() {
     setModels((current) => ({ ...current, [provider]: value }));
   }
 
-  return { apiKey, model, provider, providerConfig, setApiKey, setModel, setProvider };
+  return {
+    apiKey,
+    model,
+    provider,
+    providerConfig,
+    connectionMode,
+    proxyUrl,
+    proxyToken,
+    setApiKey,
+    setModel,
+    setProvider,
+    setConnectionMode,
+    setProxyUrl,
+    setProxyToken,
+  };
 }

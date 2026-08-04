@@ -36,7 +36,7 @@ export function BundleExportPanel({ bundle, onRemove, onClear }: BundleExportPan
           <p>Package reviewed pages for WordPress Tools → Import.</p>
         </div>
         <span className="bundle-count">
-          {bundle.length} page{bundle.length === 1 ? "" : "s"}
+          WXR bundle ({bundle.length} page{bundle.length === 1 ? "" : "s"})
         </span>
       </div>
       <ul className="bundle-list">
@@ -49,7 +49,12 @@ export function BundleExportPanel({ bundle, onRemove, onClear }: BundleExportPan
                 {page.targetTemplate ? ` · ${page.targetTemplate}` : ""})
               </span>
             </span>
-            <button type="button" className="text-button danger-text" onClick={() => onRemove(index)}>
+            <button
+              type="button"
+              className="text-button danger-text"
+              aria-label={`Remove "${page.title}" from bundle`}
+              onClick={() => onRemove(index)}
+            >
               Remove
             </button>
           </li>
@@ -83,7 +88,13 @@ export function BundleExportPanel({ bundle, onRemove, onClear }: BundleExportPan
         <button type="button" className="primary" onClick={downloadWxr}>
           Download WXR
         </button>
-        <button type="button" className="secondary" onClick={onClear}>
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => {
+            if (window.confirm("Clear every page from this WXR bundle?")) onClear();
+          }}
+        >
           Clear bundle
         </button>
       </div>

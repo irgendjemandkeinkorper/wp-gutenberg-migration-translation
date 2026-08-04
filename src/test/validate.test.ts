@@ -25,6 +25,14 @@ describe("validateFragment", () => {
     expect(html).toBe('<p><a href="/y">link</a> plain</p>');
   });
 
+  it("unwraps <a> tags with dangerous href values to prevent XSS", () => {
+    const { html } = validateFragment(
+      '<p><a href="javascript:alert(1)">js</a> <a href=" vbscript:msgbox ">vbs</a> <a href="data:text/html,<html>">data</a> <a href="java\nscript:x">hack</a> <a href="http://safe.com">safe</a></p>',
+      [],
+    );
+    expect(html).toBe('<p>js vbs data hack <a href="http://safe.com">safe</a></p>');
+  });
+
   it("reports missing and duplicated tokens", () => {
     const { report } = validateFragment("<p>⟦ASSET_0⟧</p><p>⟦ASSET_0⟧</p>", [0, 1]);
     expect(report.missing).toEqual([1]);
@@ -63,6 +71,42 @@ describe("validateFragment", () => {
     const input = "<h2>H</h2><ul><li>a</li><li>b</li></ul><blockquote><p>q</p></blockquote>";
     const { html } = validateFragment(input, []);
     expect(html).toBe(input);
+  });
+
+  it("processes a large fragment with thousands of siblings and mixed content without crashing", () => {
+    // Generate thousands of siblings within a single <p> element to stress the splitting logic
+    const count = 1500;
+    const pieces: string[] = [];
+    const expectedIndices: number[] = [];
+    for (let i = 0; i < count; i++) {
+      pieces.push(`Text ${i} ⟦ASSET_${i}⟧`);
+      expectedIndices.push(i);
+    }
+    const input = `<p>${pieces.join(" ")}</p>`;
+
+    // This should complete successfully and without any RangeError / Maximum call stack size exceeded
+    const { html, report } = validateFragment(input, expectedIndices);
+
+    expect(report.missing).toEqual([]);
+    expect(report.extra).toEqual([]);
+
+    // Check that all expected tokens are present in correct order and exactly once
+    const foundIndices: number[] = [];
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    for (const child of Array.from(doc.body.children)) {
+      if (child.tagName.toLowerCase() === "p") {
+        const text = child.textContent ?? "";
+        if (text.startsWith("⟦ASSET_") && text.endsWith("⟧")) {
+          const idx = parseInt(text.replace("⟦ASSET_", "").replace("⟧", ""), 10);
+          foundIndices.push(idx);
+        }
+      }
+    }
+
+    expect(foundIndices).toHaveLength(count);
+    for (let i = 0; i < count; i++) {
+      expect(foundIndices[i]).toBe(i);
+    }
   });
 });
 

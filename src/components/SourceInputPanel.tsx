@@ -1,13 +1,19 @@
+import type { BatchPageStatus } from "../lib/types";
+
 export type SourceTab = "paste" | "fetch" | "batch";
 
 export interface CrawledPage {
   url: string;
   title: string;
-  html: string;
+  html?: string;
+  id?: string | number;
+  parentUrl?: string;
+  parentId?: string | number;
+  menuOrder?: number;
 }
 
 export interface BatchState {
-  status: "converting" | "done" | "error";
+  status: BatchPageStatus;
   note?: string;
 }
 
@@ -36,6 +42,8 @@ interface SourceInputPanelProps {
   onBatchFile: (file: File) => void | Promise<void>;
   onConvert: () => void | Promise<void>;
   onConvertBatch: () => void | Promise<void>;
+  onCancelBatch: () => void;
+  onResumeBatch: () => void | Promise<void>;
 }
 
 const GOLFNOW_TEMPLATES = [
@@ -80,7 +88,15 @@ export function SourceInputPanel({
   onBatchFile,
   onConvert,
   onConvertBatch,
+  onCancelBatch,
+  onResumeBatch,
 }: SourceInputPanelProps) {
+  const batchCounts = Array.from(batchStatus.values()).reduce(
+    (counts, item) => ({ ...counts, [item.status]: counts[item.status] + 1 }),
+    { pending: 0, converting: 0, done: 0, error: 0, cancelled: 0 } satisfies Record<BatchPageStatus, number>,
+  );
+  const canResume = batchCounts.error > 0 || batchCounts.cancelled > 0;
+
   return (
     <section className="panel source-panel">
       <div className="panel-heading source-heading">
@@ -174,6 +190,8 @@ export function SourceInputPanel({
                           {itemStatus?.status === "done" && "✓ "}
                           {itemStatus?.status === "error" && "✗ "}
                           {itemStatus?.status === "converting" && "… "}
+                          {itemStatus?.status === "cancelled" && "⊘ "}
+                          {itemStatus?.status === "pending" && "○ "}
                           {page.title || page.url}{" "}
                           {itemStatus?.note && <span className="muted">({itemStatus.note})</span>}
                         </span>
@@ -181,6 +199,12 @@ export function SourceInputPanel({
                     );
                   })}
                 </ul>
+                <div className="batch-summary" style={{ background: "var(--code-bg)" }} aria-live="polite">
+                  <span>Total: {batch.length}</span>
+                  <span>Completed: {batchCounts.done}</span>
+                  <span>Failed: {batchCounts.error}</span>
+                  <span>Cancelled: {batchCounts.cancelled}</span>
+                </div>
               </>
             )}
           </>
@@ -258,14 +282,26 @@ export function SourceInputPanel({
       <div className="conversion-action">
         <p>{skipLlm ? "No API call · deterministic cleanup" : `${providerName} · ${model}`}</p>
         {tab === "batch" ? (
-          <button
-            type="button"
-            className="primary"
-            onClick={() => void onConvertBatch()}
-            disabled={batchBusy || batch.length === 0}
-          >
-            {batchBusy ? `Converting ${batchStatus.size}/${batch.length}…` : "Convert all & add to bundle"}
-          </button>
+          <div className="batch-actions">
+            {batchBusy ? (
+              <button type="button" className="secondary danger-text" onClick={onCancelBatch}>
+                Cancel Conversion
+              </button>
+            ) : canResume ? (
+              <button type="button" className="primary" onClick={() => void onResumeBatch()}>
+                Resume Batch
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="primary"
+                onClick={() => void onConvertBatch()}
+                disabled={batch.length === 0}
+              >
+                {batchCounts.done === batch.length && batch.length > 0 ? "Run Batch Again" : "Start Batch"}
+              </button>
+            )}
+          </div>
         ) : (
           <button type="button" className="primary" onClick={() => void onConvert()} disabled={busy}>
             {busy ? "Converting…" : "Convert"}

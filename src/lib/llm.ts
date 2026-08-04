@@ -2,6 +2,24 @@ import { GoogleGenAI } from "@google/genai";
 
 export type LlmProvider = "gemini" | "anthropic" | "openai";
 
+export const DEFAULT_MODEL = "gemini-3.6-flash";
+export const FAST_MODEL = "gemini-3.5-flash-lite";
+
+export interface ModelInfo {
+  id: string;
+  name: string;
+  status: "supported" | "stale" | "unsupported";
+  lastVerified: string;
+  documentationUrl?: string;
+}
+
+export interface ProviderInfo {
+  id: string;
+  name: string;
+  baseUrl: string;
+  models: ModelInfo[];
+}
+
 export interface ProviderModel {
   id: string;
   label: string;
@@ -190,6 +208,118 @@ export const LLM_PROVIDERS: LlmProviderConfig[] = [
   },
 ];
 
+/** Compatibility catalog with explicit lifecycle evidence for provider-model validation. */
+export const PROVIDER_CATALOG: ProviderInfo[] = [
+  {
+    id: "google",
+    name: "Google Gemini",
+    baseUrl: "https://generativelanguage.googleapis.com",
+    models: [
+      {
+        id: DEFAULT_MODEL,
+        name: "Gemini 3.6 Flash (Recommended)",
+        status: "supported",
+        lastVerified: "2025-02-21",
+        documentationUrl: "https://ai.google.dev/gemini-api/docs/models/gemini",
+      },
+      {
+        id: FAST_MODEL,
+        name: "Gemini 3.5 Flash Lite (Fast & Cheap)",
+        status: "supported",
+        lastVerified: "2025-02-21",
+        documentationUrl: "https://ai.google.dev/gemini-api/docs/models/gemini",
+      },
+      {
+        id: "gemini-2.5-flash",
+        name: "Gemini 2.5 Flash",
+        status: "stale",
+        lastVerified: "2025-02-21",
+        documentationUrl: "https://ai.google.dev/gemini-api/docs/models/gemini",
+      },
+      {
+        id: "gemini-2.5-pro",
+        name: "Gemini 2.5 Pro",
+        status: "unsupported",
+        lastVerified: "2025-02-21",
+        documentationUrl: "https://ai.google.dev/gemini-api/docs/models/gemini",
+      },
+    ],
+  },
+];
+
+export function validateProviderModel(providerId: string, modelId: string): void {
+  const catalogProvider = PROVIDER_CATALOG.find((provider) => provider.id === providerId);
+  if (catalogProvider) {
+    const model = catalogProvider.models.find((candidate) => candidate.id === modelId);
+    if (!model) {
+      throw new Error(
+        `Unknown model "${modelId}" for provider "${catalogProvider.name}". Please select a valid model.`,
+      );
+    }
+    if (model.status !== "supported") {
+      throw new Error(
+        `Model "${model.name}" is marked as ${model.status} (last verified: ${model.lastVerified}). ` +
+          `Please select a supported model (e.g., ${DEFAULT_MODEL}).`,
+      );
+    }
+    return;
+  }
+
+  const normalizedProvider = providerId === "google" ? "gemini" : providerId;
+  const provider = LLM_PROVIDERS.find((candidate) => candidate.id === normalizedProvider);
+  if (!provider) throw new Error(`Unknown provider "${providerId}". Please select a valid provider.`);
+  if (!provider.models.some((model) => model.id === modelId)) {
+    throw new Error(`Unknown model "${modelId}" for provider "${provider.name}". Please select a valid model.`);
+  }
+}
+
+export function sanitizeErrorMessage(message: string): string {
+  return message
+    .replace(/AIzaSy[a-zA-Z0-9_-]+/g, "[REDACTED_API_KEY]")
+    .replace(/\bsk-(?:ant-|proj-)?[a-zA-Z0-9_-]+/g, "[REDACTED_API_KEY]")
+    .replace(/([?&]key=)[^&\s]+/gi, "$1[REDACTED]")
+    .replace(/Bearer\s+[^\s,;]+/gi, "Bearer [REDACTED]");
+}
+
+export function parseAndCleanProviderError(error: unknown, providerId: string): Error {
+  const normalizedProvider = providerId === "google" ? "gemini" : providerId;
+  const providerName =
+    PROVIDER_CATALOG.find((provider) => provider.id === providerId)?.name ??
+    LLM_PROVIDERS.find((provider) => provider.id === normalizedProvider)?.name ??
+    providerId;
+  const record = isRecord(error) ? error : null;
+  const rawMessage =
+    error instanceof Error ? error.message : typeof record?.message === "string" ? record.message : String(error);
+  const cleanedMessage = sanitizeErrorMessage(rawMessage);
+  const explicitStatus =
+    typeof record?.status === "number"
+      ? record.status
+      : typeof record?.statusCode === "number"
+        ? record.statusCode
+        : undefined;
+  const embeddedStatus = cleanedMessage.match(/\b(400|401|403|404|429|500|503)\b/);
+  const statusCode = explicitStatus ?? (embeddedStatus ? Number(embeddedStatus[1]) : undefined);
+
+  let guidance = "Please check your network connection and configuration settings.";
+  if (statusCode === 401 || statusCode === 403) {
+    guidance = "Your API key appears to be invalid or unauthorized. Please verify your API key in Settings.";
+  } else if (statusCode === 404) {
+    guidance =
+      "The requested model was not found or has been retired by the provider. Please select a supported model in Settings.";
+  } else if (statusCode === 429) {
+    guidance = "Rate limit exceeded. Please wait a moment before trying again, or check your quota.";
+  } else if (statusCode !== undefined && statusCode >= 500) {
+    guidance = "The provider is currently experiencing internal server issues. Please try again later.";
+  }
+
+  const cleaned = new Error(
+    `Provider Error (${providerName}): ${cleanedMessage} (Status: ${statusCode ?? "unknown"}). ` +
+      `Recovery guidance: ${guidance}`,
+  );
+  if (error instanceof Error && error.stack) cleaned.stack = sanitizeErrorMessage(error.stack);
+  return cleaned;
+}
+
 export function isLlmProvider(value: string | null): value is LlmProvider {
   return LLM_PROVIDERS.some((provider) => provider.id === value);
 }
@@ -221,43 +351,76 @@ const FENCE_OPEN_RE = /^```(?:html)?\s*\r?\n?/i;
 const FENCE_CLOSE_RE = /\r?\n?```\s*$/;
 
 export interface CleanHtmlOptions {
-  provider: LlmProvider;
+  provider?: LlmProvider | "google";
   apiKey: string;
   model: string;
   title: string;
   html: string;
   violationNote?: string;
+  proxyUrl?: string;
+  proxyToken?: string;
 }
 
 export async function cleanHtml(opts: CleanHtmlOptions): Promise<string> {
   const apiKey = opts.apiKey.trim();
   const model = opts.model.trim();
-  if (!apiKey) throw new Error("An API key is required for AI cleanup.");
+  const proxyUrl = opts.proxyUrl?.trim();
+  const proxyToken = opts.proxyToken?.trim();
+  const provider = opts.provider === "google" ? "gemini" : (opts.provider ?? DEFAULT_PROVIDER);
+  if (!apiKey && !proxyUrl) throw new Error("An API key is required for AI cleanup.");
   if (!model) throw new Error("Choose a model before converting.");
+  validateProviderModel(provider === "gemini" ? "google" : provider, model);
 
   let user =
     `Article title (for context; do NOT include it in the body): ${opts.title}\n\n` +
     `Extracted HTML to clean:\n\n${opts.html}`;
   if (opts.violationNote) user += `\n\n${opts.violationNote}`;
 
-  const adapter = getProviderConfig(opts.provider).adapter;
-  const request = adapter.buildRequest({ apiKey, model, user });
-  let response: unknown;
-  if (request.transport === "gemini") {
-    const ai = new GoogleGenAI({ apiKey: request.apiKey });
-    response = await ai.models.generateContent({
-      model: request.model,
-      contents: request.user,
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        temperature: 0,
-      },
-    });
-  } else {
-    response = await postJson(request.providerName, request.url, request.init);
-  }
+  const adapter = getProviderConfig(provider).adapter;
+  const request = adapter.buildRequest({ apiKey: apiKey || "PROXY_MANAGED_KEY", model, user });
+  try {
+    let response: unknown;
+    if (request.transport === "gemini") {
+      const ai = new GoogleGenAI({
+        apiKey: request.apiKey,
+        ...(proxyUrl
+          ? {
+              httpOptions: {
+                baseUrl: proxyUrl,
+                headers: proxyToken ? { Authorization: `Bearer ${proxyToken}` } : undefined,
+              },
+            }
+          : {}),
+      });
+      response = await ai.models.generateContent({
+        model: request.model,
+        contents: request.user,
+        config: {
+          systemInstruction: SYSTEM_PROMPT,
+          temperature: 0,
+        },
+      });
+    } else {
+      let requestUrl = request.url;
+      let requestInit = request.init;
+      if (proxyUrl) {
+        const headers = new Headers(request.init.headers);
+        const vendorUrl = new URL(request.url);
+        requestUrl = new URL(`${vendorUrl.pathname}${vendorUrl.search}`, ensureTrailingSlash(proxyUrl)).toString();
+        if (proxyToken) headers.set("Authorization", `Bearer ${proxyToken}`);
+        requestInit = { ...request.init, headers };
+      }
+      response = await postJson(request.providerName, requestUrl, requestInit);
+    }
 
-  return adapter.extractResponse(response).replace(FENCE_OPEN_RE, "").replace(FENCE_CLOSE_RE, "").trim();
+    return adapter.extractResponse(response).replace(FENCE_OPEN_RE, "").replace(FENCE_CLOSE_RE, "").trim();
+  } catch (error) {
+    throw parseAndCleanProviderError(error, provider === "gemini" ? "google" : provider);
+  }
+}
+
+function ensureTrailingSlash(value: string): string {
+  return value.endsWith("/") ? value : `${value}/`;
 }
 
 function extractAnthropicText(response: unknown): string {

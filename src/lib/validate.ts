@@ -1,5 +1,14 @@
 import { TOKEN_RE, hasToken, isLoneToken, token, tokenIndices } from "./tokens";
 
+export function isSafeUrl(url: string): boolean {
+  // Strip control characters and whitespace which browsers ignore when parsing protocols
+  const normalized = url.replace(/[\x00-\x20\x7F-\x9F]/g, "").toLowerCase();
+  if (normalized.startsWith("javascript:") || normalized.startsWith("vbscript:") || normalized.startsWith("data:")) {
+    return false;
+  }
+  return true;
+}
+
 // The tag whitelist the LLM is prompted with, enforced here in code.
 const WHITELIST = new Set([
   "h2",
@@ -206,7 +215,7 @@ function enforceWhitelist(body: HTMLElement): void {
       while (el.attributes.length > 0) {
         el.removeAttribute(el.attributes[0].name);
       }
-      if (href) {
+      if (href && isSafeHref(href)) {
         el.setAttribute("href", href);
       } else {
         unwrap(el);
@@ -217,6 +226,16 @@ function enforceWhitelist(body: HTMLElement): void {
       }
     }
   }
+}
+
+function isSafeHref(href: string): boolean {
+  const trimmed = href.trim().toLowerCase();
+  // Strip control characters to prevent bypasses like java\nscript:
+  const noControlChars = trimmed.replace(/[\x00-\x1F\x7F]/g, "");
+  if (noControlChars.startsWith("javascript:")) return false;
+  if (noControlChars.startsWith("vbscript:")) return false;
+  if (noControlChars.startsWith("data:")) return false;
+  return true;
 }
 
 function rename(el: Element, newTag: string): void {
@@ -271,7 +290,11 @@ function isolateTokens(body: HTMLElement): void {
       }
     }
     flush();
-    child.replaceWith(...pieces);
+    const frag = doc.createDocumentFragment();
+    for (const piece of pieces) {
+      frag.appendChild(piece);
+    }
+    child.replaceWith(frag);
   }
 
   for (const child of Array.from(body.children)) {

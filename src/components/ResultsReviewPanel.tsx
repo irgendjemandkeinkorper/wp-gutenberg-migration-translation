@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { PageResult } from "../lib/types";
 
 interface ResultsReviewPanelProps {
@@ -10,14 +10,34 @@ interface ResultsReviewPanelProps {
 
 export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle }: ResultsReviewPanelProps) {
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState("");
   const [showIntermediate, setShowIntermediate] = useState(false);
   const [showImages, setShowImages] = useState(false);
+  const codeViewRef = useRef<HTMLPreElement>(null);
   const lostSet = useMemo(() => new Set(result.lostPositions), [result]);
 
+  function selectBlocksForManualCopy() {
+    const codeView = codeViewRef.current;
+    if (!codeView) return;
+    codeView.focus();
+    const range = document.createRange();
+    range.selectNodeContents(codeView);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  }
+
   async function copyBlocks() {
-    await navigator.clipboard.writeText(result.blocks);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopyError("");
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+      await navigator.clipboard.writeText(result.blocks);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      selectBlocksForManualCopy();
+      setCopyError("Could not copy automatically. Please press Ctrl+C or Cmd+C to copy manually.");
+    }
   }
 
   return (
@@ -25,7 +45,7 @@ export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle
       <div className="panel-heading">
         <div>
           <p className="section-kicker">03 · Review</p>
-          <h2>Gutenberg result</h2>
+          <h2>Gutenberg Result</h2>
           <p>Inspect the generated blocks and migration flags before bundling.</p>
         </div>
         <span className="result-badge">{result.images.length} assets audited</span>
@@ -35,6 +55,11 @@ export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle
           {warning}
         </p>
       ))}
+      {copyError && (
+        <p className="warn-box" role="alert">
+          {copyError}
+        </p>
+      )}
       <label>
         Title
         <input type="text" value={title} onChange={(event) => onTitleChange(event.target.value)} />
@@ -48,7 +73,9 @@ export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle
         </button>
       </div>
       <p className="hint">To paste directly: WordPress block editor → ⋮ menu → Code editor → paste.</p>
-      <pre className="code-view">{result.blocks}</pre>
+      <pre id="result-code-view" ref={codeViewRef} className="code-view" tabIndex={0}>
+        {result.blocks}
+      </pre>
 
       {result.placeholders.length > 0 && (
         <div className="warn-box">

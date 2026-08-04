@@ -1,11 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BundleExportPanel } from "./components/BundleExportPanel";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ResultsReviewPanel } from "./components/ResultsReviewPanel";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { SourceInputPanel, type BatchState, type CrawledPage, type SourceTab } from "./components/SourceInputPanel";
 import { useProviderSettings } from "./hooks/useProviderSettings";
-import { loadBundle, saveBundle } from "./lib/bundle";
+import {
+  addOrReplaceBundleEntry,
+  loadBatchFileName,
+  loadBatchPages,
+  loadBatchStatus,
+  loadBundle,
+  saveBatchFileName,
+  saveBatchPages,
+  saveBatchStatus,
+  saveBundle,
+} from "./lib/bundle";
 import { fetchPage } from "./lib/fetchPage";
 import { convertPage } from "./lib/pipeline";
 import type { BundlePage, PageResult, StepStatus, StepUpdate } from "./lib/types";
@@ -25,7 +35,21 @@ export default function App() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  const { apiKey, model, provider, providerConfig, setApiKey, setModel, setProvider } = useProviderSettings();
+  const {
+    apiKey,
+    model,
+    provider,
+    providerConfig,
+    connectionMode,
+    proxyUrl,
+    proxyToken,
+    setApiKey,
+    setModel,
+    setProvider,
+    setConnectionMode,
+    setProxyUrl,
+    setProxyToken,
+  } = useProviderSettings();
   const [skipLlm, setSkipLlm] = useState(() => localStorage.getItem("blockify.skipLlm") === "1");
 
   const [busy, setBusy] = useState(false);
@@ -33,17 +57,48 @@ export default function App() {
   const [error, setError] = useState("");
   const [result, setResult] = useState<PageResult | null>(null);
   const [title, setTitle] = useState("");
-  const [batch, setBatch] = useState<CrawledPage[]>([]);
-  const [batchFileName, setBatchFileName] = useState("");
-  const [batchStatus, setBatchStatus] = useState<Map<number, BatchState>>(new Map());
+  const [batch, setBatch] = useState<CrawledPage[]>(() => loadBatchPages());
+  const [batchFileName, setBatchFileName] = useState(loadBatchFileName);
+  const [batchStatus, setBatchStatus] = useState<Map<number, BatchState>>(
+    () => new Map(Object.entries(loadBatchStatus()).map(([index, state]) => [Number(index), state])),
+  );
   const [batchBusy, setBatchBusy] = useState(false);
+  const cancelBatchRef = useRef(false);
 
   const [bundle, setBundle] = useState<BundlePage[]>(loadBundle);
   const [targetTemplate, setTargetTemplate] = useState(() => localStorage.getItem("blockify.targetTemplate") ?? "");
 
-  useEffect(() => saveBundle(bundle), [bundle]);
+  useEffect(() => {
+    saveBundle(bundle);
+  }, [bundle]);
   useEffect(() => localStorage.setItem("blockify.skipLlm", skipLlm ? "1" : "0"), [skipLlm]);
   useEffect(() => localStorage.setItem("blockify.targetTemplate", targetTemplate), [targetTemplate]);
+  useEffect(() => saveBatchPages(batch), [batch]);
+  useEffect(() => saveBatchFileName(batchFileName), [batchFileName]);
+  useEffect(
+    () => saveBatchStatus(Object.fromEntries(Array.from(batchStatus, ([index, state]) => [String(index), state]))),
+    [batchStatus],
+  );
+
+  function hasConversionCredentials(): boolean {
+    if (skipLlm) return true;
+    if (connectionMode === "proxy") {
+      if (proxyUrl.trim()) return true;
+      setShowSettings(true);
+      setError("Add your production proxy endpoint in Settings first (or enable Local-only cleanup).");
+      return false;
+    }
+    if (apiKey.trim()) return true;
+    setShowSettings(true);
+    setError(`Add your ${providerConfig.shortName} API key in Settings first.`);
+    return false;
+  }
+
+  function conversionConnection() {
+    return connectionMode === "proxy"
+      ? { apiKey: "", proxyUrl: proxyUrl.trim(), proxyToken }
+      : { apiKey, proxyUrl: undefined, proxyToken: undefined };
+  }
 
   function onStep(u: StepUpdate) {
     setSteps((prev) => {
@@ -54,11 +109,7 @@ export default function App() {
   }
 
   async function convert() {
-    if (!apiKey && !skipLlm) {
-      setShowSettings(true);
-      setError(`Add your ${providerConfig.shortName} API key in Settings first.`);
-      return;
-    }
+    if (!hasConversionCredentials()) return;
     setBusy(true);
     setError("");
     setResult(null);
@@ -79,7 +130,7 @@ export default function App() {
           rawHtml,
           url,
           selector: selector.trim() || undefined,
-          apiKey,
+          ...conversionConnection(),
           model,
           provider,
           skipLlm,
@@ -120,6 +171,10 @@ export default function App() {
           url: (p as CrawledPage).url,
           title: typeof (p as CrawledPage).title === "string" ? (p as CrawledPage).title : "",
           html: (p as CrawledPage).html,
+          id: (p as CrawledPage).id,
+          parentUrl: (p as CrawledPage).parentUrl,
+          parentId: (p as CrawledPage).parentId,
+          menuOrder: (p as CrawledPage).menuOrder,
         })),
       );
       setBatchFileName(file.name);
@@ -130,72 +185,94 @@ export default function App() {
     }
   }
 
-  async function convertBatch() {
-    if (!apiKey && !skipLlm) {
-      setShowSettings(true);
-      setError(`Add your ${providerConfig.shortName} API key in Settings first ` + "(or enable Skip LLM).");
-      return;
-    }
+  async function convertBatch(resume = false) {
+    if (!hasConversionCredentials()) return;
     setBatchBusy(true);
+    cancelBatchRef.current = false;
     setError("");
-    const update = (i: number, s: BatchState) => setBatchStatus((prev) => new Map(prev).set(i, s));
-    for (let i = 0; i < batch.length; i++) {
-      const page = batch[i];
-      update(i, { status: "converting" });
-      try {
-        const res = await convertPage(
-          {
-            rawHtml: page.html,
-            url: page.url,
-            selector: selector.trim() || undefined,
-            apiKey,
-            model,
-            provider,
-            skipLlm,
-          },
-          () => {},
-        );
-        const entry: BundlePage = {
-          title: res.title || page.title || "Untitled",
-          link: page.url,
-          contentBlocks: res.blocks,
-          images: res.images.filter((asset) => asset.type === "image").map(({ src, alt }) => ({ src, alt })),
-          sourceHtml: res.sourceHtml,
-          targetTemplate,
-          placeholders: res.placeholders,
-        };
-        // Replace an existing bundle entry for the same URL so re-running a
-        // batch stays idempotent.
-        setBundle((prev) => {
-          const at = prev.findIndex((b) => b.link === page.url);
-          if (at < 0) return [...prev, entry];
-          const next = [...prev];
-          next[at] = entry;
-          return next;
-        });
-        update(i, {
-          status: "done",
-          note: res.warnings.length
-            ? `${res.warnings.length} warning${res.warnings.length === 1 ? "" : "s"}`
-            : undefined,
-        });
-      } catch (e) {
-        update(i, {
-          status: "error",
-          note: e instanceof Error ? e.message : String(e),
-        });
+    let runStatus = resume
+      ? new Map(batchStatus)
+      : new Map<number, BatchState>(batch.map((_, index) => [index, { status: "pending" }]));
+    if (resume) {
+      for (let index = 0; index < batch.length; index++) {
+        if (runStatus.get(index)?.status !== "done") runStatus.set(index, { status: "pending" });
       }
     }
-    setBatchBusy(false);
+    setBatchStatus(new Map(runStatus));
+
+    const update = (index: number, state: BatchState) => {
+      runStatus = new Map(runStatus).set(index, state);
+      setBatchStatus(new Map(runStatus));
+    };
+
+    try {
+      for (let index = 0; index < batch.length; index++) {
+        if (runStatus.get(index)?.status === "done") continue;
+        if (cancelBatchRef.current) {
+          for (let remaining = index; remaining < batch.length; remaining++) {
+            if (runStatus.get(remaining)?.status !== "done") update(remaining, { status: "cancelled" });
+          }
+          break;
+        }
+
+        const page = batch[index];
+        update(index, { status: "converting" });
+        try {
+          if (!page.html) throw new Error("Reload the crawl JSON to restore this page's HTML before resuming.");
+          const res = await convertPage(
+            {
+              rawHtml: page.html,
+              url: page.url,
+              selector: selector.trim() || undefined,
+              ...conversionConnection(),
+              model,
+              provider,
+              skipLlm,
+            },
+            () => {},
+          );
+          const entry: BundlePage = {
+            title: res.title || page.title || "Untitled",
+            link: page.url,
+            contentBlocks: res.blocks,
+            images: res.images.filter((asset) => asset.type === "image").map(({ src, alt }) => ({ src, alt })),
+            sourceHtml: res.sourceHtml,
+            targetTemplate,
+            placeholders: res.placeholders,
+            id: page.id,
+            parentUrl: page.parentUrl,
+            parentId: page.parentId,
+            menuOrder: page.menuOrder,
+          };
+          setBundle((current) => addOrReplaceBundleEntry(current, entry));
+          update(index, {
+            status: "done",
+            note: res.warnings.length
+              ? `${res.warnings.length} warning${res.warnings.length === 1 ? "" : "s"}`
+              : undefined,
+          });
+        } catch (e) {
+          update(index, {
+            status: "error",
+            note: e instanceof Error ? e.message : String(e),
+          });
+        }
+      }
+    } finally {
+      setBatchBusy(false);
+    }
+  }
+
+  function cancelBatch() {
+    cancelBatchRef.current = true;
   }
 
   function addToBundle() {
     if (!result) return;
     const pageTitle = title.trim() || "Untitled";
     const link = result.sourceUrl || `https://example.com/${slugify(pageTitle)}`;
-    setBundle((prev) => [
-      ...prev,
-      {
+    setBundle((current) =>
+      addOrReplaceBundleEntry(current, {
         title: pageTitle,
         link,
         contentBlocks: result.blocks,
@@ -203,8 +280,8 @@ export default function App() {
         sourceHtml: result.sourceHtml,
         targetTemplate,
         placeholders: result.placeholders,
-      },
-    ]);
+      }),
+    );
   }
 
   const visibleSteps = STEP_ORDER.filter((s) => steps.has(s) || (s !== "Fetch" && (busy || steps.size > 0)));
@@ -230,7 +307,11 @@ export default function App() {
         <div className="hero-actions">
           <span className="provider-status">
             <span className="status-dot" aria-hidden="true" />
-            {skipLlm ? "Local cleanup" : `${providerConfig.shortName} · ${model}`}
+            {skipLlm
+              ? "Local cleanup"
+              : connectionMode === "proxy"
+                ? `Production proxy · ${providerConfig.shortName}`
+                : `${providerConfig.shortName} · ${model}`}
           </span>
           <button
             type="button"
@@ -250,10 +331,16 @@ export default function App() {
         providerConfig={providerConfig}
         apiKey={apiKey}
         model={model}
+        connectionMode={connectionMode}
+        proxyUrl={proxyUrl}
+        proxyToken={proxyToken}
         onClose={() => setShowSettings(false)}
         onProviderChange={setProvider}
         onApiKeyChange={setApiKey}
         onModelChange={setModel}
+        onConnectionModeChange={setConnectionMode}
+        onProxyUrlChange={setProxyUrl}
+        onProxyTokenChange={setProxyToken}
       />
 
       <SourceInputPanel
@@ -280,7 +367,9 @@ export default function App() {
         onTargetTemplateChange={setTargetTemplate}
         onBatchFile={loadBatchFile}
         onConvert={convert}
-        onConvertBatch={convertBatch}
+        onConvertBatch={() => convertBatch(false)}
+        onCancelBatch={cancelBatch}
+        onResumeBatch={() => convertBatch(true)}
       />
 
       {(busy || steps.size > 0) && (

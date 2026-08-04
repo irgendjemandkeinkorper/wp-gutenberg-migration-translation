@@ -11,12 +11,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
-import {
-  appendArchive,
-  contentReference,
-  createRecord,
-  sha256,
-} from "./acquisition/archive.mjs";
+import { appendArchive, contentReference, createRecord, sha256 } from "./acquisition/archive.mjs";
 import {
   extractLinks,
   isRobotsDisallowed,
@@ -29,11 +24,13 @@ import {
 const USER_AGENT = "BlockifyCrawler/1.0 (site migration; one request per delay)";
 
 function parseArgs(argv) {
-  const args = { max: 50, delay: 500, out: "crawl", start: "" };
+  const args = { max: 50, delay: 500, timeout: 10_000, maxSize: 10_485_760, out: "crawl", start: "" };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--max") args.max = parseInt(argv[++i], 10);
     else if (a === "--delay") args.delay = parseInt(argv[++i], 10);
+    else if (a === "--timeout") args.timeout = parseInt(argv[++i], 10);
+    else if (a === "--max-size") args.maxSize = parseInt(argv[++i], 10);
     else if (a === "--out") args.out = argv[++i];
     else if (!a.startsWith("--") && !args.start) args.start = a;
     else {
@@ -41,28 +38,91 @@ function parseArgs(argv) {
       process.exit(1);
     }
   }
-  if (!args.start || !Number.isFinite(args.max) || !Number.isFinite(args.delay)) {
+  if (
+    !args.start ||
+    !Number.isFinite(args.max) ||
+    !Number.isFinite(args.delay) ||
+    !Number.isFinite(args.timeout) ||
+    !Number.isFinite(args.maxSize) ||
+    args.timeout <= 0 ||
+    args.maxSize <= 0
+  ) {
     console.error(
-      "Usage: node scripts/crawl.mjs <start-url> [--max 50] [--delay 500] [--out crawl]",
+      "Usage: node scripts/crawl.mjs <start-url> [--max 50] [--delay 500] " +
+        "[--timeout 10000] [--max-size 10485760] [--out crawl]",
     );
     process.exit(1);
   }
   return args;
 }
 
-async function loadRobotsDisallows(startUrl) {
+async function loadRobotsDisallows(startUrl, limits) {
   try {
-    const resp = await fetch(new URL("/robots.txt", startUrl), {
-      headers: { "user-agent": USER_AGENT },
-    });
+    const resp = await fetchWithTimeout(
+      new URL("/robots.txt", startUrl),
+      {
+        headers: { "user-agent": USER_AGENT },
+      },
+      limits.timeout,
+    );
     if (!resp.ok) return [];
-    return parseRobotsDisallows(await resp.text());
+    return parseRobotsDisallows(new TextDecoder().decode(await readResponseBytes(resp, limits.maxSize)));
   } catch {
     return [];
   }
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function fetchWithTimeout(url, init, timeout) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(`Request timed out after ${timeout}ms.`, { cause: error });
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function readResponseBytes(response, maxSize) {
+  const declaredSize = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declaredSize) && declaredSize > maxSize) {
+    throw new Error(`Response size ${declaredSize} bytes exceeds the limit of ${maxSize} bytes.`);
+  }
+
+  if (!response.body) return new Uint8Array(await response.arrayBuffer());
+  const reader = response.body.getReader();
+  const chunks = [];
+  let received = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      received += value.byteLength;
+      if (received > maxSize) {
+        await reader.cancel("response-size-limit");
+        throw new Error(`Response body exceeds the limit of ${maxSize} bytes.`);
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(received);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
+}
 
 function responseHeaders(response) {
   return Object.fromEntries(response.headers.entries());
@@ -87,7 +147,11 @@ function retrieval(startedAt, headers) {
   };
 }
 
-function policyMetadata({ decision = "allow", reason = "Allowed by the crawler robots policy check.", robots = "allowed" } = {}) {
+function policyMetadata({
+  decision = "allow",
+  reason = "Allowed by the crawler robots policy check.",
+  robots = "allowed",
+} = {}) {
   return {
     decision,
     reason,
@@ -95,19 +159,22 @@ function policyMetadata({ decision = "allow", reason = "Allowed by the crawler r
   };
 }
 
-async function saveAttempt(archiveRoot, {
-  requestedUrl,
-  finalUrl = null,
-  redirectChain = [],
-  startedAt,
-  headers = {},
-  status = null,
-  outcome,
-  parentUrl,
-  depth,
-  policy = policyMetadata(),
-  errors = [],
-}) {
+async function saveAttempt(
+  archiveRoot,
+  {
+    requestedUrl,
+    finalUrl = null,
+    redirectChain = [],
+    startedAt,
+    headers = {},
+    status = null,
+    outcome,
+    parentUrl,
+    depth,
+    policy = policyMetadata(),
+    errors = [],
+  },
+) {
   const record = createRecord({
     recordId: recordId(),
     recordKind: "attempt",
@@ -126,7 +193,7 @@ async function saveAttempt(archiveRoot, {
   return record;
 }
 
-async function acquirePage(archiveRoot, requestedUrl, { parentUrl, depth }) {
+async function acquirePage(archiveRoot, requestedUrl, { parentUrl, depth, timeout, maxSize }) {
   const startedAt = Date.now();
   const redirectChain = [];
   let currentUrl = requestedUrl;
@@ -134,10 +201,14 @@ async function acquirePage(archiveRoot, requestedUrl, { parentUrl, depth }) {
   for (let redirects = 0; redirects <= 10; redirects++) {
     let response;
     try {
-      response = await fetch(currentUrl, {
-        headers: { "user-agent": USER_AGENT },
-        redirect: "manual",
-      });
+      response = await fetchWithTimeout(
+        currentUrl,
+        {
+          headers: { "user-agent": USER_AGENT },
+          redirect: "manual",
+        },
+        timeout,
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const record = await saveAttempt(archiveRoot, {
@@ -185,11 +256,13 @@ async function acquirePage(archiveRoot, requestedUrl, { parentUrl, depth }) {
         outcome: "failure",
         parentUrl,
         depth,
-        errors: [{
-          code: "http-error",
-          message: `HTTP ${response.status}`,
-          retryable: response.status >= 500,
-        }],
+        errors: [
+          {
+            code: "http-error",
+            message: `HTTP ${response.status}`,
+            retryable: response.status >= 500,
+          },
+        ],
       });
       return { record };
     }
@@ -206,16 +279,36 @@ async function acquirePage(archiveRoot, requestedUrl, { parentUrl, depth }) {
         outcome: "non-html",
         parentUrl,
         depth,
-        errors: [{
-          code: "non-html-response",
-          message: `Content-Type ${contentType || "unknown"}`,
-          retryable: false,
-        }],
+        errors: [
+          {
+            code: "non-html-response",
+            message: `Rejected non-HTML response (Content-Type ${contentType || "unknown"}).`,
+            retryable: false,
+          },
+        ],
       });
       return { record };
     }
 
-    const rawBytes = Buffer.from(await response.arrayBuffer());
+    let rawBytes;
+    try {
+      rawBytes = Buffer.from(await readResponseBytes(response, maxSize));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const record = await saveAttempt(archiveRoot, {
+        requestedUrl,
+        finalUrl: currentUrl,
+        redirectChain,
+        startedAt,
+        outcome: "failure",
+        parentUrl,
+        depth,
+        status: response.status,
+        headers: responseHeaders(response),
+        errors: [{ code: "response-size-limit", message, retryable: false }],
+      });
+      return { record };
+    }
     const declared = declaredEncoding(contentType);
     const used = declared || "utf-8";
     let html;
@@ -274,7 +367,7 @@ async function main() {
     process.exit(1);
   }
 
-  const disallows = await loadRobotsDisallows(seed);
+  const disallows = await loadRobotsDisallows(seed, args);
 
   const archiveRoot = join(args.out, "archive");
   const queue = [{ url: seed, parentUrl: null, depth: 0 }];
@@ -284,7 +377,12 @@ async function main() {
 
   while (queue.length && pages.length < args.max) {
     const { url, parentUrl, depth } = queue.shift();
-    const acquisition = await acquirePage(archiveRoot, url, { parentUrl, depth });
+    const acquisition = await acquirePage(archiveRoot, url, {
+      parentUrl,
+      depth,
+      timeout: args.timeout,
+      maxSize: args.maxSize,
+    });
     if (!acquisition.html) {
       const detail = acquisition.record.errors[0]?.message ?? acquisition.record.outcome;
       skipped.push(`${url} — ${detail}`);
@@ -322,11 +420,13 @@ async function main() {
             reason: "Blocked by robots.txt policy.",
             robots: "disallowed",
           }),
-          errors: [{
-            code: "robots-disallowed",
-            message: "URL was not fetched because robots.txt disallows it.",
-            retryable: false,
-          }],
+          errors: [
+            {
+              code: "robots-disallowed",
+              message: "URL was not fetched because robots.txt disallows it.",
+              retryable: false,
+            },
+          ],
         });
         skipped.push(`${link} — robots.txt disallowed`);
         continue;
@@ -340,7 +440,7 @@ async function main() {
   const outFile = join(args.out, "pages.json");
   await writeFile(
     outFile,
-    JSON.stringify({ crawledAt: new Date().toISOString(), start: seed, pages }, null, 1),
+    JSON.stringify({ crawledAt: new Date().toISOString(), start: seed, pages, skipped }, null, 1),
   );
 
   console.log(`\n${pages.length} pages → ${outFile}`);

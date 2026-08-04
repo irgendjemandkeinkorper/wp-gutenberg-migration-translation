@@ -35,6 +35,7 @@ export interface WxrOptions {
   strictMedia?: boolean;
   requireAcquisition?: boolean;
   requireDestination?: boolean;
+  inferHierarchyFromPaths?: boolean;
 }
 
 export interface WxrPackage {
@@ -59,8 +60,6 @@ export function buildWxrPackage(pages: BundlePage[], opts: WxrOptions): WxrPacka
   const pub = now.toUTCString().replace("GMT", "+0000");
   const dateGmt = now.toISOString().slice(0, 19).replace("T", " ");
 
-  const items: string[] = [];
-  const pageIds = new Map<BundlePage, number>();
   const pageMedia = new Map<BundlePage, MediaRegistryRecord[]>();
   const owners = new Map<string, BundlePage>();
   for (const page of pages) {
@@ -71,17 +70,101 @@ export function buildWxrPackage(pages: BundlePage[], opts: WxrOptions): WxrPacka
     }
   }
 
+  // First pass: Allocate post IDs to pages deterministically.
+  const pageIdMap = new Map<string, number>();
+  const pageIdByCustomIdMap = new Map<string | number, number>();
+
+  let tempId = 1;
+  for (const page of pages) {
+    const pageId = tempId++;
+    if (page.link && !pageIdMap.has(page.link)) {
+      pageIdMap.set(page.link, pageId);
+    }
+    if (page.id !== undefined && !pageIdByCustomIdMap.has(page.id)) {
+      pageIdByCustomIdMap.set(page.id, pageId);
+    }
+    if (opts.emitAttachments) {
+      tempId += (pageMedia.get(page) ?? []).filter((record) => owners.get(record.recordId) === page).length;
+    }
+  }
+
+  // Helper to find parent page path-wise if inferHierarchyFromPaths is true
+  function findPathParent(pageLink: string, allPages: BundlePage[]): BundlePage | null {
+    try {
+      const u = new URL(pageLink, "https://example.com");
+      const parts = u.pathname.split("/").filter(Boolean);
+      if (parts.length <= 1) return null;
+      parts.pop();
+      const parentPath = "/" + parts.join("/");
+
+      for (const p of allPages) {
+        try {
+          const pu = new URL(p.link, "https://example.com");
+          if (pu.origin === u.origin) {
+            const pParts = pu.pathname.split("/").filter(Boolean);
+            if ("/" + pParts.join("/") === parentPath) {
+              return p;
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }
+
+  const items: string[] = [];
+  const pageIds = new Map<BundlePage, number>();
+
   let nextId = 1;
   for (const page of pages) {
     const pageId = nextId++;
     pageIds.set(page, pageId);
+
+    let parentPostId = 0;
+    const hasExplicitParent = page.parentId !== undefined || page.parentUrl !== undefined;
+
+    if (hasExplicitParent) {
+      let foundParentId: number | undefined;
+
+      if (page.parentId !== undefined) {
+        foundParentId = pageIdByCustomIdMap.get(page.parentId);
+      }
+      if (foundParentId === undefined && page.parentUrl !== undefined) {
+        foundParentId = pageIdMap.get(page.parentUrl);
+      }
+
+      if (foundParentId === undefined) {
+        throw new Error(
+          `Parent page not found in bundle for page "${page.title}". ` +
+            `Declared parentId: ${page.parentId !== undefined ? page.parentId : "none"}, ` +
+            `parentUrl: ${page.parentUrl !== undefined ? page.parentUrl : "none"}`,
+        );
+      }
+      parentPostId = foundParentId;
+    } else if (opts.inferHierarchyFromPaths) {
+      const pathParent = findPathParent(page.link, pages);
+      if (pathParent) {
+        const foundParentId = pageIdMap.get(pathParent.link);
+        if (foundParentId !== undefined) {
+          parentPostId = foundParentId;
+        }
+      }
+    }
+
+    const menuOrder = page.menuOrder ?? 0;
     const rewritten = rewriteMediaReferences(page.contentBlocks, mediaRegistry, {
       baseUrl: page.link,
       requireDestination: opts.requireDestination,
       preferAttachmentSource: opts.emitAttachments === true,
     });
     findings.push(...rewritten.findings);
-    items.push(contentItem({ ...page, contentBlocks: rewritten.content }, pageId, opts, pub, dateGmt));
+    items.push(
+      contentItem({ ...page, contentBlocks: rewritten.content }, pageId, parentPostId, menuOrder, opts, pub, dateGmt),
+    );
     if (opts.emitAttachments) {
       for (const record of pageMedia.get(page) ?? []) {
         if (owners.get(record.recordId) !== page) continue;
@@ -213,7 +296,15 @@ function imgTitle(src: string): string {
   return name || "image";
 }
 
-function contentItem(page: BundlePage, postId: number, opts: WxrOptions, pub: string, dateGmt: string): string {
+function contentItem(
+  page: BundlePage,
+  postId: number,
+  parentPostId: number,
+  menuOrder: number,
+  opts: WxrOptions,
+  pub: string,
+  dateGmt: string,
+): string {
   const slug = slugify(page.title);
   const migrationId = migrationIdForPage(page);
   return `    <item>
@@ -232,8 +323,8 @@ function contentItem(page: BundlePage, postId: number, opts: WxrOptions, pub: st
         <wp:ping_status>closed</wp:ping_status>
         <wp:post_name>${cdata(slug)}</wp:post_name>
         <wp:status>${opts.status}</wp:status>
-        <wp:post_parent>0</wp:post_parent>
-        <wp:menu_order>0</wp:menu_order>
+        <wp:post_parent>${parentPostId}</wp:post_parent>
+        <wp:menu_order>${menuOrder}</wp:menu_order>
         <wp:post_type>${opts.postType}</wp:post_type>
         <wp:post_password></wp:post_password>
         <wp:is_sticky>0</wp:is_sticky>
