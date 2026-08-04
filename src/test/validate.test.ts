@@ -36,10 +36,10 @@ describe("validateFragment", () => {
 
   it("unwraps <a> tags with dangerous href values to prevent XSS", () => {
     const { html } = validateFragment(
-      '<p><a href="javascript:alert(1)">js</a> <a href=" vbscript:msgbox ">vbs</a> <a href="data:text/html,<html>">data</a> <a href="java\nscript:x">hack</a> <a href="http://safe.com">safe</a></p>',
+      '<p><a href="javascript:alert(1)">js</a> <a href=" vbscript:msgbox ">vbs</a> <a href="data:text/html,<html>">data</a> <a href="java\nscript:x">hack</a> <a href="java script:x">hack2</a> <a href="http://safe.com">safe</a></p>',
       [],
     );
-    expect(html).toBe("<p>js vbs data hack <a href=\"http://safe.com\">safe</a></p>");
+    expect(html).toBe("<p>js vbs data hack hack2 <a href=\"http://safe.com\">safe</a></p>");
   });
 
   it("reports missing and duplicated tokens", () => {
