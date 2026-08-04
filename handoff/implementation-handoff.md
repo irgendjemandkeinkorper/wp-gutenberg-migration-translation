@@ -6,11 +6,11 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 
 ## Current baseline
 
-- Local HEAD after this handoff refresh: latest commit titled `Complete live media reconciliation` (use `git log -1 --oneline` for the exact hash).
-- Latest implementation wave: B3/#10 bundle-wide media identity, deterministic WXR attachment aliases, and live WordPress attachment/content reconciliation.
-- Branch: `main`, locally ahead of `origin/main` by 41 commits and behind by 21 commits before this handoff refresh; the next commit will make the local lead 42.
-- The handoff source files are committed with this implementation wave. A clean worktree after commit is expected.
-- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all forty-two local commits after this handoff refresh before synchronizing.
+- Implementation HEAD before this handoff refresh: `b854274 Generate the live WordPress harness fixture`.
+- Latest implementation wave: A1/#11 deterministic production-generated WXR with stable page IDs/postmeta, two pages, one shared query-string image, one unsupported-content marker, and fresh live WordPress reconciliation evidence.
+- Branch: `main`, locally ahead of `origin/main` by 43 commits and behind by 21 commits before this handoff refresh; the next commit will make the local lead 44.
+- The implementation wave is committed separately from this handoff refresh. A clean worktree after the refresh commit is expected.
+- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all forty-four local commits after this handoff refresh before synchronizing.
 - No implementation PR has been pushed and no branch-protection change has been made.
 
 ## Implemented in c810d94
@@ -64,21 +64,25 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 - F5 page QA workbench: `src/lib/qa/workbench.ts` validates versioned safe evidence, computes canonical entity-scoped invalidation previews, requires external grants for recrawl/publish, emits audited commands without implicit execution, and retains prior revisions. `src/components/PageQaWorkbench.tsx` exposes source/IR/placement/mapping/destination/finding/exception evidence with risk filters and rerun controls; it deliberately requires durable workspace records rather than fabricating evidence from the legacy in-memory converter. See `docs/page-qa-workbench.md`.
 - C6 live WordPress verification: the server-side probe now scopes inspection to pages carrying `_blockify_migration_id`, excluding WordPress's ambient Sample/Privacy pages while still failing missing fixture identities. A deterministic generated matrix covers four levels of mixed ordered/unordered nesting and escaping edge cases. Live known-good import passed against WordPress 6.8.2, and the known-malformed fixture failed with retained `parser-failure` and `unexpected-freeform-html` evidence.
 - B3 live media reconciliation: acquired aliases that resolve to one content hash collapse to the exact attachment source emitted in WXR, while the registry retains all observed aliases and provenance. The `known-media` harness fixture imports two pages and one shared PNG with the official importer, then verifies one attachment ID/URL, both post-content URLs rewritten to the local uploads URL, and no acquired source alias remaining. A harness-only MU plugin permits only the exact Docker-local fixture URL through WordPress's safe HTTP check.
+- A1 generated live harness fixture (`b854274`): `npm run fixtures:wordpress` loads the production WXR/media modules and deterministically generates the checked-in two-page fixture. WXR supports fixed generation timestamps and stable `_blockify_migration_id` metadata. The harness verifies stable identity, type/status/slug, source/audit postmeta hashes, placeholder manifest validity/count, parser structure, attachment count, and exact page-to-attachment URL reconciliation. Successful acquisition final URLs are now shared by WXR attachment items and inline media so WordPress cannot retain stale transformation queries after sideloading.
 
 ## Current verification evidence
 
-- `npm test -- --reporter=dot` — 40 test files, 177 tests passed.
+- `npm test -- --reporter=dot` — 40 test files, 181 tests passed.
 - `npm run verify` — production build, full test suite, and forced-process checkpoint integration passed with fixture-server/subprocess permissions.
 - `npm run lint` and `npm run format:check` — passed.
 - `npm run check:bundle` — largest JavaScript asset remains below the 650,000-byte budget.
 - `npm audit --audit-level=high` — 0 vulnerabilities.
 - `npm run build` — TypeScript and Vite production build passed.
 - `git diff --check` — passed.
-- `node integration/wordpress-harness/run.mjs --dry-run` — passed.
+- `npm run fixtures:wordpress:check` — passed at SHA-256 `de03c2e3da37a743818cc000c03ac98a296c84c75bcf3ccbaf4fa58a364e8960`.
+- `npm run test:wordpress -- --dry-run` — default generated `known-media` fixture passed without Docker.
 - `npm run knowledge:check` — 22 generated Obsidian-vault files match the canonical catalogs.
 - Live known-good WordPress report: `/tmp/blockify-wordpress-harness/reports/blockify-wp-codex-live-92-10-20260804b/reconciliation-report.json` — passed with one stable page and two registered Gutenberg blocks.
 - Live known-malformed report: `/tmp/blockify-wordpress-harness/reports/blockify-wp-codex-live-92-malformed-20260804a/reconciliation-report.json` — failed as expected with actionable parser/freeform findings; its disposable containers and volumes were removed after evidence capture.
 - Live known-media report: `/tmp/blockify-wordpress-harness/reports/blockify-wp-codex-live-10-media-20260804b/reconciliation-report.json` — passed with two stable pages, one attachment, and one shared destination uploads URL. Sanitized durable evidence is committed at `knowledge/evidence/wordpress/a4-known-media-wordpress-6.8.2.json`.
+- Live generated A1/#11 report: `/tmp/blockify-wordpress-harness/reports/blockify-wp-codex-live-11-generated-20260804b/reconciliation-report.json` — passed with two stable pages, eight registered Gutenberg blocks, all source/audit postmeta hashes and placeholder counts preserved, one shared attachment, one exact destination URL, and zero findings. Sanitized durable evidence is committed at `knowledge/evidence/wordpress/a1-generated-harness-wordpress-6.8.2.json`.
+- The earlier generated-fixture run `blockify-wp-codex-live-11-generated-20260804a` correctly failed because WordPress retained stale query parameters after sideloading. WXR/page rewriting now share the successful acquisition final URL; the failed run's exact containers and volumes were removed after diagnosis, while its report remains under `/tmp/blockify-wordpress-harness/`.
 - The earlier failed media project `blockify-wp-codex-live-10-media-20260804a` was diagnosed as WordPress safe-HTTP rejection of the Docker-private fixture host; its exact containers and volumes were removed after the narrow harness-only fix. Sanitized failure logs/report remain under `/tmp/blockify-wordpress-harness/` for diagnosis.
 - Docker Desktop/WSL integration was enabled for these runs. Recheck `docker version` after machine or Desktop restarts rather than assuming the engine remains available.
 
@@ -131,11 +135,11 @@ Closed with implementation evidence:
 
 Implemented but intentionally still open:
 
-- [#11](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/11) — known-good and known-malformed live paths now run; dependency #55 and the importer-failure path still require reconciliation before closure.
+- [#11](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/11) — generated-fixture, successful-import, and actionable-failure acceptance now pass locally; dependency #55 still requires a successful check on a real PR before closure. Evidence comment: [#issuecomment-5174191557](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/11#issuecomment-5174191557).
 - [#13](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/13) — durable success/failure scorecards now have live evidence; dependent page/media reconciliation acceptance remains.
 - [#70](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/70) — live imported IDs/URLs/counts and remaining-source-host checks now pass, but its #11 dependency remains open.
 - [#71](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/71) — live parser and malformed-fixture evidence now exists, but its #11 dependency remains open.
-- [#104](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/104) — page/text/placeholder reconciliation is implemented locally; live imported-page evidence remains.
+- [#104](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/104) — stable page identity, source/audit postmeta, text/structure, and placeholder-count reconciliation now have live imported-page evidence; its #11 dependency remains open.
 - [#55](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/55) — needs an actual PR check run and branch protection requiring `CI / Validate`.
 - [#78](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/78) — blocked at the human-decision gate pending authoritative target capability data.
 
@@ -143,10 +147,10 @@ The original backlog setup report and complete A1–H5 mapping are in [`github-b
 
 ## Recommended next wave
 
-Work in three disjoint scopes:
+Work in these disjoint scopes:
 
-1. Use the known-good, known-malformed, and known-media reports to finish #11's importer-failure acceptance, then reconcile #71/#104/#70/#13 in dependency order without bypassing text/placeholder gates.
-2. Run the new WordPress integration job on a real PR, then complete #55/#56 through protected-main verification.
+1. Inspect the 21-commit remote divergence, then run the WordPress integration job on a real PR to satisfy #55; complete #56 only through protected-main verification.
+2. After #55 clears, reconcile/close #11 and then #71/#104/#70/#13 in dependency order against their remaining acceptance and human-review gates. The generated live report is local evidence, not permission to bypass dependencies.
 3. Keep #78 at its authoritative human-decision gate and #107 blocked by #100; do not infer target behavior from synthetic fixtures.
 4. Preserve this handoff and inspect the 21-commit remote divergence before any synchronization.
 
@@ -154,7 +158,7 @@ Do not start #90/#94/#96 or downstream target-profile work without authoritative
 
 ## Later dependency order
 
-- M1: B3/#10 is complete with live media evidence. Finish #11/#55, then reconcile A2/A3/A4 and A5/#13 against their remaining dependency and acceptance gates.
+- M1: B3/#10 is complete with live media evidence. A1/#11 is locally accepted but blocked by #55's real-PR check; clear #55, then reconcile #11 and A2/A3/A4/A5 (#71/#104/#70/#13) against remaining gates.
 - M3: C1 before C2–C6; D1 before D2–D6.
 - M2: E1 before E2–E5.
 - M4: F/G work after the shared IR and workspace contracts stabilize.
@@ -166,5 +170,5 @@ Do not start #90/#94/#96 or downstream target-profile work without authoritative
 - Preserve existing user changes and all local implementation commits.
 - Keep each agent’s write set disjoint and return changed files, tests, risks, and open questions.
 - Do not close an issue based only on intent or local unit tests when its acceptance requires external WordPress, PR, authoritative target, or pilot evidence.
-- The local branch remains behind `origin/main` by 21 commits and ahead by forty-two local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
+- The local branch remains behind `origin/main` by 21 commits and ahead by forty-four local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
 - GitHub comments were posted for the 25 implemented PRD issues, G4/#84, E3/#89, WXR schema/#62, CI/#7/#55, A3/#104, A4/#70, #10/#11/#13/#71, and the repository/code-quality issues #43–#54/#57–#60. #13, #70, #71, #78, #104, #55, and #56 remain open; #12 was already closed before this work. #42 remains open only for the unperformed history-size rewrite.
