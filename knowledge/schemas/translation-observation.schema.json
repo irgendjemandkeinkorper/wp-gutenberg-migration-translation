@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/knowledge/schemas/translation-observation.schema.json",
+  "title": "Migration translation observation catalog",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "id",
+      "label",
+      "projectId",
+      "capabilityId",
+      "sourcePattern",
+      "destinationProfile",
+      "outcome",
+      "evidenceTier",
+      "confidence",
+      "observedAt",
+      "metrics",
+      "lossModes",
+      "evidence",
+      "relatedIssues",
+      "nextProbe"
+    ],
+    "properties": {
+      "id": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[a-z0-9]+(?:[a-z0-9.-]*[a-z0-9])?(?:-[a-z0-9.]+)*$"
+      },
+      "label": { "type": "string", "minLength": 1 },
+      "projectId": { "type": "string", "minLength": 1 },
+      "capabilityId": { "type": "string", "minLength": 1 },
+      "sourcePattern": { "type": "string", "minLength": 1 },
+      "destinationProfile": { "type": "string", "minLength": 1 },
+      "outcome": { "enum": ["pass", "partial", "placeholder", "fail"] },
+      "evidenceTier": {
+        "enum": ["deterministic-test", "disposable-wordpress", "approved-target", "pilot"]
+      },
+      "confidence": { "enum": ["low", "medium", "high"] },
+      "observedAt": { "type": "string", "format": "date" },
+      "metrics": {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": {
+          "type": ["string", "number", "boolean"]
+        }
+      },
+      "lossModes": {
+        "type": "array",
+        "items": { "type": "string", "minLength": 1 }
+      },
+      "evidence": {
+        "type": "array",
+        "minItems": 1,
+        "items": { "type": "string", "minLength": 1 }
+      },
+      "relatedIssues": {
+        "type": "array",
+        "items": { "type": "string", "minLength": 1 }
+      },
+      "nextProbe": { "type": "string", "minLength": 1 }
+    }
+  }
+}

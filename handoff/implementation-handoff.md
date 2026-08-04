@@ -6,13 +6,12 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 
 ## Current baseline
 
-- Implementation HEAD before this handoff refresh: `80f53ce Harden the reusable migration knowledge vault`.
-- Integration merge: `74a9bf9` has parents `7600045` (the preserved local PRD implementation) and `4d11563` (the then-current remote `main`), resolving the former 44-local/51-remote divergence without rebasing or dropping either history.
-- Branch: `codex/blockify-prd-integration-20260803`, tracking the same branch on `origin`.
-- Pull request: [#111](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/pull/111), open and mergeable. Its first real CI run passed both `Validate` and `WordPress integration`.
+- Protected `main`: `78a44d9317bb835f00930c6812703ba02bde5e98` after merging [PR #122](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/pull/122); the earlier integration PR #111 merged as `86a5b39e28c3f0026ea869727280534d97ddd6ba`.
+- Issue #104 closed automatically through PR #122 after live text/order/placeholder acceptance passed. Issues #11 and #71 were also reconciled and closed after PR #111 landed.
+- Current handoff branch: `codex/knowledge-translation-observations`, based on `origin/main`. It contains only the durable knowledge/Obsidian and handoff refresh described below.
 - `main` branch protection is live: strict required checks `Validate` and `WordPress integration`, admin enforcement, conversation resolution, and force-push/deletion disabled. The zero-review setting is the documented single-maintainer exception; GitHub reported one direct collaborator.
-- The reusable knowledge layer is canonical JSON under `knowledge/catalog/`, validated and projected into 22 Obsidian notes. External vaults can be generated with `npm run knowledge:generate -- --vault <path>`.
-- A clean worktree after this handoff/protection documentation commit is expected.
+- The reusable knowledge layer is canonical JSON under `knowledge/catalog/`, validated and projected into 28 Obsidian notes. `translation-observations.json` now separates project/version-specific pass, partial, placeholder, and failure outcomes from global capability claims. External vaults can be generated with `npm run knowledge:generate -- --vault <path>`.
+- The post-merge GitHub Pages [run 30878679537](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/actions/runs/30878679537) completed successfully for `78a44d9` (both build and deploy jobs).
 
 ## Implemented in c810d94
 
@@ -51,7 +50,7 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 - E5 workspace package under `src/lib/workspace/package.ts`: manifest/blob/log export, hash/path verification, offline import, and wrapper-schema upgrade.
 - CI/repository hygiene: shared `npm run verify`, bundle budget/audit gates, Dependabot, CONTRIBUTING.md, SECURITY.md, MIT license metadata, and generated-artifact ignore/removal.
 - F4 risk scoring under `src/lib/qa/risk.ts`: deterministic severity/confidence/evidence scores and QA queue filters.
-- A3/A4 reconciliation under `src/lib/qa/reconciliation.ts`: page identity/text/placeholder evidence and attachment source/count evidence. Live page/block and attachment/remap reports now exist; remaining dependent issue closure must still follow each issue's dependency and text/placeholder acceptance gates.
+- A3/A4 reconciliation: the domain engine remains under `src/lib/qa/reconciliation.ts`; the live harness now measures duplicate-aware meaningful-text recall, exact sequence/order, and placeholder IDs per page/site. A3/#104 is closed with CI evidence. A4's WordPress-side attachment/remap checks pass, but #70 remains open through the B4/#68 acquisition gap.
 - G5 gallery/slideshow preservation in `src/lib/ir/emitter.ts`: collection detection and ordered first-class gallery asset children.
 - G4 reliability corpus under `integration/reliability/` and `src/test/reliability-fixtures.test.ts`: hosted-builder, static-layout, malformed-nesting, encoding, and repeated-chrome fixtures with explicit asset/exception assertions.
 - WXR metadata contract under `docs/wxr-format.md`: canonical `_blockify_*` postmeta and placeholder-manifest schema cross-linked from reconciliation documentation.
@@ -59,8 +58,8 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 - Repository quality gates: ESLint flat config and CI lint step, Prettier config/format check, provider-adapter refactor, `useProviderSettings` hook, result-panel error boundary, and their focused tests.
 - Vendor disposition under `docs/vendor-disposition.md`: unreferenced `gn-wp-templates/` tree removed from the working tree; its historical bytes remain in Git history pending any authorized history rewrite.
 - CI/harness orientation: `Validate` and `WordPress integration` are separate named jobs with timeout and failure-artifact upload; `CONTRIBUTING.md` documents agent workflow and harness reproduction.
-- M1 scorecard: `integration/wordpress-harness/report.mjs` builds a hash-and-structure-only reconciliation report, while `verification.mjs` extracts source records and the harness retains one raw source HTML audit file per migration record. Successful and failed live runs publish durable reports under `/tmp/blockify-wordpress-harness/reports/` (or `BLOCKIFY_REPORT_DIR`) for CI artifact collection.
-- Cross-project migration knowledge: `knowledge/catalog/` is the canonical capability/failure/project record store; `knowledge/vault/` is an Obsidian-compatible projection; `scripts/generate-knowledge-vault.mjs` supports `npm run knowledge:generate`, `npm run knowledge:check`, and external `--vault` projections. Status values distinguish local contracts from live WordPress support.
+- M1 scorecard: `integration/wordpress-harness/report.mjs` now emits additive schema `1.1.0` with structural, text/order, placeholder, and media evidence using counts/hashes rather than imported text. The harness retains one raw source HTML audit file per migration record. Successful and failed live runs publish durable reports under `/tmp/blockify-wordpress-harness/reports/` (or `BLOCKIFY_REPORT_DIR`) for CI artifact collection.
+- Cross-project migration knowledge: `knowledge/catalog/` is the canonical capability/failure/project/translation-observation store; `knowledge/vault/` is an Obsidian-compatible projection; `scripts/generate-knowledge-vault.mjs` supports `npm run knowledge:generate`, `npm run knowledge:check`, and external `--vault` projections. Observation outcomes (`pass`, `partial`, `placeholder`, `fail`) are scoped to project/profile/evidence tier so future migrations can search both successes and loss modes without overpromoting a global capability.
 - Gate 0 App decomposition: `src/App.tsx` is reduced to 330 lines of top-level orchestration/composition; settings, source input/batch, result review, and bundle/export live in four focused components under `src/components/`. Panel-local review/export state moved with its panel, and `src/test/app-decomposition.test.tsx` verifies the wiring and actions.
 - F5 page QA workbench: `src/lib/qa/workbench.ts` validates versioned safe evidence, computes canonical entity-scoped invalidation previews, requires external grants for recrawl/publish, emits audited commands without implicit execution, and retains prior revisions. `src/components/PageQaWorkbench.tsx` exposes source/IR/placement/mapping/destination/finding/exception evidence with risk filters and rerun controls; it deliberately requires durable workspace records rather than fabricating evidence from the legacy in-memory converter. See `docs/page-qa-workbench.md`.
 - C6 live WordPress verification: the server-side probe now scopes inspection to pages carrying `_blockify_migration_id`, excluding WordPress's ambient Sample/Privacy pages while still failing missing fixture identities. A deterministic generated matrix covers four levels of mixed ordered/unordered nesting and escaping edge cases. Live known-good import passed against WordPress 6.8.2, and the known-malformed fixture failed with retained `parser-failure` and `unexpected-freeform-html` evidence.
@@ -69,7 +68,7 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 
 ## Current verification evidence
 
-- `npm test -- --reporter=dot` — 48 test files, 236 tests passed.
+- `npm test -- --reporter=dot` — 49 test files, 239 tests passed, including checked-in and external-vault projection coverage.
 - `npm run verify` — production build, full test suite, and forced-process checkpoint integration passed with fixture-server/subprocess permissions.
 - `npm run test:ui` — 6 UI/accessibility smoke tests passed.
 - `npm run lint` and `npm run format:check` — passed.
@@ -79,9 +78,12 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 - `git diff --check` — passed.
 - `npm run fixtures:wordpress:check` — passed at SHA-256 `de03c2e3da37a743818cc000c03ac98a296c84c75bcf3ccbaf4fa58a364e8960`.
 - `npm run test:wordpress -- --dry-run` — default generated `known-media` fixture passed without Docker.
-- `npm run knowledge:check` — 22 generated Obsidian-vault files match the canonical catalogs.
-- PR #111 CI run [30876469818](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/actions/runs/30876469818) — `Validate` and `WordPress integration` both passed on the real pull request; this completed #55's remote-run acceptance.
-- Post-merge local live report: `/tmp/blockify-wordpress-harness/reports/blockify-wp-run-1785815738496-390454/reconciliation-report.json` — generated known-media fixture imported and reconciled successfully after the remote-main integration.
+- `npm run knowledge:check` — 28 generated Obsidian-vault files match the canonical catalogs, including five project/version-specific translation observations.
+- PR #111 CI run [30876742912](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/actions/runs/30876742912) — `Validate` and `WordPress integration` both passed before protected merge `86a5b39`.
+- PR #122 CI run [30878520899](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/actions/runs/30878520899) — both required checks passed. Retained artifact `8880415113` contains reconciliation schema `1.1.0`: 2/2 exact pages, 23/23 meaningful tokens, recall/order `1`, 1/1 placeholder IDs, one shared attachment, zero findings, and no retained imported text.
+- GitHub Pages [run 30878679537](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/actions/runs/30878679537) passed build/deploy for `78a44d9`; the HTTPS site returned HTTP 200 with title `Blockify — HTML to Gutenberg` and the expected application root.
+- Latest local live report: `/tmp/blockify-wordpress-harness/reports/blockify-wp-run-1785818364941-448322/reconciliation-report.json` — generated known-media fixture passed the same text/order/placeholder/media contract before PR #122 was pushed.
+- Sanitized A3 evidence is retained at `knowledge/evidence/wordpress/a3-text-placeholder-wordpress-6.8.2.json`; it links the protected merge, workflow run, artifact, fixture hash, metrics, and privacy boundary.
 - Live known-good WordPress report: `/tmp/blockify-wordpress-harness/reports/blockify-wp-codex-live-92-10-20260804b/reconciliation-report.json` — passed with one stable page and two registered Gutenberg blocks.
 - Live known-malformed report: `/tmp/blockify-wordpress-harness/reports/blockify-wp-codex-live-92-malformed-20260804a/reconciliation-report.json` — failed as expected with actionable parser/freeform findings; its disposable containers and volumes were removed after evidence capture.
 - Live known-media report: `/tmp/blockify-wordpress-harness/reports/blockify-wp-codex-live-10-media-20260804b/reconciliation-report.json` — passed with two stable pages, one attachment, and one shared destination uploads URL. Sanitized durable evidence is committed at `knowledge/evidence/wordpress/a4-known-media-wordpress-6.8.2.json`.
@@ -104,11 +106,14 @@ At historical commit `c810d94`, the live WordPress harness had not run. The curr
 
 ## GitHub issue state
 
-Manifest coverage is 44 IDs total. Twenty-five are closed by this implementation, B4/#12 was already closed, and 18 manifest issues remain open. Additional repository and code-quality issues #43–#46, #48–#54, #57–#60, and #62 are now closed outside the 44-item PRD mapping.
+Manifest coverage remains 44 IDs total. Since the prior refresh, A1/#11, A2/#71, and A3/#104 closed through protected-main evidence. B4 still maps to already-closed #12, but audit note #68 documents acceptance gaps and must not be treated as complete manifest coverage until Claude/human scope authority resolves them.
 
 Closed with implementation evidence:
 
 - [#10](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/10) — bundle-wide content-identity deduplication, deterministic WXR attachment/source aliasing, relative-URL preflight, and live two-page/one-attachment WordPress remapping.
+- [#11](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/11) — generated official-importer fixture, stable page/postmeta evidence, parser-valid blocks, one shared attachment, retained CI artifacts, and actionable failure behavior.
+- [#71](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/71) — live registered-block parsing plus retained malformed-fixture parser/freeform failure evidence.
+- [#104](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/104) — live stable page identity, duplicate-aware text recall/order, and exact placeholder reconciliation in schema `1.1.0`.
 - [#92](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/92) — deterministic compiler round trips, generated nesting/escaping matrix, live registered-block parsing, and actionable live malformed-fixture failure.
 - [#95](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/95) — safe page evidence view, canonical invalidation preview, external recrawl/publish authorization, and immutable rerun/revision audit history.
 - [#48](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/48) — App decomposed into four focused panels with explicit state/action props and regression coverage.
@@ -137,13 +142,12 @@ Closed with implementation evidence:
 - [#84](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/84) — hosted-builder and malformed legacy-static reliability fixtures.
 - [#89](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/89) — incremental checkpoints, pause/resume, and forced-process recovery.
 
-Implemented but intentionally still open:
+Open gates with verified partial evidence:
 
-- [#11](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/11) — generated-fixture, successful-import, and actionable-failure acceptance pass; dependency #55 is now closed. Keep #11 open only until PR #111 lands on protected `main`, then reconcile it using [the retained evidence comment](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/11#issuecomment-5174191557).
-- [#13](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/13) — durable success/failure scorecards now have live evidence; dependent page/media reconciliation acceptance remains.
-- [#70](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/70) — live imported IDs/URLs/counts and remaining-source-host checks now pass, but its #11 dependency remains open.
-- [#71](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/71) — live parser and malformed-fixture evidence now exists, but its #11 dependency remains open.
-- [#104](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/104) — stable page identity, source/audit postmeta, text/structure, and placeholder-count reconciliation now have live imported-page evidence; its #11 dependency remains open.
+- [#68](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/68) — `human-decision` B4 audit. #12 covers modern discovery/download basics, but not per-element chosen-candidate evidence, MIME-vs-byte mismatch validation, or first-class unsafe/missing-candidate findings. Do not duplicate #12; obtain scope authority for one narrow follow-up or an explicit contract disposition.
+- [#70](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/70) — live imported attachment IDs/URLs/counts and remaining-source-host checks pass, including query-string aliases and two pages sharing one attachment. Keep open because it declares #68/B4 as a dependency.
+- [#13](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/13) — live JSON success/failure scorecards pass, but the second acceptance section still requires link totals, stable finding IDs, configuration-backed blocking thresholds, a documented schema artifact, and HTML output.
+- [#7](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/7) — clean-runner CI, separate checks, retained artifacts, and agent documentation pass. Close last only after every other M1 exit criterion (#68/#70/#13) passes.
 - [#78](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/78) — blocked at the human-decision gate pending authoritative target capability data.
 
 External Gate 0 work completed during integration:
@@ -157,16 +161,18 @@ The original backlog setup report and complete A1–H5 mapping are in [`github-b
 
 Work in these disjoint scopes:
 
-1. Review and merge PR #111 through the protected-main checks; do not bypass the required contexts.
-2. After the implementation is on `main`, reconcile/close #11 and then #71/#104/#70/#13 in dependency order against their remaining acceptance and human-review gates. The generated live report is evidence, not permission to bypass dependencies.
-3. Keep #78 at its authoritative human-decision gate and #107 blocked by #100; do not infer target behavior from synthetic fixtures.
-4. Continue recording reusable block successes, loss modes, evidence, and next probes in `knowledge/catalog/`, then regenerate the Obsidian projection.
+1. Claude/human scope authority reviews [#68's B4 audit](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/68#issuecomment-5174760252) and chooses either one narrow acquisition follow-up or an explicit accepted-contract disposition. Do not reopen or duplicate broad #12 work.
+2. If implementation is authorized, Codex owns only per-element candidate/selection evidence, MIME-vs-byte validation, and unsafe/missing-candidate findings plus their deterministic fixtures. Re-run A4 live evidence, then reconcile #68 and #70 in dependency order.
+3. After #70 closes, implement #13's remaining stable finding IDs/link totals, configuration-backed thresholds, documented schema, and HTML report. Preserve JSON `1.1.0` compatibility or version the contract explicitly.
+4. Close #7 last after the completed #13 artifact is exercised by both required CI checks.
+5. Keep #78 at its authoritative human-decision gate and #107 blocked by #100; do not infer target behavior from synthetic fixtures.
+6. Add one `translation-observations.json` record for every materially new project/profile/fixture outcome, update global capability/failure records only when warranted, and regenerate the Obsidian projection.
 
 Do not start #90/#94/#96 or downstream target-profile work without authoritative target data from #78. Do not start pilot/release work before its human-decision and corpus gates close.
 
 ## Later dependency order
 
-- M1: B3/#10 and CI/#55 are complete with live evidence. Merge PR #111, then reconcile A1/#11 and A2/A3/A4/A5 (#71/#104/#70/#13) against their remaining gates.
+- M1: A1/#11, A2/#71, A3/#104, B3/#10, and CI infrastructure/#55 are complete with live evidence. Resolve B4/#68, then A4/#70, A5/#13, and final gate #7 in that order.
 - M3: C1 before C2–C6; D1 before D2–D6.
 - M2: E1 before E2–E5.
 - M4: F/G work after the shared IR and workspace contracts stabilize.
@@ -178,5 +184,5 @@ Do not start #90/#94/#96 or downstream target-profile work without authoritative
 - Preserve existing user changes and all local implementation commits.
 - Keep each agent’s write set disjoint and return changed files, tests, risks, and open questions.
 - Do not close an issue based only on intent or local unit tests when its acceptance requires external WordPress, PR, authoritative target, or pilot evidence.
-- The former remote divergence is integrated in merge commit `74a9bf9`; do not re-run the old merge/rebase investigation. PR #111 is the authoritative review surface.
-- GitHub comments were posted for the 25 implemented PRD issues, G4/#84, E3/#89, WXR schema/#62, CI/#7/#55, A3/#104, A4/#70, #10/#11/#13/#71, and the repository/code-quality issues #43–#54/#57–#60. #55 is closed; #56 has verified settings and repository documentation. #13, #70, #71, #78, and #104 remain open; #11 awaits merge/reconciliation; #12 was already closed before this work. #42 remains open only for the unperformed history-size rewrite.
+- The former remote divergence is integrated in merge commit `74a9bf9`; do not re-run the old merge/rebase investigation. Protected merges `86a5b39` (PR #111) and `78a44d9` (PR #122) are current truth.
+- Fresh GitHub evidence/audit comments are on #104, #68, #70, #13, and #7. #11, #71, and #104 are closed. #68, #70, #13, #7, and #78 remain intentionally open for the exact gates documented above; #12 was already closed but does not silently satisfy the unresolved B4 contract. #42 remains open only for the unperformed history-size rewrite.

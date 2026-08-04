@@ -18,7 +18,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "verify": "npm run build && npm test -- --reporter=dot && npm run test:checkpoint",
+    "verify": "npm run build && npm test -- --reporter=dot && npm run test:checkpoint && npm run knowledge:check",
     "check:bundle": "node scripts/check-bundle-size.mjs",
     "lint": "eslint src",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",

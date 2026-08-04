@@ -16,6 +16,13 @@ const capabilityStatuses = new Set([
   "unsupported",
 ]);
 const confidenceLevels = new Set(["low", "medium", "high"]);
+const observationOutcomes = new Set(["pass", "partial", "placeholder", "fail"]);
+const observationEvidenceTiers = new Set(["deterministic-test", "disposable-wordpress", "approved-target", "pilot"]);
+const catalogNoteNames = new Map([
+  ["block-capabilities", "Block Capabilities"],
+  ["failure-classes", "Failure Classes"],
+  ["translation-observations", "Translation Observations"],
+]);
 
 function parseArgs(argv) {
   const options = { vault: defaultVault, write: false, check: false };
@@ -50,8 +57,8 @@ function requireStringArray(record, field, catalogName, allowEmpty = false) {
   }
 }
 
-function validateCatalogs(capabilities, failures, projects) {
-  for (const [name, records] of Object.entries({ capabilities, failures, projects })) {
+function validateCatalogs(capabilities, failures, projects, observations) {
+  for (const [name, records] of Object.entries({ capabilities, failures, projects, observations })) {
     if (!Array.isArray(records)) throw new Error(`${name} catalog must be an array.`);
     const ids = new Set();
     for (const record of records) {
@@ -82,6 +89,53 @@ function validateCatalogs(capabilities, failures, projects) {
       requireString(record, field, "projects");
     requireStringArray(record, "openGates", "projects", true);
     requireStringArray(record, "catalogs", "projects");
+    for (const catalog of record.catalogs)
+      if (!catalogNoteNames.has(catalog)) throw new Error(`projects/${record.id}: unknown catalog ${catalog}.`);
+  }
+
+  const capabilityIds = new Set(capabilities.map((record) => record.id));
+  const projectIds = new Set(projects.map((record) => record.id));
+  for (const record of observations) {
+    for (const field of [
+      "label",
+      "projectId",
+      "capabilityId",
+      "sourcePattern",
+      "destinationProfile",
+      "outcome",
+      "evidenceTier",
+      "confidence",
+      "observedAt",
+      "nextProbe",
+    ])
+      requireString(record, field, "observations");
+    if (!projectIds.has(record.projectId))
+      throw new Error(`observations/${record.id}: unknown projectId ${record.projectId}.`);
+    if (!capabilityIds.has(record.capabilityId))
+      throw new Error(`observations/${record.id}: unknown capabilityId ${record.capabilityId}.`);
+    if (!observationOutcomes.has(record.outcome))
+      throw new Error(`observations/${record.id}: unsupported outcome ${record.outcome}.`);
+    if (!observationEvidenceTiers.has(record.evidenceTier))
+      throw new Error(`observations/${record.id}: unsupported evidence tier ${record.evidenceTier}.`);
+    if (!confidenceLevels.has(record.confidence))
+      throw new Error(`observations/${record.id}: unsupported confidence ${record.confidence}.`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(record.observedAt))
+      throw new Error(`observations/${record.id}: observedAt must use YYYY-MM-DD.`);
+    if (
+      !record.metrics ||
+      typeof record.metrics !== "object" ||
+      Array.isArray(record.metrics) ||
+      Object.keys(record.metrics).length === 0 ||
+      Object.values(record.metrics).some(
+        (value) =>
+          !["string", "number", "boolean"].includes(typeof value) ||
+          (typeof value === "number" && !Number.isFinite(value)),
+      )
+    )
+      throw new Error(`observations/${record.id}: metrics must contain finite primitive values.`);
+    requireStringArray(record, "lossModes", "observations", true);
+    requireStringArray(record, "evidence", "observations");
+    requireStringArray(record, "relatedIssues", "observations", true);
   }
 }
 
@@ -150,7 +204,66 @@ function failureNote(record) {
   ].join("\n");
 }
 
-function projectNote(record) {
+function observationNote(record, capability, project) {
+  const metrics = Object.entries(record.metrics)
+    .map(([key, value]) => `- **${key}:** <code>${String(value)}</code>`)
+    .join("\n");
+  return [
+    "---",
+    "id: " + yaml(record.id),
+    "project: " + yaml(record.projectId),
+    "capability: " + yaml(record.capabilityId),
+    "outcome: " + yaml(record.outcome),
+    "evidence_tier: " + yaml(record.evidenceTier),
+    "confidence: " + yaml(record.confidence),
+    "observed_at: " + yaml(record.observedAt),
+    "---",
+    "",
+    "# " + record.label,
+    "",
+    "- **Project:** [[Projects/" + project.name + "|" + project.name + "]]",
+    "- **Capability:** [[Block Capabilities/" +
+      record.capabilityId.replaceAll("/", "-") +
+      "|" +
+      capability.label +
+      "]]",
+    "- **Outcome:** <code>" + record.outcome + "</code>",
+    "- **Evidence tier:** <code>" + record.evidenceTier + "</code>",
+    "- **Confidence:** <code>" + record.confidence + "</code>",
+    "- **Observed:** <code>" + record.observedAt + "</code>",
+    "",
+    "## Source pattern",
+    "",
+    record.sourcePattern,
+    "",
+    "## Destination profile",
+    "",
+    record.destinationProfile,
+    "",
+    "## Metrics",
+    "",
+    metrics,
+    "",
+    "## Observed loss modes",
+    "",
+    record.lossModes.length ? links(record.lossModes) : "- None observed in this fixture.",
+    "",
+    "## Evidence",
+    "",
+    links(record.evidence.map((item) => "<code>" + item + "</code>")),
+    "",
+    "## Related work",
+    "",
+    record.relatedIssues.length ? links(record.relatedIssues) : "- None recorded.",
+    "",
+    "## Next probe",
+    "",
+    record.nextProbe,
+    "",
+  ].join("\n");
+}
+
+function projectNote(record, observations) {
   return [
     "---",
     "id: " + yaml(record.id),
@@ -173,7 +286,17 @@ function projectNote(record) {
     "",
     "## Catalogs",
     "",
-    links(record.catalogs.map((item) => "[[" + item + "]]")),
+    links(record.catalogs.map((item) => "[[" + catalogNoteNames.get(item) + "]]")),
+    "",
+    "## Translation observations",
+    "",
+    observations.length
+      ? links(
+          observations.map(
+            (observation) => "[[Translation Observations/" + observation.id + "|" + observation.label + "]]",
+          ),
+        )
+      : "- None recorded.",
     "",
   ].join("\n");
 }
@@ -182,7 +305,10 @@ function buildFiles() {
   const capabilities = readCatalog("block-capabilities.json");
   const failures = readCatalog("failure-classes.json");
   const projects = readCatalog("projects.json");
-  validateCatalogs(capabilities, failures, projects);
+  const observations = readCatalog("translation-observations.json");
+  validateCatalogs(capabilities, failures, projects, observations);
+  const capabilitiesById = new Map(capabilities.map((record) => [record.id, record]));
+  const projectsById = new Map(projects.map((record) => [record.id, record]));
   const files = new Map();
   files.set(
     "README.md",
@@ -190,6 +316,7 @@ function buildFiles() {
       "This vault is generated from `knowledge/catalog/`. Edit the canonical JSON records, retain sanitized evidence, then regenerate.\n\n" +
       "- [[Block Capabilities]] — what translates, its evidence tier, known loss modes, and next probe\n" +
       "- [[Failure Classes]] — reusable symptoms and remediation paths\n" +
+      "- [[Translation Observations]] — project/version-specific passes, partial translations, placeholders, and failures\n" +
       "- [[Projects/Blockify migration]] — project scope and open release gates\n\n" +
       "## Evidence tiers\n\n" +
       "`locally-verified` → `live-parser-verified` → `live-target-verified`. " +
@@ -229,7 +356,56 @@ function buildFiles() {
     "# Failure Classes\n\n| Failure | Severity | Description |\n| --- | --- | --- |\n" + failureRows + "\n",
   );
   for (const record of failures) files.set("Failure Classes/" + record.id + ".md", failureNote(record));
-  for (const record of projects) files.set("Projects/" + record.name + ".md", projectNote(record));
+  const observationRows = observations
+    .map((record) => {
+      const capability = capabilitiesById.get(record.capabilityId);
+      const project = projectsById.get(record.projectId);
+      return (
+        "| [[Translation Observations/" +
+        record.id +
+        "|" +
+        record.label +
+        "]] | [[Block Capabilities/" +
+        record.capabilityId.replaceAll("/", "-") +
+        "|" +
+        capability.label +
+        "]] | <code>" +
+        record.outcome +
+        "</code> | <code>" +
+        record.evidenceTier +
+        "</code> | [[Projects/" +
+        project.name +
+        "|" +
+        project.name +
+        "]] | <code>" +
+        record.observedAt +
+        "</code> |"
+      );
+    })
+    .join("\n");
+  files.set(
+    "Translation Observations.md",
+    "# Translation Observations\n\n" +
+      "These records preserve project, target version, evidence tier, metrics, and known loss modes so a global block capability is never inferred from one fixture.\n\n" +
+      "<!-- prettier-ignore -->\n" +
+      "| Observation | Capability | Outcome | Evidence tier | Project | Observed |\n" +
+      "| --- | --- | --- | --- | --- | --- |\n" +
+      observationRows +
+      "\n",
+  );
+  for (const record of observations)
+    files.set(
+      "Translation Observations/" + record.id + ".md",
+      observationNote(record, capabilitiesById.get(record.capabilityId), projectsById.get(record.projectId)),
+    );
+  for (const record of projects)
+    files.set(
+      "Projects/" + record.name + ".md",
+      projectNote(
+        record,
+        observations.filter((observation) => observation.projectId === record.id),
+      ),
+    );
   return files;
 }
 

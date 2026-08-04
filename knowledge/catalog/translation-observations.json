@@ -1,0 +1,135 @@
+[
+  {
+    "id": "blockify-wp-6.8.2-known-media-paragraph-text",
+    "label": "Known-media paragraph text survives import exactly",
+    "projectId": "blockify",
+    "capabilityId": "core/paragraph",
+    "sourcePattern": "Generated paragraph prose across two known-media fixture pages",
+    "destinationProfile": "WordPress 6.8.2 core blocks via official importer 0.8.3",
+    "outcome": "pass",
+    "evidenceTier": "disposable-wordpress",
+    "confidence": "high",
+    "observedAt": "2026-08-04",
+    "metrics": {
+      "expectedPages": 2,
+      "exactPages": 2,
+      "expectedTokens": 23,
+      "actualTokens": 23,
+      "matchedTokens": 23,
+      "textRecall": 1,
+      "orderPreserved": true,
+      "findings": 0
+    },
+    "lossModes": [],
+    "evidence": [
+      "integration/wordpress-harness/fixtures/known-media.wxr.xml",
+      "knowledge/evidence/wordpress/a3-text-placeholder-wordpress-6.8.2.json",
+      "https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/actions/runs/30878520899"
+    ],
+    "relatedIssues": ["#104", "PR #122"],
+    "nextProbe": "Repeat text reconciliation against the approved target theme with broader paragraph markup and typography."
+  },
+  {
+    "id": "blockify-wp-6.8.2-known-media-group-parser",
+    "label": "Known-media groups parse without recovery",
+    "projectId": "blockify",
+    "capabilityId": "core/group",
+    "sourcePattern": "One generated group wrapper per known-media fixture page",
+    "destinationProfile": "WordPress 6.8.2 core blocks via official importer 0.8.3",
+    "outcome": "pass",
+    "evidenceTier": "disposable-wordpress",
+    "confidence": "high",
+    "observedAt": "2026-08-04",
+    "metrics": {
+      "groupInstances": 2,
+      "parserFailures": 0,
+      "invalidBlocks": 0,
+      "recoveredBlocks": 0,
+      "unexpectedFreeformHtml": 0
+    },
+    "lossModes": [],
+    "evidence": [
+      "integration/wordpress-harness/fixtures/known-media.wxr.xml",
+      "knowledge/evidence/wordpress/a1-generated-harness-wordpress-6.8.2.json"
+    ],
+    "relatedIssues": ["#71", "#104"],
+    "nextProbe": "Exercise layout, spacing, supports attributes, and nested group variants against the approved target profile."
+  },
+  {
+    "id": "blockify-wp-6.8.2-known-media-shared-image",
+    "label": "Query-string image aliases reconcile to one shared attachment",
+    "projectId": "blockify",
+    "capabilityId": "core/image",
+    "sourcePattern": "One PNG referenced by two pages through distinct query-string transformation aliases",
+    "destinationProfile": "WordPress 6.8.2 media library and core/image via official importer 0.8.3",
+    "outcome": "pass",
+    "evidenceTier": "disposable-wordpress",
+    "confidence": "high",
+    "observedAt": "2026-08-04",
+    "metrics": {
+      "pageReferences": 2,
+      "canonicalAttachments": 1,
+      "destinationUrls": 1,
+      "remainingSourceAliases": 0,
+      "findings": 0
+    },
+    "lossModes": [],
+    "evidence": [
+      "integration/wordpress-harness/fixtures/known-media.wxr.xml",
+      "knowledge/evidence/wordpress/a4-known-media-wordpress-6.8.2.json",
+      "knowledge/evidence/wordpress/a3-text-placeholder-wordpress-6.8.2.json"
+    ],
+    "relatedIssues": ["#10", "#70"],
+    "nextProbe": "Add responsive variants, captions, galleries, and approved-target rendering evidence."
+  },
+  {
+    "id": "blockify-wp-6.8.2-known-media-iframe-placeholder",
+    "label": "Iframe remains an exact visible placeholder",
+    "projectId": "blockify",
+    "capabilityId": "core/embed",
+    "sourcePattern": "Unsupported booking iframe in the known-media fixture",
+    "destinationProfile": "WordPress 6.8.2 core/html migration placeholder via official importer 0.8.3",
+    "outcome": "placeholder",
+    "evidenceTier": "disposable-wordpress",
+    "confidence": "high",
+    "observedAt": "2026-08-04",
+    "metrics": {
+      "expectedPlaceholderIds": 1,
+      "actualPlaceholderIds": 1,
+      "exactPlaceholderMatch": true,
+      "parserFailures": 0
+    },
+    "lossModes": ["iframe behavior and provider semantics are preserved only as an unresolved visible placeholder"],
+    "evidence": [
+      "integration/wordpress-harness/fixtures/known-media.wxr.xml",
+      "knowledge/evidence/wordpress/a3-text-placeholder-wordpress-6.8.2.json"
+    ],
+    "relatedIssues": ["#104"],
+    "nextProbe": "Capture approved provider, privacy, and target-plugin requirements before attempting semantic embed translation."
+  },
+  {
+    "id": "blockify-wp-6.8.2-malformed-group-delimiter",
+    "label": "Malformed group delimiter fails the live parser gate",
+    "projectId": "blockify",
+    "capabilityId": "core/group",
+    "sourcePattern": "Deliberately mismatched Gutenberg group closing delimiter",
+    "destinationProfile": "WordPress 6.8.2 parser in the disposable harness",
+    "outcome": "fail",
+    "evidenceTier": "disposable-wordpress",
+    "confidence": "high",
+    "observedAt": "2026-08-04",
+    "metrics": {
+      "importedPages": 1,
+      "parserFailures": 1,
+      "unexpectedFreeformHtml": 1,
+      "harnessExitNonZero": true
+    },
+    "lossModes": ["mismatched closing delimiters produce a parser failure and unexpected freeform HTML"],
+    "evidence": [
+      "integration/wordpress-harness/fixtures/known-malformed.wxr.xml",
+      "knowledge/evidence/wordpress/c6-known-malformed-wordpress-6.8.2.json"
+    ],
+    "relatedIssues": ["#71"],
+    "nextProbe": "Keep this fixture in CI and add a minimal case for each newly observed delimiter or recovery failure."
+  }
+]

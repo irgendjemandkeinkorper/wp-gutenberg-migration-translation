@@ -6,7 +6,8 @@ from generated run artifacts.
 
 ## Structure
 
-- `catalog/` — canonical machine-readable records. Update these first.
+- `catalog/` — canonical machine-readable capabilities, failure classes,
+  projects, and translation observations. Update these first.
 - `vault/` — an Obsidian-compatible Markdown projection of the catalogs.
 - `schemas/` — the record contracts future projects should follow.
 - `decisions/` — reviewed project decisions and explicit assumptions.
@@ -24,16 +25,27 @@ unit test is not a live WordPress capability claim, and a successful disposable
 import is not the same as target-theme verification. Every capability note
 links to evidence and records its next probe or remediation path.
 
+`catalog/translation-observations.json` is the append/update ledger for what a
+specific block or source pattern did in a specific project and destination
+profile. Outcomes are `pass`, `partial`, `placeholder`, or `fail`; evidence
+tiers are `deterministic-test`, `disposable-wordpress`, `approved-target`, or
+`pilot`. This keeps one fixture from becoming an unsafe global claim while
+still making successful and unsuccessful translations searchable in Obsidian.
+
 ## Continuous learning workflow
 
 1. Retain a sanitized, reproducible fixture or report for the new observation.
-2. Update the existing capability in `catalog/block-capabilities.json`; do not
-   create a competing record for the same source/IR block.
-3. Record the observed loss mode and next probe. Add or update a failure class
-   when the symptom applies across blocks or projects.
-4. Link the evidence path and relevant GitHub issue, then regenerate the vault
+2. Add or update one project/version-specific record in
+   `catalog/translation-observations.json`, including metrics, outcome,
+   evidence tier, destination profile, loss modes, and the next probe.
+3. Update the existing global capability in `catalog/block-capabilities.json`
+   only when the new retained evidence changes that claim; do not create a
+   competing record for the same source/IR block.
+4. Add or update a failure class when the symptom and remediation apply across
+   blocks or projects.
+5. Link the evidence path and relevant GitHub issue, then regenerate the vault
    with `npm run knowledge:generate`.
-5. Promote a status only when its evidence tier has actually passed. Keep old
+6. Promote a status only when its evidence tier has actually passed. Keep old
    evidence links so future agents can see how the conclusion evolved.
 
 Future repositories can either adopt the same `knowledge/` contract or project

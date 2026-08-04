@@ -21,3 +21,6 @@ Preserve stable exception identity through IR, WXR metadata, import, and reconci
 - <code>src/lib/qa/reconciliation.ts</code>
 - <code>src/lib/exceptions/lifecycle.ts</code>
 - <code>docs/wxr-format.md</code>
+- <code>integration/wordpress-harness/verification.mjs</code>
+- <code>integration/wordpress-harness/verification.test.mjs</code>
+- <code>knowledge/evidence/wordpress/a3-text-placeholder-wordpress-6.8.2.json</code>
