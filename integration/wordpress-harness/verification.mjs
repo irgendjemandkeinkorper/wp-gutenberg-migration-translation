@@ -29,6 +29,11 @@ function xmlValue(xml, tagName) {
   return match ? decodeXmlText(match[1]).trim() : "";
 }
 
+function xmlValuePreserveWhitespace(xml, tagName) {
+  const match = String(xml ?? "").match(new RegExp(`<${tagName}\\b[^>]*>([\\s\\S]*?)<\\/${tagName}>`, "i"));
+  return match ? decodeXmlText(match[1]) : "";
+}
+
 function stableHash(value) {
   return createHash("sha256")
     .update(String(value ?? ""))
@@ -78,15 +83,24 @@ export function extractSourceEvidenceFromWxr(xml) {
   const itemPattern = /<item\b[^>]*>([\s\S]*?)<\/item>/gi;
   for (const match of String(xml ?? "").matchAll(itemPattern)) {
     const item = match[1];
-    let migrationId = "";
+    const metadata = new Map();
     for (const metaMatch of item.matchAll(/<wp:postmeta\b[^>]*>([\s\S]*?)<\/wp:postmeta>/gi)) {
       const meta = metaMatch[1];
-      if (xmlValue(meta, "wp:meta_key") === MIGRATION_ID_META_KEY) {
-        migrationId = xmlValue(meta, "wp:meta_value");
-        break;
-      }
+      const key = xmlValue(meta, "wp:meta_key");
+      if (key) metadata.set(key, xmlValuePreserveWhitespace(meta, "wp:meta_value"));
     }
-    const sourceHtml = xmlValue(item, "content:encoded");
+    const migrationId = String(metadata.get(MIGRATION_ID_META_KEY) ?? "").trim();
+    const contentHtml = xmlValuePreserveWhitespace(item, "content:encoded");
+    const sourceHtmlFromMetadata = metadata.get("_blockify_source_html");
+    const sourceHtml = sourceHtmlFromMetadata === undefined ? contentHtml : sourceHtmlFromMetadata;
+    const placeholderManifest = metadata.get("_blockify_migration_placeholders") ?? "";
+    let parsedPlaceholders = null;
+    try {
+      const parsed = JSON.parse(placeholderManifest);
+      if (Array.isArray(parsed)) parsedPlaceholders = parsed;
+    } catch {
+      // Invalid or absent manifests remain explicit structural evidence.
+    }
     const sourcePostId = xmlValue(item, "wp:post_id");
     if (!migrationId) continue;
     records.push({
@@ -97,6 +111,15 @@ export function extractSourceEvidenceFromWxr(xml) {
       type: xmlValue(item, "wp:post_type") || null,
       status: xmlValue(item, "wp:status") || null,
       sourceHtml,
+      sourceHtmlOrigin: sourceHtmlFromMetadata === undefined ? "content-fallback" : "postmeta",
+      postMeta: {
+        sourceUrlSha256: stableHash(metadata.get("_blockify_source_url") ?? ""),
+        sourceHtmlSha256: stableHash(sourceHtmlFromMetadata ?? ""),
+        targetTemplateSha256: stableHash(metadata.get("_blockify_target_template") ?? ""),
+        placeholderManifestSha256: stableHash(placeholderManifest),
+        placeholderManifestValid: parsedPlaceholders !== null,
+        placeholderCount: parsedPlaceholders?.length ?? null,
+      },
     });
   }
   return records.sort((left, right) => left.migrationId.localeCompare(right.migrationId));
@@ -269,6 +292,15 @@ function pageDiagnostics(page) {
     slug: page.slug ?? page.postName ?? null,
     title: page.title ?? page.postTitle ?? null,
     status: page.status ?? page.postStatus ?? null,
+    postType: page.postType ?? null,
+    postMeta: {
+      sourceUrlSha256: nonEmptyString(page.postMeta?.sourceUrlSha256),
+      sourceHtmlSha256: nonEmptyString(page.postMeta?.sourceHtmlSha256),
+      targetTemplateSha256: nonEmptyString(page.postMeta?.targetTemplateSha256),
+      placeholderManifestSha256: nonEmptyString(page.postMeta?.placeholderManifestSha256),
+      placeholderManifestValid: page.postMeta?.placeholderManifestValid === true,
+      placeholderCount: Number.isInteger(page.postMeta?.placeholderCount) ? page.postMeta.placeholderCount : null,
+    },
     blockNames: blocks.map((block) => block.name),
     blocks: blocks.map(({ name, path }) => ({ name, path })),
     parserFailures,
@@ -282,13 +314,18 @@ function uniqueSorted(values) {
   return [...new Set(values)].sort();
 }
 
-export function verifyImportedPages({ pages, expectedMigrationIds }) {
+export function verifyImportedPages({ pages, expectedMigrationIds, expectedSourceRecords = [] }) {
   const records = Array.isArray(pages) ? pages : [];
   const expected = uniqueSorted(
     (Array.isArray(expectedMigrationIds) ? expectedMigrationIds : []).map(nonEmptyString).filter(Boolean),
   );
   const failures = [];
   const seen = new Map();
+  const expectedRecords = new Map(
+    (Array.isArray(expectedSourceRecords) ? expectedSourceRecords : [])
+      .filter((record) => nonEmptyString(record?.migrationId))
+      .map((record) => [record.migrationId, record]),
+  );
   const pageReports = records.map(pageDiagnostics);
 
   if (!expected.length)
@@ -310,6 +347,38 @@ export function verifyImportedPages({ pages, expectedMigrationIds }) {
       });
     }
     seen.set(page.migrationId, page);
+    const sourceRecord = expectedRecords.get(page.migrationId);
+    if (
+      sourceRecord &&
+      ((sourceRecord.slug && page.slug !== sourceRecord.slug) ||
+        (sourceRecord.type && page.postType !== sourceRecord.type) ||
+        (sourceRecord.status && page.status !== sourceRecord.status))
+    ) {
+      failures.push({
+        kind: "page-metadata-mismatch",
+        migrationId: page.migrationId,
+        message: "Imported slug, type, or status differs from the generated fixture record.",
+      });
+    }
+    if (sourceRecord?.postMeta) {
+      for (const key of [
+        "sourceUrlSha256",
+        "sourceHtmlSha256",
+        "targetTemplateSha256",
+        "placeholderManifestSha256",
+        "placeholderManifestValid",
+        "placeholderCount",
+      ]) {
+        if (page.postMeta[key] !== sourceRecord.postMeta[key]) {
+          failures.push({
+            kind: "post-meta-mismatch",
+            migrationId: page.migrationId,
+            metadataKey: key,
+            message: `Imported Blockify post metadata does not match generated fixture evidence for ${key}.`,
+          });
+        }
+      }
+    }
     if (page.status && page.status !== "publish") {
       failures.push({
         kind: "unexpected-page-status",
@@ -613,12 +682,27 @@ $posts = get_posts(array(
 $records = array();
 foreach ($posts as $post) {
     $content = (string) $post->post_content;
+    $source_url = (string) get_post_meta($post->ID, '_blockify_source_url', true);
+    $source_html = (string) get_post_meta($post->ID, '_blockify_source_html', true);
+    $target_template = (string) get_post_meta($post->ID, '_blockify_target_template', true);
+    $placeholder_manifest = (string) get_post_meta($post->ID, '_blockify_migration_placeholders', true);
+    $decoded_placeholders = json_decode($placeholder_manifest, true);
+    $placeholder_manifest_valid = JSON_ERROR_NONE === json_last_error() && is_array($decoded_placeholders);
     $records[] = array(
         'migrationId' => (string) get_post_meta($post->ID, $meta_key, true),
         'postId' => (int) $post->ID,
         'title' => (string) $post->post_title,
         'slug' => (string) $post->post_name,
         'status' => (string) $post->post_status,
+        'postType' => (string) $post->post_type,
+        'postMeta' => array(
+            'sourceUrlSha256' => hash('sha256', $source_url),
+            'sourceHtmlSha256' => hash('sha256', $source_html),
+            'targetTemplateSha256' => hash('sha256', $target_template),
+            'placeholderManifestSha256' => hash('sha256', $placeholder_manifest),
+            'placeholderManifestValid' => $placeholder_manifest_valid,
+            'placeholderCount' => $placeholder_manifest_valid ? count($decoded_placeholders) : null,
+        ),
         'blocks' => function_exists('parse_blocks') ? $walk(parse_blocks($content)) : array(),
         'parserFailures' => function_exists('parse_blocks') ? $markup_failures($content) : array(array('kind' => 'missing-wordpress-parser', 'message' => 'WordPress parse_blocks() is unavailable.')),
     );

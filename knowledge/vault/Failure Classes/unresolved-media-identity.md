@@ -24,3 +24,4 @@ Acquire once, match by content hash or source alias, reconcile the destination r
 - <code>integration/wordpress-harness/verification.mjs</code>
 - <code>integration/wordpress-harness/fixtures/known-media.wxr.xml</code>
 - <code>knowledge/evidence/wordpress/a4-known-media-wordpress-6.8.2.json</code>
+- <code>knowledge/evidence/wordpress/a1-generated-harness-wordpress-6.8.2.json</code>

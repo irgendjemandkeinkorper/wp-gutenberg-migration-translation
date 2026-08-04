@@ -20,3 +20,5 @@ Classify the node, capture target capability evidence, then add a focused compil
 
 - <code>src/lib/compiler/core.ts</code>
 - <code>src/lib/ir/types.ts</code>
+- <code>integration/wordpress-harness/fixtures/known-media.wxr.xml</code>
+- <code>knowledge/evidence/wordpress/a1-generated-harness-wordpress-6.8.2.json</code>

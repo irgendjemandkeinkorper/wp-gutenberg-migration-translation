@@ -84,6 +84,36 @@ describe("bundle-wide media registry", () => {
     expect(pageContents.every((content) => !content.includes("images.example.test"))).toBe(true);
   });
 
+  it("uses one successful acquisition final URL for the attachment and inline media", () => {
+    const observedUrl = "https://cdn.example.test/photos/hero.jpg?fit=crop&w=1600";
+    const finalUrl = "https://cdn.example.test/photos/hero.jpg";
+    const { registry } = createMediaRegistry([
+      {
+        pageUrl: MEDIA_FIXTURE_PAGE_A,
+        sourceUrl: observedUrl,
+        contentHash: SAME_BYTES_HASH,
+        acquisition: {
+          requestedUrl: observedUrl,
+          finalUrl,
+          status: 200,
+          errors: [],
+        },
+      },
+    ]);
+
+    const packageResult = buildWxrPackage([page(MEDIA_FIXTURE_PAGE_A, observedUrl)], {
+      author: "admin",
+      postType: "page",
+      status: "draft",
+      emitAttachments: true,
+      mediaRegistry: registry,
+    });
+
+    expect(packageResult.xml).toContain(`<wp:attachment_url>${finalUrl}</wp:attachment_url>`);
+    expect(packageResult.xml).toContain(`<img src="${finalUrl}"`);
+    expect(packageResult.xml).not.toContain("fit=crop");
+  });
+
   it("keeps changed bytes at one URL separate and raises a blocking conflict", () => {
     const { registry, findings } = createMediaRegistry(sameUrlChangedBytesFixture());
     expect(registry.records).toHaveLength(2);

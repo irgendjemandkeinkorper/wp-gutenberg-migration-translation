@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildWxr, cdata, slugify } from "../lib/wxr";
+import { buildWxr, cdata, migrationIdForPage, slugify } from "../lib/wxr";
 import type { BundlePage } from "../lib/types";
 
 const page: BundlePage = {
+  migrationId: "page-about-us",
   title: "About Us & More",
   link: "https://old-site.com/about",
   contentBlocks: "<!-- wp:paragraph -->\n<p>Hello</p>\n<!-- /wp:paragraph -->",
@@ -46,13 +47,33 @@ describe("buildWxr", () => {
     expect(xml).toContain("<wp:meta_key><![CDATA[_wp_attached_file]]></wp:meta_key>");
   });
 
-  it("stores source HTML, source URL, and target template as importable post metadata", () => {
+  it("stores stable migration identity and source evidence as importable post metadata", () => {
     const xml = buildWxr([page], { author: "admin", postType: "page", status: "draft" });
     expect(xml).toContain("<![CDATA[_blockify_source_html]]>");
     expect(xml).toContain("<![CDATA[<main><p>Hello</p></main>]]>");
     expect(xml).toContain("<![CDATA[_blockify_source_url]]>");
+    expect(xml).toContain("<![CDATA[_blockify_migration_id]]>");
+    expect(xml).toContain("<![CDATA[page-about-us]]>");
     expect(xml).toContain("<![CDATA[_blockify_target_template]]>");
     expect(xml).toContain("<![CDATA[Albatross]]>");
+  });
+
+  it("emits byte-stable dates when generatedAt is fixed", () => {
+    const options = {
+      author: "admin",
+      postType: "page" as const,
+      status: "draft" as const,
+      generatedAt: "2025-01-15T12:34:56.000Z",
+    };
+    const first = buildWxr([page], options);
+    const second = buildWxr([page], options);
+
+    expect(first).toBe(second);
+    expect(first).toContain("<pubDate>Wed, 15 Jan 2025 12:34:56 +0000</pubDate>");
+    expect(first).toContain("<wp:post_date_gmt>2025-01-15 12:34:56</wp:post_date_gmt>");
+    expect(() => buildWxr([page], { ...options, generatedAt: "not-a-date" })).toThrow(
+      "WxrOptions.generatedAt must be a valid ISO date-time string",
+    );
   });
 
   it("stores the documented placeholder manifest as JSON post metadata", () => {
@@ -116,5 +137,21 @@ describe("slugify", () => {
     expect(slugify("Hello, World!")).toBe("hello-world");
     expect(slugify("---")).toBe("page");
     expect(slugify("")).toBe("page");
+  });
+});
+
+describe("migrationIdForPage", () => {
+  it("prefers explicit identity and otherwise derives a stable fragment-free source identity", () => {
+    expect(migrationIdForPage(page)).toBe("page-about-us");
+    const derived = migrationIdForPage({ ...page, migrationId: undefined, title: "First title" });
+    expect(derived).toMatch(/^blockify-page-v1-[a-f0-9]{16}$/);
+    expect(
+      migrationIdForPage({
+        ...page,
+        migrationId: undefined,
+        title: "Changed title",
+        link: `${page.link}#team`,
+      }),
+    ).toBe(derived);
   });
 });

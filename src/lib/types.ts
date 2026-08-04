@@ -47,6 +47,8 @@ export interface MigrationPlaceholder {
 }
 
 export interface BundlePage {
+  /** Stable import/reconciliation identity. WXR derives one from the source URL when omitted. */
+  migrationId?: string;
   title: string;
   link: string;
   contentBlocks: string;

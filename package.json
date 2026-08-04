@@ -25,6 +25,8 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
     "test:checkpoint": "node integration/workspace/checkpoint-integration.mjs",
     "test:wordpress": "node integration/wordpress-harness/run.mjs",
+    "fixtures:wordpress": "node integration/wordpress-harness/generate-fixtures.mjs --write",
+    "fixtures:wordpress:check": "node integration/wordpress-harness/generate-fixtures.mjs --check",
     "knowledge:generate": "node scripts/generate-knowledge-vault.mjs --write",
     "knowledge:check": "node scripts/generate-knowledge-vault.mjs --check",
     "preview": "vite preview",

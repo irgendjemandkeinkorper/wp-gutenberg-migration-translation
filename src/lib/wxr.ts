@@ -1,5 +1,6 @@
 import type { BundlePage } from "./types";
 import {
+  attachmentSourceUrl,
   buildMediaRegistry,
   MediaPreflightError,
   rewriteMediaReferences,
@@ -25,6 +26,8 @@ export interface WxrOptions {
   postType: "page" | "post";
   status: "draft" | "publish";
   siteTitle?: string;
+  /** Fixed ISO timestamp for reproducible delivery artifacts and fixtures. */
+  generatedAt?: string;
   emitAttachments?: boolean;
   /** Use a previously acquired bundle registry instead of rebuilding URL-only records. */
   mediaRegistry?: MediaRegistry;
@@ -52,7 +55,7 @@ export function buildWxrPackage(pages: BundlePage[], opts: WxrOptions): WxrPacka
     throw new MediaPreflightError(findings.filter((finding) => finding.severity === "blocking"));
   }
 
-  const now = new Date();
+  const now = wxrTimestamp(opts.generatedAt);
   const pub = now.toUTCString().replace("GMT", "+0000");
   const dateGmt = now.toISOString().slice(0, 19).replace("T", " ");
 
@@ -162,6 +165,26 @@ export function slugify(title: string): string {
   return slug || "page";
 }
 
+/** Stable identity used by post-import reconciliation when a caller has not supplied one. */
+export function migrationIdForPage(page: Pick<BundlePage, "migrationId" | "link" | "title" | "contentBlocks">): string {
+  const explicit = page.migrationId?.trim();
+  if (explicit) return explicit;
+
+  let identity = page.link.trim();
+  if (identity) {
+    try {
+      const source = new URL(identity);
+      source.hash = "";
+      identity = source.href;
+    } catch {
+      // Preserve a non-URL source locator rather than guessing another identity.
+    }
+  } else {
+    identity = `${page.title.trim()}\n${page.contentBlocks}`;
+  }
+  return `blockify-page-v1-${fnv1a64(identity)}`;
+}
+
 /** CDATA cannot contain the literal "]]>"; split it if present. */
 export function cdata(text: string): string {
   return "<![CDATA[" + text.replaceAll("]]>", "]]]]><![CDATA[>") + "]]>";
@@ -192,6 +215,7 @@ function imgTitle(src: string): string {
 
 function contentItem(page: BundlePage, postId: number, opts: WxrOptions, pub: string, dateGmt: string): string {
   const slug = slugify(page.title);
+  const migrationId = migrationIdForPage(page);
   return `    <item>
         <title>${escapeXml(page.title)}</title>
         <link>${escapeXml(page.link)}</link>
@@ -214,10 +238,28 @@ function contentItem(page: BundlePage, postId: number, opts: WxrOptions, pub: st
         <wp:post_password></wp:post_password>
         <wp:is_sticky>0</wp:is_sticky>
 ${postMeta("_blockify_source_url", page.link)}
+${postMeta("_blockify_migration_id", migrationId)}
 ${postMeta("_blockify_source_html", page.sourceHtml ?? "")}
 ${postMeta("_blockify_target_template", page.targetTemplate ?? "")}
 ${postMeta("_blockify_migration_placeholders", JSON.stringify(page.placeholders ?? []))}
     </item>`;
+}
+
+function wxrTimestamp(generatedAt?: string): Date {
+  const timestamp = generatedAt === undefined ? new Date() : new Date(generatedAt);
+  if (Number.isNaN(timestamp.valueOf())) {
+    throw new TypeError("WxrOptions.generatedAt must be a valid ISO date-time string.");
+  }
+  return timestamp;
+}
+
+function fnv1a64(value: string): string {
+  let hash = 0xcbf29ce484222325n;
+  for (const byte of new TextEncoder().encode(value)) {
+    hash ^= BigInt(byte);
+    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
+  }
+  return hash.toString(16).padStart(16, "0");
 }
 
 function postMeta(key: string, value: string): string {
@@ -236,12 +278,7 @@ function attachmentItem(
   dateGmt: string,
 ): string {
   const alt = record.provenance.alt[0]?.value ?? "";
-  const src =
-    record.observedUrls[0] ||
-    record.acquisition?.requestedUrl ||
-    record.acquisition?.finalUrl ||
-    record.sourceUrls[0] ||
-    record.canonicalUrl;
+  const src = attachmentSourceUrl(record);
   const title = record.provenance.title[0]?.value || alt.trim() || record.filename || imgTitle(src);
   const filename = attachmentFilename(src);
   const mime = record.mime || imageMime(filename);

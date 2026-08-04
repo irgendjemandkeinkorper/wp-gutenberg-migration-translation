@@ -37,6 +37,53 @@ describe("post-import Gutenberg verifier", () => {
     expect(records[0].sourceHtml).toContain("Blockify deterministic import fixture.");
   });
 
+  it("compares imported Blockify postmeta to generated fixture hashes and counts", () => {
+    const sourceRecords = extractSourceEvidenceFromWxr(fixture("known-media.wxr.xml"));
+    expect(sourceRecords).toHaveLength(2);
+    expect(sourceRecords[0]).toMatchObject({
+      sourceHtmlOrigin: "postmeta",
+      postMeta: { placeholderManifestValid: true, placeholderCount: 1 },
+    });
+    expect(sourceRecords[0].sourceHtml).toContain("<iframe");
+    expect(sourceRecords[0].sourceHtml).not.toContain("<!-- wp:");
+
+    const pages = sourceRecords.map((record) => ({
+      migrationId: record.migrationId,
+      postId: Number(record.sourcePostId),
+      slug: record.slug,
+      status: record.status,
+      postType: record.type,
+      postMeta: record.postMeta,
+      blocks: [],
+      parserFailures: [],
+    }));
+    const passing = verifyImportedPages({
+      pages,
+      expectedMigrationIds: sourceRecords.map((record) => record.migrationId),
+      expectedSourceRecords: sourceRecords,
+    });
+    expect(passing.pass).toBe(true);
+
+    const failing = verifyImportedPages({
+      pages: [
+        { ...pages[0], postMeta: { ...pages[0].postMeta, sourceHtmlSha256: "0".repeat(64) } },
+        pages[1],
+      ],
+      expectedMigrationIds: sourceRecords.map((record) => record.migrationId),
+      expectedSourceRecords: sourceRecords,
+    });
+    expect(failing.pass).toBe(false);
+    expect(failing.failures).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "post-meta-mismatch",
+          migrationId: sourceRecords[0].migrationId,
+          metadataKey: "sourceHtmlSha256",
+        }),
+      ]),
+    );
+  });
+
   it("builds a durable passing scorecard with source evidence pointers and no raw HTML", () => {
     const sourceRecords = extractSourceEvidenceFromWxr(fixture("known-good.wxr.xml"));
     const verification = verifyImportedPages({
@@ -82,6 +129,12 @@ describe("post-import Gutenberg verifier", () => {
   it("extracts stable migration IDs from WXR metadata", () => {
     expect(extractMigrationIdsFromWxr(fixture("known-good.wxr.xml"))).toEqual(["a2-good-page-9001"]);
     expect(extractMigrationIdsFromWxr(fixture("known-malformed.wxr.xml"))).toEqual(["a2-malformed-page-9002"]);
+    expect(extractMigrationIdsFromWxr(fixture("known-media.wxr.xml"))).toEqual([
+      "a1-generated-page-9101",
+      "a1-generated-page-9102",
+    ]);
+    expect(fixture("known-media.wxr.xml")).toContain("_blockify_migration_placeholders");
+    expect(fixture("known-media.wxr.xml")).toContain("MIGRATION PLACEHOLDER 1: iframe");
     expect(MIGRATION_ID_META_KEY).toBe("_blockify_migration_id");
   });
 
@@ -280,6 +333,8 @@ describe("post-import Gutenberg verifier", () => {
     expect(WORDPRESS_VERIFICATION_EVAL).toContain("'meta_query'");
     expect(WORDPRESS_VERIFICATION_EVAL).toContain("'compare' => 'EXISTS'");
     expect(WORDPRESS_VERIFICATION_EVAL).toContain("sha256");
+    expect(WORDPRESS_VERIFICATION_EVAL).toContain("_blockify_source_html");
+    expect(WORDPRESS_VERIFICATION_EVAL).toContain("placeholderManifestValid");
     expect(WORDPRESS_MEDIA_VERIFICATION_EVAL).toContain("wp_get_attachment_url");
     expect(WORDPRESS_MEDIA_VERIFICATION_EVAL).toContain("hash_file");
     expect(WORDPRESS_MEDIA_VERIFICATION_EVAL).toContain("mediaUrls");

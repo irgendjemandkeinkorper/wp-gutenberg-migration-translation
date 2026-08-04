@@ -5,7 +5,12 @@
     "severity": "blocking",
     "symptom": "A source node has no deterministic target compiler and becomes a visible migration placeholder.",
     "remediation": "Classify the node, capture target capability evidence, then add a focused compiler and round-trip fixture.",
-    "evidence": ["src/lib/compiler/core.ts", "src/lib/ir/types.ts"]
+    "evidence": [
+      "src/lib/compiler/core.ts",
+      "src/lib/ir/types.ts",
+      "integration/wordpress-harness/fixtures/known-media.wxr.xml",
+      "knowledge/evidence/wordpress/a1-generated-harness-wordpress-6.8.2.json"
+    ]
   },
   {
     "id": "unresolved-media-identity",
@@ -19,7 +24,8 @@
       "docs/media-registry-contract.md",
       "integration/wordpress-harness/verification.mjs",
       "integration/wordpress-harness/fixtures/known-media.wxr.xml",
-      "knowledge/evidence/wordpress/a4-known-media-wordpress-6.8.2.json"
+      "knowledge/evidence/wordpress/a4-known-media-wordpress-6.8.2.json",
+      "knowledge/evidence/wordpress/a1-generated-harness-wordpress-6.8.2.json"
     ]
   },
   {

@@ -23,6 +23,7 @@ const harnessDir = dirname(fileURLToPath(import.meta.url));
 const repoDir = resolve(harnessDir, "../..");
 const composeFile = join(harnessDir, "docker-compose.yml");
 const fixturesDir = join(harnessDir, "fixtures");
+const fixtureGeneratorFile = join(harnessDir, "generate-fixtures.mjs");
 const fixtureFiles = {
   "known-good": "known-good.wxr.xml",
   "known-bad": "known-bad.wxr.xml",
@@ -48,7 +49,7 @@ function usage() {
   console.log(`Usage: node integration/wordpress-harness/run.mjs [options]
 
 Options:
-  --fixture known-good|known-bad|known-malformed|known-media  WXR fixture to import (default: known-good)
+  --fixture known-good|known-bad|known-malformed|known-media  WXR fixture to import (default: known-media)
   --dry-run                       Validate the harness without Docker
   --help                          Show this help
 
@@ -65,7 +66,7 @@ Environment:
 }
 
 function parseArgs(argv) {
-  const options = { fixture: "known-good", dryRun: false };
+  const options = { fixture: "known-media", dryRun: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--help" || arg === "-h") {
@@ -148,6 +149,15 @@ function commandResult(command, args, options = {}) {
   };
 }
 
+function verifyGeneratedFixture(fixtureKey) {
+  if (fixtureKey !== "known-media") return;
+  const result = commandResult(process.execPath, [fixtureGeneratorFile, "--check"], { cwd: repoDir });
+  if (result.status !== 0) {
+    const detail = redact(result.stderr || result.stdout).trim();
+    throw new HarnessError(detail || "Generated WordPress fixture check failed.");
+  }
+}
+
 function findAvailablePort() {
   return new Promise((resolvePort, reject) => {
     const server = createServer();
@@ -177,6 +187,7 @@ async function waitForHttp(url, timeoutMs = 120_000) {
 }
 
 function dryRun(fixtureKey) {
+  verifyGeneratedFixture(fixtureKey);
   const fixturePath = join(fixturesDir, fixtureFiles[fixtureKey]);
   const mediaAllowlistPath = join(harnessDir, "mu-plugins", "blockify-fixture-media.php");
   const composeText = readFileSync(composeFile, "utf8");
@@ -252,6 +263,8 @@ async function main() {
     return;
   }
 
+  verifyGeneratedFixture(options.fixture);
+
   const dockerCheck = commandResult("docker", ["compose", "version"]);
   if (dockerCheck.status !== 0) {
     throw new HarnessError(
@@ -302,6 +315,8 @@ async function main() {
       slug: record.slug,
       type: record.type,
       status: record.status,
+      sourceHtmlOrigin: record.sourceHtmlOrigin,
+      postMeta: record.postMeta,
       path: relativePath,
       bytes: Buffer.byteLength(record.sourceHtml, "utf8"),
       sha256: createHash("sha256").update(record.sourceHtml).digest("hex"),
@@ -480,7 +495,7 @@ async function main() {
       throw new HarnessError("WordPress returned an unreadable Gutenberg verification response.");
     }
     const expectedMigrationIds = extractMigrationIdsFromWxr(fixtureText);
-    verification = verifyImportedPages({ pages: inspectedPages, expectedMigrationIds });
+    verification = verifyImportedPages({ pages: inspectedPages, expectedMigrationIds, expectedSourceRecords: sourceRecords });
     importedPages = verification.pages.map((page) => ({
       ID: page.postId,
       post_title: page.title,

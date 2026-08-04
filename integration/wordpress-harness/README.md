@@ -1,7 +1,7 @@
 # Disposable WordPress import harness
 
 This harness provisions an isolated WordPress and MariaDB pair, installs the
-official `wordpress-importer` plugin, imports a checked-in WXR fixture, checks
+official `wordpress-importer` plugin, imports a checked-in generated WXR fixture, checks
 the homepage/REST API and imported page state, runs the post-import Gutenberg
 verifier, then removes the containers and volumes on success.
 Every live run also writes `reconciliation-report.json`, a JSONL
@@ -12,18 +12,21 @@ in adjacent audit files rather than duplicated into the scorecard.
 
 ## One command
 
-From the repository root:
+From the repository root after `npm ci`:
 
 ```sh
-node integration/wordpress-harness/run.mjs
+npm run test:wordpress
 ```
 
-The command has no npm dependency. It requires Node.js 20 or newer, Docker
-Engine or Docker Desktop, and Docker Compose v2. The first run downloads the
+The command requires the checked-in npm dependencies, Node.js 22, Docker Engine
+or Docker Desktop, and Docker Compose v2. The first run downloads the
 pinned WordPress/MariaDB images, the WordPress CLI image, and the official
 WordPress Importer package.
 
-The fixture is local and deterministic; no source website is contacted. A
+The default fixture is local and deterministic; no source website is contacted.
+`known-media.wxr.xml` is generated through the production WXR and media-registry
+modules. `npm run fixtures:wordpress:check` fails if it drifts, while
+`npm run fixtures:wordpress` deliberately regenerates it. A
 successful run enumerates every fixture page by `_blockify_migration_id`,
 reports block names and nesting paths, and removes its temporary Docker project.
 
@@ -50,9 +53,11 @@ then fail the Gutenberg gate with a retained JSON verification report:
 node integration/wordpress-harness/run.mjs --fixture known-malformed
 ```
 
-The `known-media` fixture imports two pages that share one image attachment. It
-passes only when WordPress creates exactly one attachment and rewrites both
-pages to that attachment's local uploads URL:
+The default `known-media` fixture imports two pages that share one query-string
+image plus a visible unsupported-content marker and its postmeta manifest. It
+passes only when WordPress creates exactly one attachment, preserves metadata
+and parsed blocks, and rewrites both pages to that attachment's local uploads
+URL:
 
 ```sh
 node integration/wordpress-harness/run.mjs --fixture known-media
@@ -60,7 +65,8 @@ node integration/wordpress-harness/run.mjs --fixture known-media
 
 WordPress's safe HTTP client normally rejects Docker-private hosts. The
 checked-in `mu-plugins/blockify-fixture-media.php` therefore allows only the
-exact disposable URL `http://wordpress/blockify-fixture.png`; it is mounted
+exact disposable URL
+`http://wordpress/blockify-fixture.png`; it is mounted
 only in this harness and does not relax requests in generated or production
 WordPress environments.
 

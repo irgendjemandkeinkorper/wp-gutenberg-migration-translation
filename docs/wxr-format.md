@@ -1,10 +1,11 @@
 # Blockify WXR post metadata
 
-Every page/post item emitted by `buildWxr` carries four `_blockify_*` postmeta records. WordPress stores each value as text; the shapes below are the canonical contract consumed by reconciliation and downstream QA tooling.
+Every page/post item emitted by `buildWxr` carries five `_blockify_*` postmeta records. WordPress stores each value as text; the shapes below are the canonical contract consumed by reconciliation and downstream QA tooling.
 
 | Meta key | Type in WXR | Required value | Meaning |
 | --- | --- | --- | --- |
 | `_blockify_source_url` | string | `BundlePage.link` | The requested/source page URL used to identify the source record. It is emitted as an empty string only when the input page link is empty. |
+| `_blockify_migration_id` | string | `BundlePage.migrationId` or a deterministic `blockify-page-v1-*` fallback | Stable identity used to match the expected page to its imported WordPress post. The fallback hashes the fragment-free source URL, or the title/content when no source locator exists. |
 | `_blockify_source_html` | string | `BundlePage.sourceHtml \|\| ""` | The exact retained source HTML before conversion. It is evidence, not generated target markup. |
 | `_blockify_target_template` | string | `BundlePage.targetTemplate \|\| ""` | The selected target template/profile label. An empty value means no target template was selected. |
 | `_blockify_migration_placeholders` | JSON string | `JSON.stringify(BundlePage.placeholders \|\| [])` | The durable unsupported-content manifest described below. |

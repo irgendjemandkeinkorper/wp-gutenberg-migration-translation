@@ -11,7 +11,9 @@
       "src/test/compiler-core.test.ts",
       "integration/reliability/fixtures/hosted-builder.html",
       "integration/wordpress-harness/fixtures/known-good.wxr.xml",
-      "knowledge/evidence/wordpress/c6-known-good-wordpress-6.8.2.json"
+      "knowledge/evidence/wordpress/c6-known-good-wordpress-6.8.2.json",
+      "integration/wordpress-harness/fixtures/known-media.wxr.xml",
+      "knowledge/evidence/wordpress/a1-generated-harness-wordpress-6.8.2.json"
     ],
     "nextProbe": "Compare live destination text recall/order and rendered theme behavior before declaring full production support."
   },
@@ -25,7 +27,9 @@
     "evidence": [
       "integration/wordpress-harness/verification.mjs",
       "integration/wordpress-harness/fixtures/known-good.wxr.xml",
-      "knowledge/evidence/wordpress/c6-known-good-wordpress-6.8.2.json"
+      "knowledge/evidence/wordpress/c6-known-good-wordpress-6.8.2.json",
+      "integration/wordpress-harness/fixtures/known-media.wxr.xml",
+      "knowledge/evidence/wordpress/a1-generated-harness-wordpress-6.8.2.json"
     ],
     "nextProbe": "Expand the live fixture across layout/supports attributes and compare the rendered target tree."
   },
@@ -102,7 +106,8 @@
       "src/lib/media/registry.ts",
       "src/test/media.test.ts",
       "integration/wordpress-harness/fixtures/known-media.wxr.xml",
-      "knowledge/evidence/wordpress/a4-known-media-wordpress-6.8.2.json"
+      "knowledge/evidence/wordpress/a4-known-media-wordpress-6.8.2.json",
+      "knowledge/evidence/wordpress/a1-generated-harness-wordpress-6.8.2.json"
     ],
     "nextProbe": "Expand live import coverage to responsive srcset variants, captions, galleries, and the approved target theme."
   },
@@ -128,7 +133,13 @@
     "confidence": "high",
     "destination": "core/html migration placeholder",
     "lossModes": ["content is not semantically translated", "release remains blocked until reviewed or remediated"],
-    "evidence": ["src/lib/compiler/core.ts", "src/lib/blocks.ts", "src/test/compiler-core.test.ts"],
+    "evidence": [
+      "src/lib/compiler/core.ts",
+      "src/lib/blocks.ts",
+      "src/test/compiler-core.test.ts",
+      "integration/wordpress-harness/fixtures/known-media.wxr.xml",
+      "knowledge/evidence/wordpress/a1-generated-harness-wordpress-6.8.2.json"
+    ],
     "nextProbe": "Classify recurring unknown nodes and add a dedicated compiler only after a target capability is approved."
   },
   {

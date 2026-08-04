@@ -174,6 +174,31 @@ export class MediaPreflightError extends Error {
   }
 }
 
+/**
+ * Select the exact source URL shared by a WXR attachment and every inline use.
+ * A successful acquisition final URL is authoritative because it identifies
+ * the bytes that were actually fetched; otherwise preserve the observed URL.
+ */
+export function attachmentSourceUrl(record: MediaRegistryRecord): string {
+  const acquisition = record.acquisition;
+  const finalUrl = acquisition?.finalUrl?.trim();
+  const statusSucceeded =
+    acquisition?.status === null ||
+    (typeof acquisition?.status === "number" && acquisition.status >= 200 && acquisition.status < 400);
+  const hasContentIdentity = Boolean(record.contentHash || acquisition?.content?.sha256);
+
+  if (acquisition && finalUrl && acquisition.errors.length === 0 && statusSucceeded && hasContentIdentity) {
+    try {
+      const parsed = new URL(finalUrl);
+      if (parsed.protocol === "http:" || parsed.protocol === "https:") return finalUrl;
+    } catch {
+      // Fall through to the observed source rather than emitting an invalid URL.
+    }
+  }
+
+  return record.observedUrls[0] || acquisition?.requestedUrl || record.sourceUrls[0] || record.canonicalUrl;
+}
+
 /** Normalize URL spelling without treating CDN transformations as equivalent by guesswork. */
 export function normalizeMediaUrl(sourceUrl: string, baseUrl?: string): string {
   const raw = decodeHtmlEntities(sourceUrl.trim());
@@ -580,7 +605,7 @@ function replaceOneMediaUrl(
   }
   if (record.import.destinationUrl) return escapeHtmlAttribute(record.import.destinationUrl);
   if (options.preferAttachmentSource) {
-    return escapeHtmlAttribute(record.observedUrls[0] || record.canonicalUrl);
+    return escapeHtmlAttribute(attachmentSourceUrl(record));
   }
   if (options.requireDestination) {
     addFinding(findings, {
