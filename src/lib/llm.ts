@@ -1,5 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
-
 export type LlmProvider = "gemini" | "anthropic" | "openai";
 
 export const DEFAULT_MODEL = "gemini-3.6-flash";
@@ -381,6 +379,7 @@ export async function cleanHtml(opts: CleanHtmlOptions): Promise<string> {
   try {
     let response: unknown;
     if (request.transport === "gemini") {
+      const { GoogleGenAI } = await import("@google/genai");
       const ai = new GoogleGenAI({
         apiKey: request.apiKey,
         ...(proxyUrl

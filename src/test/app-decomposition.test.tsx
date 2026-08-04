@@ -118,6 +118,7 @@ describe("ResultsReviewPanel", () => {
 
     await act(async () => button(host, "Add page to WXR bundle").click());
     expect(onAddToBundle).toHaveBeenCalledOnce();
+    expect(host.textContent).toContain("Added to bundle ✓");
 
     const titleInput = host.querySelector<HTMLInputElement>('input[type="text"]');
     if (!titleInput) throw new Error("Title input not found");

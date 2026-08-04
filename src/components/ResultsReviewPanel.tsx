@@ -10,6 +10,7 @@ interface ResultsReviewPanelProps {
 
 export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle }: ResultsReviewPanelProps) {
   const [copied, setCopied] = useState(false);
+  const [addedResult, setAddedResult] = useState<PageResult | null>(null);
   const [copyError, setCopyError] = useState("");
   const [showIntermediate, setShowIntermediate] = useState(false);
   const [showImages, setShowImages] = useState(false);
@@ -40,6 +41,11 @@ export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle
     }
   }
 
+  function addToBundle() {
+    onAddToBundle();
+    setAddedResult(result);
+  }
+
   return (
     <section className="panel result-panel">
       <div className="panel-heading">
@@ -51,7 +57,7 @@ export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle
         <span className="result-badge">{result.images.length} assets audited</span>
       </div>
       {result.warnings.map((warning) => (
-        <p key={warning} className="warn-box">
+        <p key={warning} className="warn-box" role="alert">
           {warning}
         </p>
       ))}
@@ -68,8 +74,8 @@ export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle
         <button type="button" className="primary" onClick={() => void copyBlocks()}>
           {copied ? "Copied ✓" : "Copy to clipboard"}
         </button>
-        <button type="button" className="secondary" onClick={onAddToBundle}>
-          Add page to WXR bundle
+        <button type="button" className="secondary" onClick={addToBundle} aria-live="polite">
+          {addedResult === result ? "Added to bundle ✓" : "Add page to WXR bundle"}
         </button>
       </div>
       <p className="hint">To paste directly: WordPress block editor → ⋮ menu → Code editor → paste.</p>
@@ -78,7 +84,7 @@ export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle
       </pre>
 
       {result.placeholders.length > 0 && (
-        <div className="warn-box">
+        <div className="warn-box" role="alert">
           <strong>Manual migration needed</strong>
           <ul>
             {result.placeholders.map((placeholder) => (
