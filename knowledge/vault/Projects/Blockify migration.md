@@ -35,3 +35,4 @@ Local tests establish contracts; live WordPress harness results are required bef
 - [[Translation Observations/blockify-wp-6.8.2-known-media-shared-image|Query-string image aliases reconcile to one shared attachment]]
 - [[Translation Observations/blockify-wp-6.8.2-known-media-iframe-placeholder|Iframe remains an exact visible placeholder]]
 - [[Translation Observations/blockify-wp-6.8.2-malformed-group-delimiter|Malformed group delimiter fails the live parser gate]]
+- [[Translation Observations/blockify-wp-6.8.2-known-media-internal-link|Relative internal paragraph link survives import and resolves]]

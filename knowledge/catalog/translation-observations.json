@@ -131,5 +131,34 @@
     ],
     "relatedIssues": ["#71"],
     "nextProbe": "Keep this fixture in CI and add a minimal case for each newly observed delimiter or recovery failure."
+  },
+  {
+    "id": "blockify-wp-6.8.2-known-media-internal-link",
+    "label": "Relative internal paragraph link survives import and resolves",
+    "projectId": "blockify",
+    "capabilityId": "core/paragraph",
+    "sourcePattern": "One relative anchor from the first generated fixture page to the second page slug",
+    "destinationProfile": "WordPress 6.8.2 core/paragraph via official importer 0.8.3",
+    "outcome": "pass",
+    "evidenceTier": "disposable-wordpress",
+    "confidence": "high",
+    "observedAt": "2026-08-04",
+    "metrics": {
+      "expectedLinks": 1,
+      "actualLinks": 1,
+      "expectedInternalLinks": 1,
+      "actualInternalLinks": 1,
+      "brokenInternalLinks": 0,
+      "brokenInternalLinkRate": 0,
+      "exactPages": 2,
+      "findings": 0
+    },
+    "lossModes": [],
+    "evidence": [
+      "integration/wordpress-harness/fixtures/known-media.wxr.xml",
+      "knowledge/evidence/wordpress/a5-link-scorecard-wordpress-6.8.2.json"
+    ],
+    "relatedIssues": ["#13"],
+    "nextProbe": "Exercise redirected, fragment, query-string, cross-domain, and intentionally broken links against the approved target profile."
   }
 ]
