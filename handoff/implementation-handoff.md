@@ -1,17 +1,18 @@
 # Blockify Implementation Handoff
 
-Updated: 2026-08-03
+Updated: 2026-08-04
 
 Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation)
 
 ## Current baseline
 
-- Implementation HEAD before this handoff refresh: `b854274 Generate the live WordPress harness fixture`.
-- Latest implementation wave: A1/#11 deterministic production-generated WXR with stable page IDs/postmeta, two pages, one shared query-string image, one unsupported-content marker, and fresh live WordPress reconciliation evidence.
-- Branch: `main`, locally ahead of `origin/main` by 43 commits and behind by 21 commits before this handoff refresh; the next commit will make the local lead 44.
-- The implementation wave is committed separately from this handoff refresh. A clean worktree after the refresh commit is expected.
-- Do not pull, rebase, or reset blindly. Inspect the 21-commit divergence and preserve all forty-four local commits after this handoff refresh before synchronizing.
-- No implementation PR has been pushed and no branch-protection change has been made.
+- Implementation HEAD before this handoff refresh: `80f53ce Harden the reusable migration knowledge vault`.
+- Integration merge: `74a9bf9` has parents `7600045` (the preserved local PRD implementation) and `4d11563` (the then-current remote `main`), resolving the former 44-local/51-remote divergence without rebasing or dropping either history.
+- Branch: `codex/blockify-prd-integration-20260803`, tracking the same branch on `origin`.
+- Pull request: [#111](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/pull/111), open and mergeable. Its first real CI run passed both `Validate` and `WordPress integration`.
+- `main` branch protection is live: strict required checks `Validate` and `WordPress integration`, admin enforcement, conversation resolution, and force-push/deletion disabled. The zero-review setting is the documented single-maintainer exception; GitHub reported one direct collaborator.
+- The reusable knowledge layer is canonical JSON under `knowledge/catalog/`, validated and projected into 22 Obsidian notes. External vaults can be generated with `npm run knowledge:generate -- --vault <path>`.
+- A clean worktree after this handoff/protection documentation commit is expected.
 
 ## Implemented in c810d94
 
@@ -68,8 +69,9 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 
 ## Current verification evidence
 
-- `npm test -- --reporter=dot` — 40 test files, 181 tests passed.
+- `npm test -- --reporter=dot` — 48 test files, 236 tests passed.
 - `npm run verify` — production build, full test suite, and forced-process checkpoint integration passed with fixture-server/subprocess permissions.
+- `npm run test:ui` — 6 UI/accessibility smoke tests passed.
 - `npm run lint` and `npm run format:check` — passed.
 - `npm run check:bundle` — largest JavaScript asset remains below the 650,000-byte budget.
 - `npm audit --audit-level=high` — 0 vulnerabilities.
@@ -78,6 +80,8 @@ Repository: [irgendjemandkeinkorper/wp-gutenberg-migration-translation](https://
 - `npm run fixtures:wordpress:check` — passed at SHA-256 `de03c2e3da37a743818cc000c03ac98a296c84c75bcf3ccbaf4fa58a364e8960`.
 - `npm run test:wordpress -- --dry-run` — default generated `known-media` fixture passed without Docker.
 - `npm run knowledge:check` — 22 generated Obsidian-vault files match the canonical catalogs.
+- PR #111 CI run [30876469818](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/actions/runs/30876469818) — `Validate` and `WordPress integration` both passed on the real pull request; this completed #55's remote-run acceptance.
+- Post-merge local live report: `/tmp/blockify-wordpress-harness/reports/blockify-wp-run-1785815738496-390454/reconciliation-report.json` — generated known-media fixture imported and reconciled successfully after the remote-main integration.
 - Live known-good WordPress report: `/tmp/blockify-wordpress-harness/reports/blockify-wp-codex-live-92-10-20260804b/reconciliation-report.json` — passed with one stable page and two registered Gutenberg blocks.
 - Live known-malformed report: `/tmp/blockify-wordpress-harness/reports/blockify-wp-codex-live-92-malformed-20260804a/reconciliation-report.json` — failed as expected with actionable parser/freeform findings; its disposable containers and volumes were removed after evidence capture.
 - Live known-media report: `/tmp/blockify-wordpress-harness/reports/blockify-wp-codex-live-10-media-20260804b/reconciliation-report.json` — passed with two stable pages, one attachment, and one shared destination uploads URL. Sanitized durable evidence is committed at `knowledge/evidence/wordpress/a4-known-media-wordpress-6.8.2.json`.
@@ -135,13 +139,17 @@ Closed with implementation evidence:
 
 Implemented but intentionally still open:
 
-- [#11](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/11) — generated-fixture, successful-import, and actionable-failure acceptance now pass locally; dependency #55 still requires a successful check on a real PR before closure. Evidence comment: [#issuecomment-5174191557](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/11#issuecomment-5174191557).
+- [#11](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/11) — generated-fixture, successful-import, and actionable-failure acceptance pass; dependency #55 is now closed. Keep #11 open only until PR #111 lands on protected `main`, then reconcile it using [the retained evidence comment](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/11#issuecomment-5174191557).
 - [#13](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/13) — durable success/failure scorecards now have live evidence; dependent page/media reconciliation acceptance remains.
 - [#70](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/70) — live imported IDs/URLs/counts and remaining-source-host checks now pass, but its #11 dependency remains open.
 - [#71](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/71) — live parser and malformed-fixture evidence now exists, but its #11 dependency remains open.
 - [#104](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/104) — stable page identity, source/audit postmeta, text/structure, and placeholder-count reconciliation now have live imported-page evidence; its #11 dependency remains open.
-- [#55](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/55) — needs an actual PR check run and branch protection requiring `CI / Validate`.
 - [#78](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/78) — blocked at the human-decision gate pending authoritative target capability data.
+
+External Gate 0 work completed during integration:
+
+- [#55](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/55) — closed after both jobs passed on real PR #111.
+- [#56](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/56) — protected-main settings are applied and verified; the exact policy and single-maintainer review exception are recorded in `CONTRIBUTING.md`.
 
 The original backlog setup report and complete A1–H5 mapping are in [`github-backlog-setup-report.md`](./github-backlog-setup-report.md). The source requirements remain [`blockify-human-grade-migration-prd.md`](./blockify-human-grade-migration-prd.md) and [`blockify-github-issue-manifest.json`](./blockify-github-issue-manifest.json).
 
@@ -149,16 +157,16 @@ The original backlog setup report and complete A1–H5 mapping are in [`github-b
 
 Work in these disjoint scopes:
 
-1. Inspect the 21-commit remote divergence, then run the WordPress integration job on a real PR to satisfy #55; complete #56 only through protected-main verification.
-2. After #55 clears, reconcile/close #11 and then #71/#104/#70/#13 in dependency order against their remaining acceptance and human-review gates. The generated live report is local evidence, not permission to bypass dependencies.
+1. Review and merge PR #111 through the protected-main checks; do not bypass the required contexts.
+2. After the implementation is on `main`, reconcile/close #11 and then #71/#104/#70/#13 in dependency order against their remaining acceptance and human-review gates. The generated live report is evidence, not permission to bypass dependencies.
 3. Keep #78 at its authoritative human-decision gate and #107 blocked by #100; do not infer target behavior from synthetic fixtures.
-4. Preserve this handoff and inspect the 21-commit remote divergence before any synchronization.
+4. Continue recording reusable block successes, loss modes, evidence, and next probes in `knowledge/catalog/`, then regenerate the Obsidian projection.
 
 Do not start #90/#94/#96 or downstream target-profile work without authoritative target data from #78. Do not start pilot/release work before its human-decision and corpus gates close.
 
 ## Later dependency order
 
-- M1: B3/#10 is complete with live media evidence. A1/#11 is locally accepted but blocked by #55's real-PR check; clear #55, then reconcile #11 and A2/A3/A4/A5 (#71/#104/#70/#13) against remaining gates.
+- M1: B3/#10 and CI/#55 are complete with live evidence. Merge PR #111, then reconcile A1/#11 and A2/A3/A4/A5 (#71/#104/#70/#13) against their remaining gates.
 - M3: C1 before C2–C6; D1 before D2–D6.
 - M2: E1 before E2–E5.
 - M4: F/G work after the shared IR and workspace contracts stabilize.
@@ -170,5 +178,5 @@ Do not start #90/#94/#96 or downstream target-profile work without authoritative
 - Preserve existing user changes and all local implementation commits.
 - Keep each agent’s write set disjoint and return changed files, tests, risks, and open questions.
 - Do not close an issue based only on intent or local unit tests when its acceptance requires external WordPress, PR, authoritative target, or pilot evidence.
-- The local branch remains behind `origin/main` by 21 commits and ahead by forty-four local commits after this handoff refresh; inspect divergence before synchronization. No implementation PR or push has been made.
-- GitHub comments were posted for the 25 implemented PRD issues, G4/#84, E3/#89, WXR schema/#62, CI/#7/#55, A3/#104, A4/#70, #10/#11/#13/#71, and the repository/code-quality issues #43–#54/#57–#60. #13, #70, #71, #78, #104, #55, and #56 remain open; #12 was already closed before this work. #42 remains open only for the unperformed history-size rewrite.
+- The former remote divergence is integrated in merge commit `74a9bf9`; do not re-run the old merge/rebase investigation. PR #111 is the authoritative review surface.
+- GitHub comments were posted for the 25 implemented PRD issues, G4/#84, E3/#89, WXR schema/#62, CI/#7/#55, A3/#104, A4/#70, #10/#11/#13/#71, and the repository/code-quality issues #43–#54/#57–#60. #55 is closed; #56 has verified settings and repository documentation. #13, #70, #71, #78, and #104 remain open; #11 awaits merge/reconciliation; #12 was already closed before this work. #42 remains open only for the unperformed history-size rewrite.

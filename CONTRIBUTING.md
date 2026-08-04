@@ -23,3 +23,26 @@ For agent work, choose the next dependency-ready issue from [`handoff/implementa
 Keep acquisition evidence immutable, keep semantic IR source-agnostic, and add focused fixtures for every new migration behavior. Do not close issues whose acceptance requires live WordPress, authoritative target data, protected-branch checks, or pilot evidence without those checks.
 
 Pull requests should describe changed files, tests, external validation, risks, and remaining decisions. Keep dependency-ordered issue scopes disjoint when using parallel agents.
+
+## Protected `main` policy
+
+`main` is protected with strict, up-to-date status checks. Pull requests must
+pass both CI job contexts before merge:
+
+- `Validate` — clean install, formatting, lint, build/tests, bundle budget, and
+  high-severity dependency audit;
+- `WordPress integration` — harness dry-run, interruption recovery, and a live
+  disposable WordPress import with retained failure diagnostics.
+
+The rule applies to administrators, blocks force pushes and branch deletion,
+and requires conversation resolution. At configuration time on 2026-08-04,
+GitHub reported one direct collaborator: the repository owner. Required review
+count is therefore intentionally zero under the single-maintainer exception in
+[#56](https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/issues/56).
+Enable at least one approving review before adding a second direct collaborator.
+
+Administrators can inspect the live settings export with:
+
+```bash
+gh api repos/irgendjemandkeinkorper/wp-gutenberg-migration-translation/branches/main/protection
+```
