@@ -156,9 +156,10 @@
     "lossModes": [],
     "evidence": [
       "integration/wordpress-harness/fixtures/known-media.wxr.xml",
-      "knowledge/evidence/wordpress/a5-link-scorecard-wordpress-6.8.2.json"
+      "knowledge/evidence/wordpress/a5-link-scorecard-wordpress-6.8.2.json",
+      "https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/actions/runs/30914775244"
     ],
-    "relatedIssues": ["#13"],
+    "relatedIssues": ["#13", "PR #125"],
     "nextProbe": "Exercise redirected, fragment, query-string, cross-domain, and intentionally broken links against the approved target profile."
   }
 ]

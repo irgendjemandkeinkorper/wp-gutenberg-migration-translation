@@ -44,10 +44,12 @@ WordPress 6.8.2 core/paragraph via official importer 0.8.3
 
 - <code>integration/wordpress-harness/fixtures/known-media.wxr.xml</code>
 - <code>knowledge/evidence/wordpress/a5-link-scorecard-wordpress-6.8.2.json</code>
+- <code>https://github.com/irgendjemandkeinkorper/wp-gutenberg-migration-translation/actions/runs/30914775244</code>
 
 ## Related work
 
 - #13
+- PR #125
 
 ## Next probe
 
