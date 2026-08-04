@@ -24,6 +24,7 @@ confidence: "high"
 - <code>knowledge/evidence/wordpress/c6-known-good-wordpress-6.8.2.json</code>
 - <code>integration/wordpress-harness/fixtures/known-media.wxr.xml</code>
 - <code>knowledge/evidence/wordpress/a1-generated-harness-wordpress-6.8.2.json</code>
+- <code>knowledge/evidence/wordpress/a3-text-placeholder-wordpress-6.8.2.json</code>
 
 ## Next probe
 

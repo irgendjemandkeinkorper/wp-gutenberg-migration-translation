@@ -20,3 +20,6 @@ Compare immutable source evidence with destination records, isolate the compiler
 
 - <code>src/lib/qa/reconciliation.ts</code>
 - <code>docs/reconciliation.md</code>
+- <code>integration/wordpress-harness/verification.mjs</code>
+- <code>integration/wordpress-harness/verification.test.mjs</code>
+- <code>knowledge/evidence/wordpress/a3-text-placeholder-wordpress-6.8.2.json</code>

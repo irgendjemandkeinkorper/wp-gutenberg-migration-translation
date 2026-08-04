@@ -22,9 +22,9 @@ The pipeline keeps the LLM on judgment and off mechanics (the design proven in
    outside the LLM's reach, so it cannot hallucinate or silently discard them.
 3. **Clean (AI)** — choose Google Gemini, Anthropic Claude, or OpenAI. The
    selected model normalizes messy HTML to a 22-tag whitelist fragment (`h2 h3
-   h4 p ul ol li blockquote pre code table thead tbody tr th td strong em a br
-   hr sup sub`, `href` only). Boilerplate is dropped.
-4. **Validate** — the contract is enforced *in code*: wrapper elements
+h4 p ul ol li blockquote pre code table thead tbody tr th td strong em a br
+hr sup sub`, `href` only). Boilerplate is dropped.
+4. **Validate** — the contract is enforced _in code_: wrapper elements
    unwrapped, off-whitelist tags removed, attributes stripped, token
    drift detected and retried (max 2), then repaired with an explicit
    "position lost" warning instead of silent image loss.
@@ -34,8 +34,8 @@ The pipeline keeps the LLM on judgment and off mechanics (the design proven in
    with captions).
 6. **WXR export** — converted pages accumulate in a bundle; download produces
    a WXR 1.2 file. With "Sideload images" on, each image gets an attachment
-   item so the WordPress importer (with *Download and import file
-   attachments* checked) copies it into the media library and remaps URLs.
+   item so the WordPress importer (with _Download and import file
+   attachments_ checked) copies it into the media library and remaps URLs.
    Duplicate URLs are emitted once and attachment filename/MIME metadata is
    included for more reliable WordPress imports.
 7. **Migration QA** — unsupported interactive content (embeds, media players,
@@ -102,14 +102,16 @@ Blockify is designed with a strict security boundary that separates local privat
 ### Supported Deployment Modes
 
 #### 1. Private Pilot Mode (Direct-Browser)
-* **Goal**: Local development, individual testing, or private team pilots.
-* **Security Mechanics**: The operator inputs their personal Google Gemini API key directly into the settings panel. This key is held **strictly in browser memory (React state)** and is never written to `localStorage`, cookies, or persistent storage. It will be completely cleared if the browser tab is reloaded or closed.
-* **Risks**: Exposing keys on frontends or prompting public users to enter their keys is highly discouraged. Direct-browser key entries are **unsafe for public production deployment** because credentials can easily be leaked or misused.
+
+- **Goal**: Local development, individual testing, or private team pilots.
+- **Security Mechanics**: The operator inputs their personal Google Gemini API key directly into the settings panel. This key is held **strictly in browser memory (React state)** and is never written to `localStorage`, cookies, or persistent storage. It will be completely cleared if the browser tab is reloaded or closed.
+- **Risks**: Exposing keys on frontends or prompting public users to enter their keys is highly discouraged. Direct-browser key entries are **unsafe for public production deployment** because credentials can easily be leaked or misused.
 
 #### 2. Production Proxy Mode (Secure Server-Side Key)
-* **Goal**: Safe public production hosting.
-* **Security Mechanics**: The frontend application does not accept or hold any Gemini API keys. Instead, it is configured with a **Proxy Endpoint URL**. All clean/normalization LLM requests are routed through this self-hosted proxy backend, which securely appends the actual production API key, implements backend rate-limiting, and hides credentials completely from frontend clients.
-* **Configuration**: Specify the Proxy URL and optional Proxy Access Token in settings. Non-sensitive config like the Proxy URL is stored in `localStorage` for convenience, while the Proxy Access Token is kept strictly in browser memory.
+
+- **Goal**: Safe public production hosting.
+- **Security Mechanics**: The frontend application does not accept or hold any Gemini API keys. Instead, it is configured with a **Proxy Endpoint URL**. All clean/normalization LLM requests are routed through this self-hosted proxy backend, which securely appends the actual production API key, implements backend rate-limiting, and hides credentials completely from frontend clients.
+- **Configuration**: Specify the Proxy URL and optional Proxy Access Token in settings. Non-sensitive config like the Proxy URL is stored in `localStorage` for convenience, while the Proxy Access Token is kept strictly in browser memory.
 
 ---
 
@@ -118,14 +120,17 @@ Blockify is designed with a strict security boundary that separates local privat
 For production deployment, your self-hosted backend proxy must conform to the standard Gemini API REST interface so that the Google Gen AI SDK can interact with it seamlessly.
 
 #### 1. Upstream Endpoint Mapping
+
 The proxy must listen for standard POST requests on the following path and forward them securely to the Google API:
-* **Client Request Path**: `/v1/models/{model}:generateContent`
-* **Upstream Target**: `https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key=SECURE_API_KEY_HERE`
+
+- **Client Request Path**: `/v1/models/{model}:generateContent`
+- **Upstream Target**: `https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key=SECURE_API_KEY_HERE`
 
 The backend proxy is responsible for appending the `key` query parameter using the secure, server-side secret key, and stripping any frontend-supplied mock key.
 
 #### 2. Request / Response Payloads
-* **Request Format**: Standard JSON `application/json`
+
+- **Request Format**: Standard JSON `application/json`
   ```json
   {
     "contents": {
@@ -148,7 +153,7 @@ The backend proxy is responsible for appending the `key` query parameter using t
     }
   }
   ```
-* **Response Format**: Standard JSON `application/json`
+- **Response Format**: Standard JSON `application/json`
   ```json
   {
     "candidates": [
@@ -166,6 +171,7 @@ The backend proxy is responsible for appending the `key` query parameter using t
   ```
 
 #### 3. Client Authorization (Optional)
+
 If your proxy requires client authentication, the frontend sends the Proxy Access Token as a standard `Authorization: Bearer <TOKEN>` header. Your proxy must validate this token before forwarding the request to Google.
 
 ---
@@ -180,6 +186,7 @@ Before deploying Blockify publicly or upgrading your pilot, check off the follow
 - [ ] **No Raw Payload Logging**: Configure proxy logging so that it records metadata (timestamp, model, status) but **never** logs the raw HTML contents, source URLs, or authorization tokens.
 - [ ] **Key Rotation Schedule**: Put in place a regular rotation schedule (e.g., every 90 days) for both Google Gemini API keys and Proxy Access Tokens.
 - [ ] **Rate Limiting**: Enforce strict server-side rate limits on the proxy (e.g., max 5 requests per minute per IP) to prevent abuse and budget exhaustion.
+
 ### Privacy & Reliability
 
 When migrating content, keep the following security and privacy boundaries in mind:
@@ -187,6 +194,24 @@ When migrating content, keep the following security and privacy boundaries in mi
 - **Fetch URL (Browser Mode):** Uses third-party public CORS proxies (`corsproxy.io` and `api.allorigins.win`) to fetch page source. Avoid this mode for sensitive, paywalled, or internal intranet pages, as your request and content pass through these public services.
 - **Paste HTML (Recommended Private Path):** Pasting the source HTML directly is fully private. All extraction, tokenization, and cleaning (if Skip LLM is checked) occur locally in your browser. (LLM requests only send the cleaned text to Gemini if enabled).
 - **Local Site Crawler:** Running `scripts/crawl.mjs` runs locally on your machine. It makes direct requests from your Node process, avoiding third-party proxies, making it the secure and reliable path for private or bulk content.
+
+## Durable Migration Knowledge
+
+Reusable block capability, failure, project, and translation-observation records
+live in [`knowledge/catalog/`](knowledge/README.md). The catalog records both
+successful and unsuccessful project/profile outcomes with retained evidence,
+metrics, loss modes, and next probes. `knowledge/vault/` is the generated
+Obsidian browsing surface; Git-reviewed JSON remains canonical.
+
+```bash
+npm run knowledge:generate # regenerate the repository Obsidian vault
+npm run knowledge:check    # fail if catalogs or generated notes drift
+node scripts/generate-knowledge-vault.mjs --write --vault /path/to/shared/vault
+```
+
+The canonical `npm run verify` command includes `knowledge:check`, so stale
+vault projections fail CI. See the [knowledge workflow](knowledge/README.md)
+before promoting a block capability or adding a project observation.
 
 ## Development
 
@@ -205,7 +230,9 @@ Deploys to GitHub Pages automatically on push to `main`
 To prevent runtime conversion failures due to stale, retired, or malformed model IDs, the application maintains a canonical model catalog in `src/lib/llm.ts`.
 
 ### Model Catalog Structure
+
 Every selectable model in the application is defined inside the `PROVIDER_CATALOG` configuration with:
+
 - **`id`**: The exact technical model identifier passed to the provider API.
 - **`name`**: The user-friendly name displayed in Settings.
 - **`status`**: Current compatibility status (`supported`, `stale`, or `unsupported`). Unsupported or stale selections fail validation prior to conversion to prevent wasting API calls.
@@ -213,7 +240,9 @@ Every selectable model in the application is defined inside the `PROVIDER_CATALO
 - **`documentationUrl`**: Link to the provider's official model list documentation.
 
 ### Verifying Catalog Updates
+
 When introducing new models or changing model statuses:
+
 1. **Validation Checks**: Update `PROVIDER_CATALOG` in `src/lib/llm.ts` to include the model details, setting the appropriate status and updating the `lastVerified` timestamp.
 2. **Settings UI Auto-Population**: The Settings dropdown dynamically reads from `PROVIDER_CATALOG`, ensuring model selection lists are automatically synchronized without code duplication.
 3. **Contract Tests**: Run `npm run test` to execute unit tests in `src/test/provider.test.ts`. These verify:

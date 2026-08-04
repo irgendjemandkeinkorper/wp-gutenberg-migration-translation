@@ -4,6 +4,7 @@ This vault is generated from `knowledge/catalog/`. Edit the canonical JSON recor
 
 - [[Block Capabilities]] — what translates, its evidence tier, known loss modes, and next probe
 - [[Failure Classes]] — reusable symptoms and remediation paths
+- [[Translation Observations]] — project/version-specific passes, partial translations, placeholders, and failures
 - [[Projects/Blockify migration]] — project scope and open release gates
 
 ## Evidence tiers

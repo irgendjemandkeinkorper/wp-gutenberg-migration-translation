@@ -46,7 +46,13 @@
     "severity": "blocking",
     "symptom": "Imported meaningful text has recall below 1 or violates source sequence.",
     "remediation": "Compare immutable source evidence with destination records, isolate the compiler or parser boundary, and add a minimal regression fixture.",
-    "evidence": ["src/lib/qa/reconciliation.ts", "docs/reconciliation.md"]
+    "evidence": [
+      "src/lib/qa/reconciliation.ts",
+      "docs/reconciliation.md",
+      "integration/wordpress-harness/verification.mjs",
+      "integration/wordpress-harness/verification.test.mjs",
+      "knowledge/evidence/wordpress/a3-text-placeholder-wordpress-6.8.2.json"
+    ]
   },
   {
     "id": "placeholder-drift",
@@ -54,7 +60,14 @@
     "severity": "blocking",
     "symptom": "Expected placeholder IDs do not match imported IDs one-to-one.",
     "remediation": "Preserve stable exception identity through IR, WXR metadata, import, and reconciliation; never silently discard unresolved content.",
-    "evidence": ["src/lib/qa/reconciliation.ts", "src/lib/exceptions/lifecycle.ts", "docs/wxr-format.md"]
+    "evidence": [
+      "src/lib/qa/reconciliation.ts",
+      "src/lib/exceptions/lifecycle.ts",
+      "docs/wxr-format.md",
+      "integration/wordpress-harness/verification.mjs",
+      "integration/wordpress-harness/verification.test.mjs",
+      "knowledge/evidence/wordpress/a3-text-placeholder-wordpress-6.8.2.json"
+    ]
   },
   {
     "id": "source-evidence-missing",

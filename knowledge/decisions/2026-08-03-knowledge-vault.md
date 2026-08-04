@@ -11,6 +11,11 @@ catalogs under `knowledge/catalog/` and projected into `knowledge/vault/` for
 Obsidian browsing. External vaults may be generated with
 `scripts/generate-knowledge-vault.mjs --vault <path> --write`.
 
+Project/version-specific outcomes live in the translation-observation catalog.
+They preserve both successful and unsuccessful block mappings, metrics, target
+profile, evidence tier, loss modes, and next probes without turning one fixture
+into a global capability claim.
+
 The catalog must distinguish local-contract evidence, disposable WordPress
 parser verification, and approved target-profile verification. A block is not
 considered production-supported merely because a unit test, deterministic

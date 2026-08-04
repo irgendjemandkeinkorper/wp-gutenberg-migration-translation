@@ -6,7 +6,14 @@
     "scope": "HTML/source evidence to Gutenberg IR, deterministic blocks, WXR delivery, and verified WordPress import",
     "repository": "wp-gutenberg-migration-translation",
     "evidencePolicy": "Local tests establish contracts; live WordPress harness results are required before declaring production support.",
-    "openGates": ["target profile approval", "branch-protected CI", "pilot/release decision"],
-    "catalogs": ["block-capabilities", "failure-classes"]
+    "openGates": [
+      "B4 acquisition coverage disposition (#68)",
+      "A4 dependency reconciliation after B4 (#70)",
+      "M1 stable finding IDs, thresholds, schema, and HTML report (#13)",
+      "M1 final CI gate after every exit criterion (#7)",
+      "authoritative target profile approval (#78)",
+      "pilot/release decision"
+    ],
+    "catalogs": ["block-capabilities", "failure-classes", "translation-observations"]
   }
 ]
