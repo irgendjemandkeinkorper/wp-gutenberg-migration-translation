@@ -1005,6 +1005,4 @@ export function parseWorkspaceManifest(serialized: string, options: ParseManifes
   return parsed;
 }
 
-export * from "./checkpoint";
 export * from "./retry";
-export * from "./package";
