@@ -170,6 +170,7 @@ export function SourceInputPanel({
               className="file-input"
               type="file"
               accept=".json,application/json"
+              aria-label="Upload crawl JSON file"
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (file) void onBatchFile(file);
@@ -219,6 +220,7 @@ export function SourceInputPanel({
               onChange={(event) => onPastedHtmlChange(event.target.value)}
               placeholder="<html>…</html>"
               rows={10}
+              aria-label="Paste HTML source here"
             />
             <label>
               Page URL <span className="muted">(optional — resolves relative image links)</span>
