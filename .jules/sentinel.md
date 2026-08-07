@@ -19,3 +19,7 @@
 **Vulnerability:** The raw error message from the Gemini API or LLM SDK could leak the API key if thrown during a network failure or validation error, and is then surfaced directly to the user interface via `String(e)`.
 **Learning:** External API errors often reflect request payloads or sensitive identifiers. They must be sanitized before being caught and stored in application state that is rendered to the DOM.
 **Prevention:** Catch errors where the API SDK is invoked (`src/lib/llm.ts`) and sanitize the error message (e.g., removing `AIzaSy...`) before rethrowing it.
+## 2024-05-18 - Missing noopener noreferrer on target blank links
+**Vulnerability:** Found `target="_blank"` anchor tags lacking the `rel="noopener noreferrer"` attribute, exposing the application to reverse tabnabbing attacks.
+**Learning:** React elements with `target="_blank"` should always explicitly define `rel="noopener noreferrer"` as older browsers do not implicitly apply this protection, creating a risk where the opened window could access `window.opener`.
+**Prevention:** Ensure all external links using `target="_blank"` explicitly include `rel="noopener noreferrer"`. Validate this with ESLint rules (like `react/jsx-no-target-blank`).

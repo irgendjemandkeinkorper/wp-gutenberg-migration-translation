@@ -153,7 +153,7 @@ export function SourceInputPanel({
         </label>
         <p className="hint">
           Stored with each page for implementation and QA. Compare against the{" "}
-          <a href="https://golfnowbusiness.com/template-library/" target="_blank" rel="noreferrer">
+          <a href="https://golfnowbusiness.com/template-library/" target="_blank" rel="noopener noreferrer">
             template library
           </a>
           .

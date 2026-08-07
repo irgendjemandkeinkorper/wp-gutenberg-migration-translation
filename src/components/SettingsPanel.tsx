@@ -110,7 +110,7 @@ export function SettingsPanel({
             />
             <span className="field-help">
               Need one?{" "}
-              <a href={providerConfig.keyUrl} target="_blank" rel="noreferrer">
+              <a href={providerConfig.keyUrl} target="_blank" rel="noopener noreferrer">
                 Open {providerConfig.shortName} key settings
               </a>
             </span>
