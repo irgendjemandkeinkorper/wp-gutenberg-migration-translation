@@ -201,8 +201,9 @@ export default function App() {
     setBatchStatus(new Map(runStatus));
 
     const update = (index: number, state: BatchState) => {
-      runStatus = new Map(runStatus).set(index, state);
-      setBatchStatus(new Map(runStatus));
+      runStatus = new Map(runStatus);
+      runStatus.set(index, state);
+      setBatchStatus(runStatus);
     };
 
     try {
