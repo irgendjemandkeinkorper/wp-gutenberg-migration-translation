@@ -172,7 +172,6 @@ export function SourceInputPanel({
               aria-label="Load crawl JSON file"
               className="file-input"
               type="file"
-              aria-label="Upload crawl JSON file"
               accept=".json,application/json"
               onChange={(event) => {
                 const file = event.target.files?.[0];
@@ -221,7 +220,6 @@ export function SourceInputPanel({
             <textarea
               aria-label="Paste HTML source code"
               value={pastedHtml}
-              aria-label="Paste HTML source code"
               onChange={(event) => onPastedHtmlChange(event.target.value)}
               placeholder="<html>…</html>"
               rows={10}
