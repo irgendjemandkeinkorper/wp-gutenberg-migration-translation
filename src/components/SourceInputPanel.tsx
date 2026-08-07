@@ -167,6 +167,7 @@ export function SourceInputPanel({
               selector, skip-LLM, model) and added to the WXR bundle.
             </p>
             <input
+              aria-label="Load crawl JSON file"
               className="file-input"
               type="file"
               accept=".json,application/json"
@@ -215,6 +216,7 @@ export function SourceInputPanel({
               JS-rendered pages), then paste it here.
             </p>
             <textarea
+              aria-label="Paste HTML source code"
               value={pastedHtml}
               onChange={(event) => onPastedHtmlChange(event.target.value)}
               placeholder="<html>…</html>"
