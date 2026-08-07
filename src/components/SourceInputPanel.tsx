@@ -91,10 +91,11 @@ export function SourceInputPanel({
   onCancelBatch,
   onResumeBatch,
 }: SourceInputPanelProps) {
-  const batchCounts = Array.from(batchStatus.values()).reduce(
-    (counts, item) => ({ ...counts, [item.status]: counts[item.status] + 1 }),
-    { pending: 0, converting: 0, done: 0, error: 0, cancelled: 0 } satisfies Record<BatchPageStatus, number>,
-  );
+  // ⚡ Bolt: Avoid Array.from and O(N^2) object spread inside reducer for frequent UI updates
+  const batchCounts: Record<BatchPageStatus, number> = { pending: 0, converting: 0, done: 0, error: 0, cancelled: 0 };
+  for (const item of batchStatus.values()) {
+    batchCounts[item.status]++;
+  }
   const canResume = batchCounts.error > 0 || batchCounts.cancelled > 0;
 
   return (
