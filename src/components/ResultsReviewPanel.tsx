@@ -71,7 +71,7 @@ export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle
         <input type="text" value={title} onChange={(event) => onTitleChange(event.target.value)} />
       </label>
       <div className="row">
-        <button type="button" className="primary" onClick={() => void copyBlocks()}>
+        <button type="button" className="primary" onClick={() => void copyBlocks()} aria-live="polite">
           {copied ? "Copied ✓" : "Copy to clipboard"}
         </button>
         <button type="button" className="secondary" onClick={addToBundle} aria-live="polite">
