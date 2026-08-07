@@ -91,10 +91,12 @@ export function SourceInputPanel({
   onCancelBatch,
   onResumeBatch,
 }: SourceInputPanelProps) {
-  const batchCounts = Array.from(batchStatus.values()).reduce(
-    (counts, item) => ({ ...counts, [item.status]: counts[item.status] + 1 }),
-    { pending: 0, converting: 0, done: 0, error: 0, cancelled: 0 } satisfies Record<BatchPageStatus, number>,
-  );
+  // Optimization: use a for...of loop instead of Array.from().reduce() with object spread
+  // to avoid O(N) intermediate array and object allocations during frequent re-renders.
+  const batchCounts: Record<BatchPageStatus, number> = { pending: 0, converting: 0, done: 0, error: 0, cancelled: 0 };
+  for (const item of batchStatus.values()) {
+    batchCounts[item.status]++;
+  }
   const canResume = batchCounts.error > 0 || batchCounts.cancelled > 0;
 
   return (
@@ -167,6 +169,7 @@ export function SourceInputPanel({
               selector, skip-LLM, model) and added to the WXR bundle.
             </p>
             <input
+              aria-label="Load crawl JSON file"
               className="file-input"
               type="file"
               accept=".json,application/json"
@@ -215,6 +218,7 @@ export function SourceInputPanel({
               JS-rendered pages), then paste it here.
             </p>
             <textarea
+              aria-label="Paste HTML source code"
               value={pastedHtml}
               onChange={(event) => onPastedHtmlChange(event.target.value)}
               placeholder="<html>…</html>"
