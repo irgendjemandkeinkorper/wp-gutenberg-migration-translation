@@ -75,10 +75,14 @@ export default function App() {
   useEffect(() => localStorage.setItem("blockify.targetTemplate", targetTemplate), [targetTemplate]);
   useEffect(() => saveBatchPages(batch), [batch]);
   useEffect(() => saveBatchFileName(batchFileName), [batchFileName]);
-  useEffect(
-    () => saveBatchStatus(Object.fromEntries(Array.from(batchStatus, ([index, state]) => [String(index), state]))),
-    [batchStatus],
-  );
+  useEffect(() => {
+    // ⚡ Bolt: Avoid Array.from allocation and object intermediate for serialization
+    const statusObj: Record<string, BatchState> = {};
+    for (const [index, state] of batchStatus) {
+      statusObj[String(index)] = state;
+    }
+    saveBatchStatus(statusObj);
+  }, [batchStatus]);
 
   function hasConversionCredentials(): boolean {
     if (skipLlm) return true;

@@ -91,8 +91,7 @@ export function SourceInputPanel({
   onCancelBatch,
   onResumeBatch,
 }: SourceInputPanelProps) {
-  // Optimization: use a for...of loop instead of Array.from().reduce() with object spread
-  // to avoid O(N) intermediate array and object allocations during frequent re-renders.
+  // ⚡ Bolt: Avoid Array.from and O(N^2) object spread inside reducer for frequent UI updates
   const batchCounts: Record<BatchPageStatus, number> = { pending: 0, converting: 0, done: 0, error: 0, cancelled: 0 };
   for (const item of batchStatus.values()) {
     batchCounts[item.status]++;
