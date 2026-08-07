@@ -26,3 +26,7 @@
 ## 2024-05-18 - Bare input and textarea elements missing accessible names
 **Learning:** Bare input (`<input type="file">`) and textareas without corresponding explicit `<label>`s are not fully accessible and provide limited context to screen readers on what input is expected.
 **Action:** Use `aria-label` to give these form elements explicit accessible names that communicate their purpose to users relying on assistive technologies.
+
+## 2024-08-06 - Accessible Input Fields Without Labels
+**Learning:** Bare `<input type="file">` and `<textarea>` elements without associated `<label>` tags need explicit `aria-label` attributes to ensure screen readers can announce their purpose correctly.
+**Action:** Always add descriptive `aria-label` to form inputs that do not have explicitly associated labels, especially for raw text areas and file uploads.

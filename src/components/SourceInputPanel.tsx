@@ -91,10 +91,12 @@ export function SourceInputPanel({
   onCancelBatch,
   onResumeBatch,
 }: SourceInputPanelProps) {
-  const batchCounts = Array.from(batchStatus.values()).reduce(
-    (counts, item) => ({ ...counts, [item.status]: counts[item.status] + 1 }),
-    { pending: 0, converting: 0, done: 0, error: 0, cancelled: 0 } satisfies Record<BatchPageStatus, number>,
-  );
+  // Optimization: use a for...of loop instead of Array.from().reduce() with object spread
+  // to avoid O(N) intermediate array and object allocations during frequent re-renders.
+  const batchCounts: Record<BatchPageStatus, number> = { pending: 0, converting: 0, done: 0, error: 0, cancelled: 0 };
+  for (const item of batchStatus.values()) {
+    batchCounts[item.status]++;
+  }
   const canResume = batchCounts.error > 0 || batchCounts.cancelled > 0;
 
   return (
@@ -170,6 +172,7 @@ export function SourceInputPanel({
               aria-label="Load crawl JSON file"
               className="file-input"
               type="file"
+              aria-label="Upload crawl JSON file"
               accept=".json,application/json"
               onChange={(event) => {
                 const file = event.target.files?.[0];
@@ -218,6 +221,7 @@ export function SourceInputPanel({
             <textarea
               aria-label="Paste HTML source code"
               value={pastedHtml}
+              aria-label="Paste HTML source code"
               onChange={(event) => onPastedHtmlChange(event.target.value)}
               placeholder="<html>…</html>"
               rows={10}
