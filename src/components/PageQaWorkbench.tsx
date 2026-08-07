@@ -204,7 +204,7 @@ export function PageQaWorkbench({
         </p>
         {record.current.destination.referenceUrl && (
           <p>
-            <a href={record.current.destination.referenceUrl} target="_blank" rel="noreferrer">
+            <a href={record.current.destination.referenceUrl} target="_blank" rel="noopener noreferrer">
               Open destination reference
             </a>
           </p>

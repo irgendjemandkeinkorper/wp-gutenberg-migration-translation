@@ -12,3 +12,11 @@
 ## 2024-08-07 - Inefficient Derived State from Large Maps
 **Learning:** React state derived from iterating over a large Map using `Array.from()` or object spreads in `reduce()` executes on every render. If the Map updates frequently, the constant array reallocation and O(n²) object spread causes severe rendering slowdowns.
 **Action:** When deriving object states from Map iteration during render loops (e.g. counting statuses), avoid `Array.from` intermediate objects, and mutate an initial state object using a standard `for...of` loop over `Map.prototype.values()`. For serializing a Map, iterate over `Map.prototype.entries()` rather than allocating an array with `Array.from()`.
+
+## 2024-11-20 - [Batch Rendering Overhead]
+**Learning:** Using `Array.from(...).reduce(...)` combined with object spread syntax (`{ ...counts }`) inside a React component render function causes significant memory churn and garbage collection overhead, particularly when iterating over large Maps (e.g. `batchStatus`). This resulted in O(N^2) object allocations during batch conversions where the state updates frequently.
+**Action:** Replace `Array.reduce` chains that spread objects with a simple `for...of` loop and a mutable local object accumulator within the render scope. This turns O(N^2) allocations into O(1) without violating React immutability rules (since the local object is created fresh each render).
+
+## 2024-08-05 - Avoid Object Spread in Loop-based Reducers During React Renders
+**Learning:** Using `Array.from(map.values()).reduce(...)` combined with object spread (`{ ...acc, [key]: value }`) inside a React component's render method causes O(N) intermediate array and object memory allocations. When dealing with maps that update frequently (like status trackers for large batches), this triggers expensive re-renders and degrades performance heavily.
+**Action:** Replace reducers that accumulate into objects via spread operators with simple `for...of` loops that mutate a single, pre-allocated local object when calculating derived component state.
