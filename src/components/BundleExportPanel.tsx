@@ -7,15 +7,37 @@ interface BundleExportPanelProps {
   bundle: BundlePage[];
   onRemove: (index: number) => void;
   onClear: () => void;
+  onUndoClear?: () => void;
+  canUndoClear?: boolean;
 }
 
-export function BundleExportPanel({ bundle, onRemove, onClear }: BundleExportPanelProps) {
+export function BundleExportPanel({ bundle, onRemove, onClear, onUndoClear, canUndoClear }: BundleExportPanelProps) {
   const [author, setAuthor] = useState("admin");
   const [postType, setPostType] = useState<"page" | "post">("page");
   const [status, setStatus] = useState<"draft" | "publish">("draft");
   const [sideload, setSideload] = useState(true);
 
-  if (bundle.length === 0) return null;
+  if (bundle.length === 0) {
+    if (canUndoClear && onUndoClear) {
+      return (
+        <section className="panel bundle-panel" aria-live="polite">
+          <div className="panel-heading">
+            <div>
+              <p className="section-kicker">04 · Export</p>
+              <h2>WXR migration bundle</h2>
+            </div>
+          </div>
+          <div className="warn-box" role="alert" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>Bundle cleared.</span>
+            <button type="button" className="text-button" onClick={onUndoClear}>
+              Undo clear
+            </button>
+          </div>
+        </section>
+      );
+    }
+    return null;
+  }
 
   function downloadWxr() {
     const xml = buildWxr(bundle, {
