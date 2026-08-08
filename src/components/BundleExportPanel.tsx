@@ -27,7 +27,11 @@ export function BundleExportPanel({ bundle, onRemove, onClear, onUndoClear, canU
               <h2>WXR migration bundle</h2>
             </div>
           </div>
-          <div className="warn-box" role="alert" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div
+            className="warn-box"
+            role="alert"
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+          >
             <span>Bundle cleared.</span>
             <button type="button" className="text-button" onClick={onUndoClear}>
               Undo clear
