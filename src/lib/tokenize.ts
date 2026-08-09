@@ -89,7 +89,12 @@ export function tokenizeImages(html: string, baseUrl?: string): TokenizeResult {
         if (
           !normalizedVal.startsWith("javascript:") &&
           !normalizedVal.startsWith("vbscript:") &&
-          !(normalizedVal.startsWith("data:") && !normalizedVal.startsWith("data:image/") && !normalizedVal.startsWith("data:audio/") && !normalizedVal.startsWith("data:video/"))
+          !(
+            normalizedVal.startsWith("data:") &&
+            !normalizedVal.startsWith("data:image/") &&
+            !normalizedVal.startsWith("data:audio/") &&
+            !normalizedVal.startsWith("data:video/")
+          )
         ) {
           attributes[name] = val;
         }
