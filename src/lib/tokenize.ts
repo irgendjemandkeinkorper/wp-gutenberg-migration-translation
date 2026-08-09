@@ -81,7 +81,16 @@ export function tokenizeImages(html: string, baseUrl?: string): TokenizeResult {
       const name = attr.name.toLowerCase();
       if (safeAttrs.includes(name)) {
         const val = attr.value.trim();
-        if (!val.toLowerCase().startsWith("javascript:")) {
+        const normalizedVal = val.replace(/[\x00-\x20\x7F-\x9F]/g, "").toLowerCase();
+
+        // Block dangerous protocols like javascript: and vbscript:.
+        // We only block data: URIs if they are being used to execute scripts or embed HTML.
+        // data:image/... and data:audio/... are safe and should be allowed.
+        if (
+          !normalizedVal.startsWith("javascript:") &&
+          !normalizedVal.startsWith("vbscript:") &&
+          !(normalizedVal.startsWith("data:") && !normalizedVal.startsWith("data:image/") && !normalizedVal.startsWith("data:audio/") && !normalizedVal.startsWith("data:video/"))
+        ) {
           attributes[name] = val;
         }
       }
