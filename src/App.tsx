@@ -66,10 +66,19 @@ export default function App() {
   const cancelBatchRef = useRef(false);
 
   const [bundle, setBundle] = useState<BundlePage[]>(loadBundle);
+  const [lastClearedBundle, setLastClearedBundle] = useState<BundlePage[] | null>(null);
+  const [bundleSaveError, setBundleSaveError] = useState(false);
   const [targetTemplate, setTargetTemplate] = useState(() => localStorage.getItem("blockify.targetTemplate") ?? "");
 
   useEffect(() => {
-    saveBundle(bundle);
+    // 🎨 Palette: We intercept saveBundle failure here without setting state directly
+    // within the effect body to avoid cascading renders.
+    const success = saveBundle(bundle);
+    if (!success) {
+      setTimeout(() => setBundleSaveError(true), 0);
+    } else {
+      setTimeout(() => setBundleSaveError(false), 0);
+    }
   }, [bundle]);
   useEffect(() => localStorage.setItem("blockify.skipLlm", skipLlm ? "1" : "0"), [skipLlm]);
   useEffect(() => localStorage.setItem("blockify.targetTemplate", targetTemplate), [targetTemplate]);
@@ -415,8 +424,20 @@ export default function App() {
 
       <BundleExportPanel
         bundle={bundle}
+        saveError={bundleSaveError}
         onRemove={(index) => setBundle((current) => current.filter((_, itemIndex) => itemIndex !== index))}
-        onClear={() => setBundle([])}
+        onClear={() => {
+          setLastClearedBundle(bundle);
+          setBundle([]);
+        }}
+        onUndoClear={
+          lastClearedBundle && bundle.length === 0
+            ? () => {
+                setBundle(lastClearedBundle);
+                setLastClearedBundle(null);
+              }
+            : undefined
+        }
       />
     </div>
   );

@@ -30,3 +30,6 @@
 ## 2024-08-06 - Accessible Input Fields Without Labels
 **Learning:** Bare `<input type="file">` and `<textarea>` elements without associated `<label>` tags need explicit `aria-label` attributes to ensure screen readers can announce their purpose correctly.
 **Action:** Always add descriptive `aria-label` to form inputs that do not have explicitly associated labels, especially for raw text areas and file uploads.
+## 2026-08-09 - Avoiding Cascading Renders in Effects
+**Learning:** The project's ESLint configuration prevents calling `setState` synchronously within a `useEffect` body to avoid cascading renders.
+**Action:** When a state update is required inside an effect (e.g., responding to a local storage operation's failure status), wrap the state setter in an asynchronous callback like `setTimeout(() => setState(...), 0)`.
