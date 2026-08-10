@@ -105,7 +105,8 @@ function sanitize(rawHtml: string, options: SanitizerOptions): SanitizedContent 
     return { safe: false, html: "", code: "empty-safe-content", reason: "Content has no source HTML to serialize." };
   const document = new DOMParser().parseFromString(rawHtml, "text/html");
   const body = document.body;
-  for (const forbidden of Array.from(body.querySelectorAll("script,style,object,embed,form"))) forbidden.remove();
+  // ⚡ Bolt: Avoid Array.from allocation on NodeList for performance
+  body.querySelectorAll("script,style,object,embed,form").forEach((el) => el.remove());
   let unsafeReason: string | undefined;
   const walk = (element: Element): void => {
     if (unsafeReason) return;
@@ -114,7 +115,10 @@ function sanitize(rawHtml: string, options: SanitizerOptions): SanitizedContent 
       unsafeReason = `Tag <${tag}> is not in the safe-content allowlist.`;
       return;
     }
-    for (const attribute of Array.from(element.attributes)) {
+    // ⚡ Bolt: Avoid Array.from allocation; iterate backwards for safe in-place removal
+    const attrs = element.attributes;
+    for (let i = attrs.length - 1; i >= 0; i--) {
+      const attribute = attrs[i];
       const name = attribute.name.toLowerCase();
       if (name.startsWith("on") || !options.allowedAttributes.has(name)) {
         element.removeAttribute(attribute.name);
@@ -128,15 +132,29 @@ function sanitize(rawHtml: string, options: SanitizerOptions): SanitizedContent 
         }
       }
     }
-    for (const child of Array.from(element.children)) walk(child);
+    // ⚡ Bolt: Avoid Array.from allocation; use native firstElementChild/nextElementSibling
+    let child = element.firstElementChild;
+    while (child) {
+      const next = child.nextElementSibling;
+      walk(child);
+      child = next;
+    }
   };
-  for (const child of Array.from(body.children)) walk(child);
+  // ⚡ Bolt: Avoid Array.from allocation
+  let child = body.firstElementChild;
+  while (child) {
+    const next = child.nextElementSibling;
+    walk(child);
+    child = next;
+  }
   if (unsafeReason) return { safe: false, html: "", code: "unsafe-content", reason: unsafeReason };
-  const html = Array.from(body.childNodes)
-    .map((child) =>
-      child.nodeType === Node.ELEMENT_NODE ? (child as Element).outerHTML : escapeText(child.textContent ?? ""),
-    )
-    .join("");
+  // ⚡ Bolt: Avoid Array.from and intermediate map array allocations
+  let html = "";
+  let node = body.firstChild;
+  while (node) {
+    html += node.nodeType === Node.ELEMENT_NODE ? (node as Element).outerHTML : escapeText(node.textContent ?? "");
+    node = node.nextSibling;
+  }
   return { safe: true, html };
 }
 
