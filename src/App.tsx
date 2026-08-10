@@ -66,10 +66,13 @@ export default function App() {
   const cancelBatchRef = useRef(false);
 
   const [bundle, setBundle] = useState<BundlePage[]>(loadBundle);
+  const [clearedBundle, setClearedBundle] = useState<BundlePage[] | null>(null);
+  const [bundleSaveError, setBundleSaveError] = useState(false);
   const [targetTemplate, setTargetTemplate] = useState(() => localStorage.getItem("blockify.targetTemplate") ?? "");
 
   useEffect(() => {
-    saveBundle(bundle);
+    const success = saveBundle(bundle);
+    setTimeout(() => setBundleSaveError(!success), 0);
   }, [bundle]);
   useEffect(() => localStorage.setItem("blockify.skipLlm", skipLlm ? "1" : "0"), [skipLlm]);
   useEffect(() => localStorage.setItem("blockify.targetTemplate", targetTemplate), [targetTemplate]);
@@ -250,6 +253,7 @@ export default function App() {
             menuOrder: page.menuOrder,
           };
           setBundle((current) => addOrReplaceBundleEntry(current, entry));
+          setClearedBundle(null);
           update(index, {
             status: "done",
             note: res.warnings.length
@@ -287,6 +291,7 @@ export default function App() {
         placeholders: result.placeholders,
       }),
     );
+    setClearedBundle(null);
   }
 
   const visibleSteps = STEP_ORDER.filter((s) => steps.has(s) || (s !== "Fetch" && (busy || steps.size > 0)));
@@ -416,7 +421,16 @@ export default function App() {
       <BundleExportPanel
         bundle={bundle}
         onRemove={(index) => setBundle((current) => current.filter((_, itemIndex) => itemIndex !== index))}
-        onClear={() => setBundle([])}
+        onClear={() => {
+          setClearedBundle(bundle);
+          setBundle([]);
+        }}
+        hasCleared={clearedBundle !== null && clearedBundle.length > 0}
+        onUndoClear={() => {
+          if (clearedBundle) setBundle(clearedBundle);
+          setClearedBundle(null);
+        }}
+        saveError={bundleSaveError}
       />
     </div>
   );

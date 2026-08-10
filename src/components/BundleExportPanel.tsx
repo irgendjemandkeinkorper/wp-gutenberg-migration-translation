@@ -7,15 +7,39 @@ interface BundleExportPanelProps {
   bundle: BundlePage[];
   onRemove: (index: number) => void;
   onClear: () => void;
+  saveError?: boolean;
+  hasCleared?: boolean;
+  onUndoClear?: () => void;
 }
 
-export function BundleExportPanel({ bundle, onRemove, onClear }: BundleExportPanelProps) {
+export function BundleExportPanel({
+  bundle,
+  onRemove,
+  onClear,
+  saveError,
+  hasCleared,
+  onUndoClear,
+}: BundleExportPanelProps) {
   const [author, setAuthor] = useState("admin");
   const [postType, setPostType] = useState<"page" | "post">("page");
   const [status, setStatus] = useState<"draft" | "publish">("draft");
   const [sideload, setSideload] = useState(true);
 
-  if (bundle.length === 0) return null;
+  if (bundle.length === 0) {
+    if (hasCleared && onUndoClear) {
+      return (
+        <section className="panel bundle-panel" aria-live="polite">
+          <p className="hint">
+            WXR bundle cleared.{" "}
+            <button type="button" className="text-button" onClick={onUndoClear}>
+              Undo
+            </button>
+          </p>
+        </section>
+      );
+    }
+    return null;
+  }
 
   function downloadWxr() {
     const xml = buildWxr(bundle, {
@@ -29,6 +53,12 @@ export function BundleExportPanel({ bundle, onRemove, onClear }: BundleExportPan
 
   return (
     <section className="panel bundle-panel">
+      {saveError && (
+        <div className="warn-box" role="alert">
+          <strong>Storage warning:</strong> The bundle could not be saved to your browser (storage may be full or
+          disabled). You can still export this bundle now, but it will be lost if you refresh the page.
+        </div>
+      )}
       <div className="panel-heading">
         <div>
           <p className="section-kicker">04 · Export</p>
@@ -88,13 +118,7 @@ export function BundleExportPanel({ bundle, onRemove, onClear }: BundleExportPan
         <button type="button" className="primary" onClick={downloadWxr}>
           Download WXR
         </button>
-        <button
-          type="button"
-          className="secondary"
-          onClick={() => {
-            if (window.confirm("Clear every page from this WXR bundle?")) onClear();
-          }}
-        >
+        <button type="button" className="secondary" onClick={onClear}>
           Clear bundle
         </button>
       </div>

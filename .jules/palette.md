@@ -8,3 +8,7 @@
 ## 2024-06-15 - Explicit Connection Modes and Disclaimers
 **Learning:** Security choices must be visually and contextually explicit to operators. When an application supports multiple connection modes with varying levels of security (e.g., client-side key entry vs. server-side proxy), operators must be able to identify the current mode before performing any action. Highlighting these boundaries using prominent visual badges, distinct selection models, and helper disclaimers prevents human error and accidental credential storage.
 **Action:** Always provide a highly visible indicator (such as a badge/bar) representing the active connection mode at the top level of the UI, and accompany credential inputs with specific disclaimer blocks clarifying security boundaries.
+
+## 2024-08-10 - Transience and Non-blocking destructive actions
+**Learning:** For bulk data deletion (like clearing a list of imported pages), abrasive `window.confirm` dialogues interrupt workflow. Replacing these prompts with an immediate clear action that offers a highly visible, contextual "Undo" button (utilizing `aria-live` for screen readers) provides a much better and safer user experience.
+**Action:** Always favor transient state recovery ("Undo") over blocking modal confirmations for destructive actions in the UI, especially where data is primarily held in memory. Ensure the undo trigger is prominently placed where the deleted items used to be.
