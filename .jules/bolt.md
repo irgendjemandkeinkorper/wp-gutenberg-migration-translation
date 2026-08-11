@@ -20,3 +20,7 @@
 ## 2024-08-05 - Avoid Object Spread in Loop-based Reducers During React Renders
 **Learning:** Using `Array.from(map.values()).reduce(...)` combined with object spread (`{ ...acc, [key]: value }`) inside a React component's render method causes O(N) intermediate array and object memory allocations. When dealing with maps that update frequently (like status trackers for large batches), this triggers expensive re-renders and degrades performance heavily.
 **Action:** Replace reducers that accumulate into objects via spread operators with simple `for...of` loops that mutate a single, pre-allocated local object when calculating derived component state.
+
+## 2024-08-11 - Fast DOM Child Traversal Avoids Array.from Allocation Overhead
+**Learning:** Using `Array.from(el.childNodes)` inside the block serialization loop creates high allocation pressure, especially for deep or wide HTML trees, causing significant overhead in `serializeBlocks`.
+**Action:** Replace `Array.from()` iteration with standard raw DOM pointer traversal (`let node = parent.firstChild; while(node) { ... node = node.nextSibling; }`). Also applied to `firstElementChild` and `nextElementSibling` in `listBlock`.

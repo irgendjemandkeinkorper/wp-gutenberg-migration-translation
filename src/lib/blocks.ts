@@ -13,15 +13,17 @@ export function serializeBlocks(html: string, images: Map<number, AssetRef>): st
   const doc = new DOMParser().parseFromString(html, "text/html");
   const out: string[] = [];
 
-  for (const node of Array.from(doc.body.childNodes)) {
+  // ⚡ Bolt: Avoid Array.from allocation for performance.
+  let node = doc.body.firstChild;
+  while (node) {
     if (node.nodeType === Node.TEXT_NODE) {
       const text = node.textContent?.trim();
       if (text) out.push(paragraphBlock(escapeHtml(text)));
-      continue;
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const block = elementToBlock(node as HTMLElement, images);
+      if (block) out.push(block);
     }
-    if (node.nodeType !== Node.ELEMENT_NODE) continue;
-    const block = elementToBlock(node as HTMLElement, images);
-    if (block) out.push(block);
+    node = node.nextSibling;
   }
 
   return out.join("\n\n");
@@ -59,7 +61,9 @@ function elementToBlock(el: HTMLElement, images: Map<number, AssetRef>): string 
       return listBlock(el, true);
     case "blockquote": {
       const inner: string[] = [];
-      for (const child of Array.from(el.childNodes)) {
+      // ⚡ Bolt: Avoid Array.from allocation for performance.
+      let child = el.firstChild;
+      while (child) {
         if (child.nodeType === Node.TEXT_NODE) {
           const t = child.textContent?.trim();
           if (t) inner.push(paragraphBlock(escapeHtml(t)));
@@ -73,6 +77,7 @@ function elementToBlock(el: HTMLElement, images: Map<number, AssetRef>): string 
             if (t) inner.push(paragraphBlock(t));
           }
         }
+        child = child.nextSibling;
       }
       return (
         `<!-- wp:quote -->\n` +
@@ -115,24 +120,32 @@ function listBlock(el: HTMLElement, ordered: boolean): string {
   const attrs = ordered ? ' {"ordered":true}' : "";
   const items: string[] = [];
 
-  for (const li of Array.from(el.children)) {
-    if (li.tagName.toLowerCase() !== "li") continue;
+  // ⚡ Bolt: Avoid Array.from allocation for performance.
+  let li = el.firstElementChild;
+  while (li) {
+    if (li.tagName.toLowerCase() === "li") {
+      // Separate nested lists (Gutenberg nests a wp:list block inside the
+      // parent wp:list-item) from the item's own inline content.
+      const nested: HTMLElement[] = [];
+      const clone = li.cloneNode(true) as HTMLElement;
 
-    // Separate nested lists (Gutenberg nests a wp:list block inside the
-    // parent wp:list-item) from the item's own inline content.
-    const nested: HTMLElement[] = [];
-    const clone = li.cloneNode(true) as HTMLElement;
-    for (const sub of Array.from(clone.children)) {
-      const subTag = sub.tagName.toLowerCase();
-      if (subTag === "ul" || subTag === "ol") {
-        nested.push(sub as HTMLElement);
-        sub.remove();
+      let sub = clone.firstElementChild;
+      while (sub) {
+        const nextSub = sub.nextElementSibling;
+        const subTag = sub.tagName.toLowerCase();
+        if (subTag === "ul" || subTag === "ol") {
+          nested.push(sub as HTMLElement);
+          sub.remove();
+        }
+        sub = nextSub;
       }
-    }
-    const inline = clone.innerHTML.trim();
-    const nestedMarkup = nested.map((n) => listBlock(n, n.tagName.toLowerCase() === "ol")).join("\n\n");
 
-    items.push(`<!-- wp:list-item -->\n` + `<li>${inline}${nestedMarkup}</li>\n` + `<!-- /wp:list-item -->`);
+      const inline = clone.innerHTML.trim();
+      const nestedMarkup = nested.map((n) => listBlock(n, n.tagName.toLowerCase() === "ol")).join("\n\n");
+
+      items.push(`<!-- wp:list-item -->\n` + `<li>${inline}${nestedMarkup}</li>\n` + `<!-- /wp:list-item -->`);
+    }
+    li = li.nextElementSibling;
   }
 
   return (
