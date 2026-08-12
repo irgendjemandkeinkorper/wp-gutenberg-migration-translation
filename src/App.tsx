@@ -214,9 +214,16 @@ export default function App() {
       for (let index = 0; index < batch.length; index++) {
         if (runStatus.get(index)?.status === "done") continue;
         if (cancelBatchRef.current) {
-          for (let remaining = index; remaining < batch.length; remaining++) {
-            if (runStatus.get(remaining)?.status !== "done") update(remaining, { status: "cancelled" });
-          }
+          // ⚡ Bolt: Avoid O(N^2) cloning and N re-renders by updating state functionally once
+          setBatchStatus((prev) => {
+            const next = new Map(prev);
+            for (let remaining = index; remaining < batch.length; remaining++) {
+              if (next.get(remaining)?.status !== "done") {
+                next.set(remaining, { status: "cancelled" });
+              }
+            }
+            return next;
+          });
           break;
         }
 

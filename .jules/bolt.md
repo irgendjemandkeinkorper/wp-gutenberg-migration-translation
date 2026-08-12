@@ -20,3 +20,7 @@
 ## 2024-08-05 - Avoid Object Spread in Loop-based Reducers During React Renders
 **Learning:** Using `Array.from(map.values()).reduce(...)` combined with object spread (`{ ...acc, [key]: value }`) inside a React component's render method causes O(N) intermediate array and object memory allocations. When dealing with maps that update frequently (like status trackers for large batches), this triggers expensive re-renders and degrades performance heavily.
 **Action:** Replace reducers that accumulate into objects via spread operators with simple `for...of` loops that mutate a single, pre-allocated local object when calculating derived component state.
+
+## 2024-11-21 - [Batch Cancellation O(N^2) Map Cloning]
+**Learning:** During batch cancellation of many items in React state, calling an `update(index, state)` helper function inside a loop that repeatedly clones a `Map` and triggers state updates (`setBatchStatus(new Map(prev))`) creates severe O(N^2) memory cloning overhead and O(N) re-renders, causing noticeable freezes for large lists.
+**Action:** When updating multiple state items in a loop, clone the data structure once locally, apply all item mutations sequentially within that single local structure, and then push the fully updated structure back to React state with a single `setState` call.
