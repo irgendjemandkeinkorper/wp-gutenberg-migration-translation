@@ -30,3 +30,6 @@
 ## 2024-08-06 - Accessible Input Fields Without Labels
 **Learning:** Bare `<input type="file">` and `<textarea>` elements without associated `<label>` tags need explicit `aria-label` attributes to ensure screen readers can announce their purpose correctly.
 **Action:** Always add descriptive `aria-label` to form inputs that do not have explicitly associated labels, especially for raw text areas and file uploads.
+## 2024-08-01 - Adding Accessible Interactions to Interactive UI Elements
+**Learning:** Interactive states and actions (like toggles and clipboard copying) often rely on visual cues (text changes, icons) which exclude screen reader users. Adding ARIA state attributes (`aria-expanded`, `aria-live`) and hiding decorative text elements drastically improves their experience without altering the visual design.
+**Action:** Audit interactive elements (buttons, inputs) for visual state changes and add corresponding ARIA attributes to communicate these states explicitly, and wrap pure decorative symbols like check marks or arrows in `aria-hidden='true'`.

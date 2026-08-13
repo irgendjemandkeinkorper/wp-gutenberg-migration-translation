@@ -47,7 +47,7 @@ export function SettingsPanel({
           <p>Each provider uses the same guarded normalization prompt and deterministic token validation.</p>
         </div>
         <button type="button" className="icon-button" aria-label="Close AI settings" onClick={onClose}>
-          ×
+          <span aria-hidden="true">×</span>
         </button>
       </div>
 
