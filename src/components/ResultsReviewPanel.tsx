@@ -72,10 +72,22 @@ export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle
       </label>
       <div className="row">
         <button type="button" className="primary" onClick={() => void copyBlocks()} aria-live="polite">
-          {copied ? <>Copied <span aria-hidden="true">✓</span></> : "Copy to clipboard"}
+          {copied ? (
+            <>
+              Copied <span aria-hidden="true">✓</span>
+            </>
+          ) : (
+            "Copy to clipboard"
+          )}
         </button>
         <button type="button" className="secondary" onClick={addToBundle} aria-live="polite">
-          {addedResult === result ? <>Added to bundle <span aria-hidden="true">✓</span></> : "Add page to WXR bundle"}
+          {addedResult === result ? (
+            <>
+              Added to bundle <span aria-hidden="true">✓</span>
+            </>
+          ) : (
+            "Add page to WXR bundle"
+          )}
         </button>
       </div>
       <p className="hint">To paste directly: WordPress block editor → ⋮ menu → Code editor → paste.</p>
