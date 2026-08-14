@@ -438,8 +438,8 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     });
 
     // Verify per-page ticks
-    expect(container.textContent).toContain("✓ Page One");
-    expect(container.textContent).toContain("✓ Page Two");
+    expect(container.textContent).toContain("✓ Done: Page One");
+    expect(container.textContent).toContain("✓ Done: Page Two");
     expect(container.textContent).toContain("WXR bundle (2 pages)");
   });
 

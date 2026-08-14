@@ -30,3 +30,6 @@
 ## 2024-08-06 - Accessible Input Fields Without Labels
 **Learning:** Bare `<input type="file">` and `<textarea>` elements without associated `<label>` tags need explicit `aria-label` attributes to ensure screen readers can announce their purpose correctly.
 **Action:** Always add descriptive `aria-label` to form inputs that do not have explicitly associated labels, especially for raw text areas and file uploads.
+## 2024-08-14 - Hiding Decorative Symbols and Providing Context
+**Learning:** Raw Unicode symbols used as decorative or state indicators (like ✓, ▾, ✗, ○) are often poorly announced or meaningless to screen reader users when read sequentially. Hiding them with `aria-hidden="true"` is essential, but if they are the *only* indicators of state (like in a batch status list), hiding them without providing an alternative completely removes the context.
+**Action:** Always wrap decorative status symbols in `<span aria-hidden="true">`. Critically, when those symbols are the sole indicator of state, pair them with a screen-reader-only text alternative (e.g., `<span className="sr-only">Done: </span>`) to ensure assistive technologies still announce the correct state.
