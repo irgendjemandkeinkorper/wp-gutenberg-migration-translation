@@ -105,7 +105,9 @@ function sanitize(rawHtml: string, options: SanitizerOptions): SanitizedContent 
     return { safe: false, html: "", code: "empty-safe-content", reason: "Content has no source HTML to serialize." };
   const document = new DOMParser().parseFromString(rawHtml, "text/html");
   const body = document.body;
-  for (const forbidden of Array.from(body.querySelectorAll("script,style,object,embed,form"))) forbidden.remove();
+  // ⚡ Bolt: Avoid Array.from allocation for NodeList iteration
+  const forbiddenNodes = body.querySelectorAll("script,style,object,embed,form");
+  for (let i = 0; i < forbiddenNodes.length; i++) forbiddenNodes[i].remove();
   let unsafeReason: string | undefined;
   const walk = (element: Element): void => {
     if (unsafeReason) return;
@@ -114,7 +116,9 @@ function sanitize(rawHtml: string, options: SanitizerOptions): SanitizedContent 
       unsafeReason = `Tag <${tag}> is not in the safe-content allowlist.`;
       return;
     }
-    for (const attribute of Array.from(element.attributes)) {
+    // ⚡ Bolt: Avoid Array.from allocation and iterate backwards to safely remove attributes
+    for (let i = element.attributes.length - 1; i >= 0; i--) {
+      const attribute = element.attributes[i];
       const name = attribute.name.toLowerCase();
       if (name.startsWith("on") || !options.allowedAttributes.has(name)) {
         element.removeAttribute(attribute.name);
@@ -128,15 +132,18 @@ function sanitize(rawHtml: string, options: SanitizerOptions): SanitizedContent 
         }
       }
     }
-    for (const child of Array.from(element.children)) walk(child);
+    // ⚡ Bolt: Use firstElementChild/nextElementSibling to avoid Array.from over children
+    for (let child = element.firstElementChild; child; child = child.nextElementSibling) walk(child);
   };
-  for (const child of Array.from(body.children)) walk(child);
+  // ⚡ Bolt: Use firstElementChild/nextElementSibling to avoid Array.from over children
+  for (let child = body.firstElementChild; child; child = child.nextElementSibling) walk(child);
   if (unsafeReason) return { safe: false, html: "", code: "unsafe-content", reason: unsafeReason };
-  const html = Array.from(body.childNodes)
-    .map((child) =>
-      child.nodeType === Node.ELEMENT_NODE ? (child as Element).outerHTML : escapeText(child.textContent ?? ""),
-    )
-    .join("");
+
+  // ⚡ Bolt: Avoid Array.from over childNodes and use firstChild/nextSibling
+  let html = "";
+  for (let child = body.firstChild; child; child = child.nextSibling) {
+    html += child.nodeType === Node.ELEMENT_NODE ? (child as Element).outerHTML : escapeText(child.textContent ?? "");
+  }
   return { safe: true, html };
 }
 
