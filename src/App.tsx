@@ -66,10 +66,15 @@ export default function App() {
   const cancelBatchRef = useRef(false);
 
   const [bundle, setBundle] = useState<BundlePage[]>(loadBundle);
+  const [lastClearedBundle, setLastClearedBundle] = useState<BundlePage[] | null>(null);
+  const [bundleSaveError, setBundleSaveError] = useState(false);
   const [targetTemplate, setTargetTemplate] = useState(() => localStorage.getItem("blockify.targetTemplate") ?? "");
 
   useEffect(() => {
-    saveBundle(bundle);
+    // 🎨 Palette: We intercept saveBundle failure here without setting state directly
+    // within the effect body to avoid cascading renders.
+    const success = saveBundle(bundle);
+    setTimeout(() => setBundleSaveError(!success), 0);
   }, [bundle]);
   useEffect(() => localStorage.setItem("blockify.skipLlm", skipLlm ? "1" : "0"), [skipLlm]);
   useEffect(() => localStorage.setItem("blockify.targetTemplate", targetTemplate), [targetTemplate]);
@@ -194,29 +199,49 @@ export default function App() {
     setBatchBusy(true);
     cancelBatchRef.current = false;
     setError("");
-    let runStatus = resume
-      ? new Map(batchStatus)
-      : new Map<number, BatchState>(batch.map((_, index) => [index, { status: "pending" }]));
+    // ⚡ Bolt: Compute done items synchronously to avoid reading stale closure state.
+    const skipIndices = new Set<number>();
     if (resume) {
-      for (let index = 0; index < batch.length; index++) {
-        if (runStatus.get(index)?.status !== "done") runStatus.set(index, { status: "pending" });
+      for (const [index, state] of batchStatus) {
+        if (state.status === "done") skipIndices.add(index);
       }
     }
-    setBatchStatus(new Map(runStatus));
 
+    setBatchStatus((prev) => {
+      const next = resume
+        ? new Map(prev)
+        : new Map<number, BatchState>(batch.map((_, index) => [index, { status: "pending" }]));
+      if (resume) {
+        for (let index = 0; index < batch.length; index++) {
+          if (!skipIndices.has(index)) next.set(index, { status: "pending" });
+        }
+      }
+      return next;
+    });
+
+    // ⚡ Bolt: Use functional state updates to avoid repeated cloning in O(N^2) loop.
     const update = (index: number, state: BatchState) => {
-      runStatus = new Map(runStatus);
-      runStatus.set(index, state);
-      setBatchStatus(runStatus);
+      setBatchStatus((prev) => {
+        const next = new Map(prev);
+        next.set(index, state);
+        return next;
+      });
     };
 
     try {
       for (let index = 0; index < batch.length; index++) {
-        if (runStatus.get(index)?.status === "done") continue;
+        if (skipIndices.has(index)) continue;
         if (cancelBatchRef.current) {
-          for (let remaining = index; remaining < batch.length; remaining++) {
-            if (runStatus.get(remaining)?.status !== "done") update(remaining, { status: "cancelled" });
-          }
+          // ⚡ Bolt: Avoid O(N^2) cloning and N re-renders by updating state functionally once
+          setBatchStatus((prev) => {
+            const next = new Map(prev);
+            for (let remaining = index; remaining < batch.length; remaining++) {
+              if (next.get(remaining)?.status !== "done") {
+                next.set(remaining, { status: "cancelled" });
+              }
+            }
+            return next;
+          });
           break;
         }
 
@@ -250,6 +275,7 @@ export default function App() {
             menuOrder: page.menuOrder,
           };
           setBundle((current) => addOrReplaceBundleEntry(current, entry));
+          setLastClearedBundle(null);
           update(index, {
             status: "done",
             note: res.warnings.length
@@ -287,6 +313,7 @@ export default function App() {
         placeholders: result.placeholders,
       }),
     );
+    setLastClearedBundle(null);
   }
 
   const visibleSteps = STEP_ORDER.filter((s) => steps.has(s) || (s !== "Fetch" && (busy || steps.size > 0)));
@@ -415,8 +442,19 @@ export default function App() {
 
       <BundleExportPanel
         bundle={bundle}
+        saveError={bundleSaveError}
         onRemove={(index) => setBundle((current) => current.filter((_, itemIndex) => itemIndex !== index))}
-        onClear={() => setBundle([])}
+        onClear={() => {
+          setLastClearedBundle(bundle);
+          setBundle([]);
+        }}
+        canUndoClear={!!lastClearedBundle}
+        onUndoClear={() => {
+          if (lastClearedBundle) {
+            setBundle(lastClearedBundle);
+            setLastClearedBundle(null);
+          }
+        }}
       />
     </div>
   );
