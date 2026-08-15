@@ -24,3 +24,7 @@
 ## 2024-08-11 - Fast DOM Child Traversal Avoids Array.from Allocation Overhead
 **Learning:** Using `Array.from(el.childNodes)` inside the block serialization loop creates high allocation pressure, especially for deep or wide HTML trees, causing significant overhead in `serializeBlocks`.
 **Action:** Replace `Array.from()` iteration with standard raw DOM pointer traversal (`let node = parent.firstChild; while(node) { ... node = node.nextSibling; }`). Also applied to `firstElementChild` and `nextElementSibling` in `listBlock`.
+
+## 2024-11-21 - [Batch Cancellation O(N^2) Map Cloning]
+**Learning:** During batch cancellation of many items in React state, calling an `update(index, state)` helper function inside a loop that repeatedly clones a `Map` and triggers state updates (`setBatchStatus(new Map(prev))`) creates severe O(N^2) memory cloning overhead and O(N) re-renders, causing noticeable freezes for large lists.
+**Action:** When updating multiple state items in a loop, clone the data structure once locally, apply all item mutations sequentially within that single local structure, and then push the fully updated structure back to React state with a single `setState` call.
