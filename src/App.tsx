@@ -275,7 +275,7 @@ export default function App() {
             menuOrder: page.menuOrder,
           };
           setBundle((current) => addOrReplaceBundleEntry(current, entry));
-          setClearedBundle(null);
+          setLastClearedBundle(null);
           update(index, {
             status: "done",
             note: res.warnings.length
@@ -313,7 +313,7 @@ export default function App() {
         placeholders: result.placeholders,
       }),
     );
-    setClearedBundle(null);
+    setLastClearedBundle(null);
   }
 
   const visibleSteps = STEP_ORDER.filter((s) => steps.has(s) || (s !== "Fetch" && (busy || steps.size > 0)));
