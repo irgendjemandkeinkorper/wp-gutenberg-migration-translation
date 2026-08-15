@@ -66,6 +66,7 @@ export default function App() {
   const cancelBatchRef = useRef(false);
 
   const [bundle, setBundle] = useState<BundlePage[]>(loadBundle);
+  const [lastClearedBundle, setLastClearedBundle] = useState<BundlePage[] | null>(null);
   const [targetTemplate, setTargetTemplate] = useState(() => localStorage.getItem("blockify.targetTemplate") ?? "");
 
   useEffect(() => {
@@ -416,7 +417,17 @@ export default function App() {
       <BundleExportPanel
         bundle={bundle}
         onRemove={(index) => setBundle((current) => current.filter((_, itemIndex) => itemIndex !== index))}
-        onClear={() => setBundle([])}
+        onClear={() => {
+          setLastClearedBundle(bundle);
+          setBundle([]);
+        }}
+        canUndoClear={!!lastClearedBundle}
+        onUndoClear={() => {
+          if (lastClearedBundle) {
+            setBundle(lastClearedBundle);
+            setLastClearedBundle(null);
+          }
+        }}
       />
     </div>
   );
