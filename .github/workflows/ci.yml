@@ -24,6 +24,32 @@ jobs:
       - run: npm run check:bundle
       - run: npm audit --audit-level=high
 
+  template-match-e2e:
+    name: Template-match E2E
+    runs-on: ubuntu-latest
+    needs: validate
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run template-match E2E suite
+        run: npm run test:e2e
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+
   wordpress-integration:
     name: WordPress integration
     runs-on: ubuntu-latest

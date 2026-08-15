@@ -10,7 +10,7 @@ export default defineConfig({
     // Keep genuine hangs bounded while allowing those integration tests to share CI workers.
     testTimeout: 15_000,
     exclude: process.env.UI_TEST
-      ? ["**/node_modules/**", "**/dist/**"]
-      : ["**/node_modules/**", "**/dist/**", "**/*.ui.test.tsx"],
+      ? ["**/node_modules/**", "**/dist/**", "e2e/**"]
+      : ["**/node_modules/**", "**/dist/**", "e2e/**", "**/*.ui.test.tsx"],
   },
 });
