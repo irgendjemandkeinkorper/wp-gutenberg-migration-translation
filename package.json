@@ -32,7 +32,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:ui": "UI_TEST=true vitest run src/test/app.ui.test.tsx",
-    "crawl": "node scripts/crawl.mjs"
+    "crawl": "node scripts/crawl.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@google/genai": "^2.16.0",
@@ -42,6 +44,7 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/jsdom": "^28.0.3",
     "@types/node": "^26.2.0",
     "@types/react": "^19.1.0",
