@@ -199,25 +199,38 @@ export default function App() {
     setBatchBusy(true);
     cancelBatchRef.current = false;
     setError("");
-    let runStatus = resume
-      ? new Map(batchStatus)
-      : new Map<number, BatchState>(batch.map((_, index) => [index, { status: "pending" }]));
+    // ⚡ Bolt: Compute done items synchronously to avoid reading stale closure state.
+    const skipIndices = new Set<number>();
     if (resume) {
-      for (let index = 0; index < batch.length; index++) {
-        if (runStatus.get(index)?.status !== "done") runStatus.set(index, { status: "pending" });
+      for (const [index, state] of batchStatus) {
+        if (state.status === "done") skipIndices.add(index);
       }
     }
-    setBatchStatus(new Map(runStatus));
 
+    setBatchStatus((prev) => {
+      const next = resume
+        ? new Map(prev)
+        : new Map<number, BatchState>(batch.map((_, index) => [index, { status: "pending" }]));
+      if (resume) {
+        for (let index = 0; index < batch.length; index++) {
+          if (!skipIndices.has(index)) next.set(index, { status: "pending" });
+        }
+      }
+      return next;
+    });
+
+    // ⚡ Bolt: Use functional state updates to avoid repeated cloning in O(N^2) loop.
     const update = (index: number, state: BatchState) => {
-      runStatus = new Map(runStatus);
-      runStatus.set(index, state);
-      setBatchStatus(runStatus);
+      setBatchStatus((prev) => {
+        const next = new Map(prev);
+        next.set(index, state);
+        return next;
+      });
     };
 
     try {
       for (let index = 0; index < batch.length; index++) {
-        if (runStatus.get(index)?.status === "done") continue;
+        if (skipIndices.has(index)) continue;
         if (cancelBatchRef.current) {
           // ⚡ Bolt: Avoid O(N^2) cloning and N re-renders by updating state functionally once
           setBatchStatus((prev) => {

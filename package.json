@@ -37,6 +37,7 @@
   "dependencies": {
     "@google/genai": "^2.16.0",
     "@mozilla/readability": "^0.6.0",
+    "nanoid": "^6.0.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

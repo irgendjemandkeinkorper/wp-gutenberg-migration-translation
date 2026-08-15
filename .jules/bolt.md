@@ -28,3 +28,7 @@
 ## 2024-11-21 - [Batch Cancellation O(N^2) Map Cloning]
 **Learning:** During batch cancellation of many items in React state, calling an `update(index, state)` helper function inside a loop that repeatedly clones a `Map` and triggers state updates (`setBatchStatus(new Map(prev))`) creates severe O(N^2) memory cloning overhead and O(N) re-renders, causing noticeable freezes for large lists.
 **Action:** When updating multiple state items in a loop, clone the data structure once locally, apply all item mutations sequentially within that single local structure, and then push the fully updated structure back to React state with a single `setState` call.
+
+## 2024-11-21 - [Stale Closures and Repeated Object Cloning in Loops]
+**Learning:** Mutating an outer Map variable and immediately setting state inside an asynchronous operation's loop (e.g. tracking per-item status in a batch process) leads to stale state bugs or requires O(N) memory cloning per item on every cancellation/update pass. This causes O(N^2) memory and time overhead for operations like bulk cancellation.
+**Action:** Always use functional state updates (`setBatchStatus(prev => ...)`) to ensure access to fresh state, and pre-compute a set of skipped indices synchronously before iterating. When updating multiple fields in state concurrently (like bulk cancellations), batch them into a single functional update instead of invoking it repeatedly in a loop.
