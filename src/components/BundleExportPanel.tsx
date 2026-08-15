@@ -5,13 +5,21 @@ import { buildWxr } from "../lib/wxr";
 
 interface BundleExportPanelProps {
   bundle: BundlePage[];
+  saveError?: boolean;
   onRemove: (index: number) => void;
   onClear: () => void;
   onUndoClear?: () => void;
   canUndoClear?: boolean;
 }
 
-export function BundleExportPanel({ bundle, onRemove, onClear, onUndoClear, canUndoClear }: BundleExportPanelProps) {
+export function BundleExportPanel({
+  bundle,
+  saveError,
+  onRemove,
+  onClear,
+  onUndoClear,
+  canUndoClear,
+}: BundleExportPanelProps) {
   const [author, setAuthor] = useState("admin");
   const [postType, setPostType] = useState<"page" | "post">("page");
   const [status, setStatus] = useState<"draft" | "publish">("draft");
@@ -65,6 +73,12 @@ export function BundleExportPanel({ bundle, onRemove, onClear, onUndoClear, canU
           WXR bundle ({bundle.length} page{bundle.length === 1 ? "" : "s"})
         </span>
       </div>
+      {saveError && (
+        <p className="warn-box" role="alert">
+          <strong>Storage quota exceeded.</strong> Your bundle is safe in-memory for export, but will be lost if you
+          reload this tab.
+        </p>
+      )}
       <ul className="bundle-list">
         {bundle.map((page, index) => (
           <li key={`${page.link}-${index}`}>
