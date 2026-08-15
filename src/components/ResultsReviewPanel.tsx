@@ -72,10 +72,22 @@ export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle
       </label>
       <div className="row">
         <button type="button" className="primary" onClick={() => void copyBlocks()} aria-live="polite">
-          {copied ? "Copied ✓" : "Copy to clipboard"}
+          {copied ? (
+            <>
+              Copied <span aria-hidden="true">✓</span>
+            </>
+          ) : (
+            "Copy to clipboard"
+          )}
         </button>
         <button type="button" className="secondary" onClick={addToBundle} aria-live="polite">
-          {addedResult === result ? "Added to bundle ✓" : "Add page to WXR bundle"}
+          {addedResult === result ? (
+            <>
+              Added to bundle <span aria-hidden="true">✓</span>
+            </>
+          ) : (
+            "Add page to WXR bundle"
+          )}
         </button>
       </div>
       <p className="hint">To paste directly: WordPress block editor → ⋮ menu → Code editor → paste.</p>
@@ -100,7 +112,7 @@ export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle
         aria-expanded={showImages}
         onClick={() => setShowImages((visible) => !visible)}
       >
-        {showImages ? "▾" : "▸"} Asset Manifest / Audit ({result.images.length})
+        <span aria-hidden="true">{showImages ? "▾" : "▸"}</span> Asset Manifest / Audit ({result.images.length})
       </button>
       {showImages && result.images.length > 0 && (
         <div className="table-scroll">
@@ -152,7 +164,7 @@ export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle
         aria-expanded={showIntermediate}
         onClick={() => setShowIntermediate((visible) => !visible)}
       >
-        {showIntermediate ? "▾" : "▸"} Intermediate HTML
+        <span aria-hidden="true">{showIntermediate ? "▾" : "▸"}</span> Intermediate HTML
       </button>
       {showIntermediate && <pre className="code-view">{result.intermediateHtml}</pre>}
       <details>

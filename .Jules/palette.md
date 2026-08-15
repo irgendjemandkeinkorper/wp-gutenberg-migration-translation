@@ -30,3 +30,6 @@
 ## 2024-08-06 - Accessible Input Fields Without Labels
 **Learning:** Bare `<input type="file">` and `<textarea>` elements without associated `<label>` tags need explicit `aria-label` attributes to ensure screen readers can announce their purpose correctly.
 **Action:** Always add descriptive `aria-label` to form inputs that do not have explicitly associated labels, especially for raw text areas and file uploads.
+## 2024-05-19 - Adding visually hidden context text
+**Learning:** Hiding ambiguous decorative unicode symbols (like checkmarks, arrows, and circles) using `aria-hidden="true"` removes noise for screen readers, but if those symbols convey unique status information (like in a batch conversion list), hiding them without providing an alternative breaks accessibility.
+**Action:** When hiding status symbols using `aria-hidden="true"`, always provide an adjacent text alternative using a visually hidden class (e.g., `<span className="sr-only">Done:</span>`) so screen readers still receive the critical state information. Additionally, you may need to introduce the `.sr-only` utility to the CSS file and ensure tests matching exact text content are updated.
