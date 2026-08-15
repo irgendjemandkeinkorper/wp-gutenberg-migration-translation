@@ -356,19 +356,39 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     expect(appendChildSpy).toHaveBeenCalled();
     expect(removeSpy).toHaveBeenCalled();
 
-    // Check Clear Bundle destructive confirmation behavior
+    // Check Clear Bundle in-place undo behavior
     const clearBtn = Array.from(container.querySelectorAll("button")).find(
       (btn) => btn.textContent === "Clear bundle",
     ) as HTMLButtonElement;
     expect(clearBtn).not.toBeNull();
 
-    const confirmSpy = vi.spyOn(window, "confirm");
     await act(async () => {
       clearBtn.click();
     });
 
-    expect(confirmSpy).toHaveBeenCalled();
-    // Use bundle.length check or similar check instead of not.toContain("WXR bundle") if "WXR bundle (0 pages)" is displayed or panel is hidden
+    // Expect the undo hint to be shown
+    expect(container.textContent).toContain("WXR bundle cleared.");
+
+    const undoBtn = Array.from(container.querySelectorAll("button")).find(
+      (btn) => btn.textContent === "Undo",
+    ) as HTMLButtonElement;
+    expect(undoBtn).not.toBeNull();
+
+    await act(async () => {
+      undoBtn.click();
+    });
+
+    // Bundle is restored
+    expect(container.textContent).toContain("WXR bundle (1 page)");
+
+    // Final clear to reset state
+    const clearBtnFinal = Array.from(container.querySelectorAll("button")).find(
+      (btn) => btn.textContent === "Clear bundle",
+    ) as HTMLButtonElement;
+    await act(async () => {
+      clearBtnFinal.click();
+    });
+
     expect(container.textContent).not.toContain("WXR bundle (");
   });
 

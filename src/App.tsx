@@ -74,11 +74,7 @@ export default function App() {
     // 🎨 Palette: We intercept saveBundle failure here without setting state directly
     // within the effect body to avoid cascading renders.
     const success = saveBundle(bundle);
-    if (!success) {
-      setTimeout(() => setBundleSaveError(true), 0);
-    } else {
-      setTimeout(() => setBundleSaveError(false), 0);
-    }
+    setTimeout(() => setBundleSaveError(!success), 0);
   }, [bundle]);
   useEffect(() => localStorage.setItem("blockify.skipLlm", skipLlm ? "1" : "0"), [skipLlm]);
   useEffect(() => localStorage.setItem("blockify.targetTemplate", targetTemplate), [targetTemplate]);
@@ -259,6 +255,7 @@ export default function App() {
             menuOrder: page.menuOrder,
           };
           setBundle((current) => addOrReplaceBundleEntry(current, entry));
+          setClearedBundle(null);
           update(index, {
             status: "done",
             note: res.warnings.length
@@ -296,6 +293,7 @@ export default function App() {
         placeholders: result.placeholders,
       }),
     );
+    setClearedBundle(null);
   }
 
   const visibleSteps = STEP_ORDER.filter((s) => steps.has(s) || (s !== "Fetch" && (busy || steps.size > 0)));
