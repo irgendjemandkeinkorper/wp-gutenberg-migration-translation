@@ -38,7 +38,9 @@ describe("validateFragment", () => {
       '<p><a href="data:image/png;base64,iVBORw0KGgo...">image</a> <a href="data:audio/mp3;base64,SUQz...">audio</a></p>',
       [],
     );
-    expect(html).toBe('<p><a href="data:image/png;base64,iVBORw0KGgo...">image</a> <a href="data:audio/mp3;base64,SUQz...">audio</a></p>');
+    expect(html).toBe(
+      '<p><a href="data:image/png;base64,iVBORw0KGgo...">image</a> <a href="data:audio/mp3;base64,SUQz...">audio</a></p>',
+    );
   });
 
   it("reports missing and duplicated tokens", () => {
