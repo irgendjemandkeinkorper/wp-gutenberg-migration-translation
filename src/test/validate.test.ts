@@ -27,10 +27,18 @@ describe("validateFragment", () => {
 
   it("unwraps <a> tags with dangerous href values to prevent XSS", () => {
     const { html } = validateFragment(
-      '<p><a href="javascript:alert(1)">js</a> <a href=" vbscript:msgbox ">vbs</a> <a href="data:text/html,<html>">data</a> <a href="java\nscript:x">hack</a> <a href="java script:x">hack2</a> <a href="http://safe.com">safe</a></p>',
+      '<p><a href="javascript:alert(1)">js</a> <a href=" vbscript:msgbox ">vbs</a> <a href="data:text/html,<html>">data-html</a> <a href="data:application/xhtml+xml,<html>">data-xhtml</a> <a href="data:image/svg+xml,<svg>">data-svg</a> <a href="java\nscript:x">hack</a> <a href="java script:x">hack2</a> <a href="http://safe.com">safe</a></p>',
       [],
     );
-    expect(html).toBe('<p>js vbs data hack hack2 <a href="http://safe.com">safe</a></p>');
+    expect(html).toBe('<p>js vbs data-html data-xhtml data-svg hack hack2 <a href="http://safe.com">safe</a></p>');
+  });
+
+  it("preserves <a> tags with safe data: URIs (e.g., inline images)", () => {
+    const { html } = validateFragment(
+      '<p><a href="data:image/png;base64,iVBORw0KGgo...">image</a> <a href="data:audio/mp3;base64,SUQz...">audio</a></p>',
+      [],
+    );
+    expect(html).toBe('<p><a href="data:image/png;base64,iVBORw0KGgo...">image</a> <a href="data:audio/mp3;base64,SUQz...">audio</a></p>');
   });
 
   it("reports missing and duplicated tokens", () => {
