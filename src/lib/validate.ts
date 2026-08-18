@@ -3,8 +3,18 @@ import { TOKEN_RE, hasToken, isLoneToken, token, tokenIndices } from "./tokens";
 export function isSafeUrl(url: string): boolean {
   // Strip control characters and whitespace which browsers ignore when parsing protocols
   const normalized = url.replace(/[\x00-\x20\x7F-\x9F]/g, "").toLowerCase();
-  if (normalized.startsWith("javascript:") || normalized.startsWith("vbscript:") || normalized.startsWith("data:")) {
+  if (normalized.startsWith("javascript:") || normalized.startsWith("vbscript:")) {
     return false;
+  }
+  if (normalized.startsWith("data:")) {
+    const match = normalized.match(/^data:([^;,]*)/);
+    const mime = match ? match[1].trim() : "";
+    if (!mime.startsWith("image/") && !mime.startsWith("audio/") && !mime.startsWith("video/")) {
+      return false;
+    }
+    if (mime === "image/svg+xml") {
+      return false;
+    }
   }
   return true;
 }
