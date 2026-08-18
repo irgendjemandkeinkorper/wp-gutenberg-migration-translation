@@ -88,7 +88,10 @@ function densestContainer(doc: Document): { el: Element; selector: string } | nu
   let best: { el: Element; selector: string } | null = null;
   let bestLen = 0;
   for (const selector of CONTAINER_CANDIDATES) {
-    for (const el of Array.from(doc.querySelectorAll(selector))) {
+    // ⚡ Bolt: Avoid Array.from allocation on NodeList for performance
+    const elements = doc.querySelectorAll(selector);
+    for (let i = 0; i < elements.length; i++) {
+      const el = elements[i];
       const len = visibleTextLength(el);
       if (len > bestLen) {
         best = { el, selector };
