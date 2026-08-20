@@ -73,9 +73,7 @@ describe("core Gutenberg compiler", () => {
     const result = compileCoreNode(paragraph);
     expect(result.markup).not.toContain("javascript:alert(1)");
     expect(result.markup).toContain("<a>read</a>");
-    expect(result.findings).toEqual([
-      expect.objectContaining({ code: "unsafe-inline-href", severity: "warning" }),
-    ]);
+    expect(result.findings).toEqual([expect.objectContaining({ code: "unsafe-inline-href", severity: "warning" })]);
   });
 
   it("serializes nested ordered and unordered lists deterministically", () => {
