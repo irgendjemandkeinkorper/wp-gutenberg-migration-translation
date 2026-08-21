@@ -173,10 +173,7 @@ export interface ManifestValidationResult {
 }
 
 export type WorkspaceManifestErrorCode =
-  | "invalid-json"
-  | "corrupt-manifest"
-  | "unsupported-schema"
-  | "incompatible-reader";
+  "invalid-json" | "corrupt-manifest" | "unsupported-schema" | "incompatible-reader";
 
 export class WorkspaceManifestError extends Error {
   readonly code: WorkspaceManifestErrorCode;
