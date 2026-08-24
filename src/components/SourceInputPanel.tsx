@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { BatchPageStatus } from "../lib/types";
 
 export type SourceTab = "paste" | "fetch" | "batch";
@@ -91,11 +92,15 @@ export function SourceInputPanel({
   onCancelBatch,
   onResumeBatch,
 }: SourceInputPanelProps) {
-  // ⚡ Bolt: Avoid Array.from and O(N^2) object spread inside reducer for frequent UI updates
-  const batchCounts: Record<BatchPageStatus, number> = { pending: 0, converting: 0, done: 0, error: 0, cancelled: 0 };
-  for (const item of batchStatus.values()) {
-    batchCounts[item.status]++;
-  }
+  // ⚡ Bolt: Avoid Array.from and O(N^2) object spread inside reducer for frequent UI updates,
+  // and memoize to avoid O(N) recalculations on every render during batch processing.
+  const batchCounts = useMemo(() => {
+    const counts: Record<BatchPageStatus, number> = { pending: 0, converting: 0, done: 0, error: 0, cancelled: 0 };
+    for (const item of batchStatus.values()) {
+      counts[item.status]++;
+    }
+    return counts;
+  }, [batchStatus]);
   const canResume = batchCounts.error > 0 || batchCounts.cancelled > 0;
 
   return (
