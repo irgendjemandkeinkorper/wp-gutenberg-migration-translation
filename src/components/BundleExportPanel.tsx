@@ -128,7 +128,19 @@ export function BundleExportPanel({
         <button type="button" className="primary" onClick={downloadWxr}>
           Download WXR
         </button>
-        <button type="button" className="secondary" onClick={onClear}>
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => {
+            if (
+              window.confirm(
+                "Are you sure you want to clear the entire bundle? This action can be undone briefly, but any unsaved changes may be lost.",
+              )
+            ) {
+              onClear();
+            }
+          }}
+        >
           Clear bundle
         </button>
       </div>
