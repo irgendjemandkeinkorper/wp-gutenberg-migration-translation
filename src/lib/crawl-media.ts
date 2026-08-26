@@ -71,7 +71,8 @@ export function discoverImageCandidates(html: string, baseUrl: string): string[]
 
   // Process all img tags
   const imgs = doc.querySelectorAll("img");
-  for (const img of Array.from(imgs) as any[]) {
+  for (let idx = 0; idx < imgs.length; idx++) {
+    const img = imgs[idx] as any;
     // 1. standard src
     addUrl(img.getAttribute("src"));
     // 2. standard srcset
@@ -92,7 +93,8 @@ export function discoverImageCandidates(html: string, baseUrl: string): string[]
 
   // Process all source tags (e.g. within picture tags)
   const sources = doc.querySelectorAll("source");
-  for (const src of Array.from(sources) as any[]) {
+  for (let idx = 0; idx < sources.length; idx++) {
+    const src = sources[idx] as any;
     // 1. standard src
     addUrl(src.getAttribute("src"));
     // 2. standard srcset
