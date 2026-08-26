@@ -37,3 +37,7 @@
 ## 2024-08-12 - Decorative Characters in UI
 **Learning:** Screen readers often announce decorative unicode characters (like '✓', '▾', '▸') in verbose or confusing ways (e.g. "black down-pointing small triangle"). When the state is already conveyed semantically (like using `aria-expanded` on an accordion toggle or explicit button text for success states), these characters add noise.
 **Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.
+
+## 2024-05-24 - Explain disabled primary actions
+**Learning:** Users can feel stuck when primary conversion actions (like "Convert" or "Start Batch") are disabled without clear indication of what input is missing. This is a recurring UX/accessibility pattern in this app's component.
+**Action:** Explicitly add conditional `title` attributes to disabled action buttons to explain exactly what prerequisite is missing (e.g. "Enter a URL to fetch first"), rather than relying on visually disabling them or post-click errors.
