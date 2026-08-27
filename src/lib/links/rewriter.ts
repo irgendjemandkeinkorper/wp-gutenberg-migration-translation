@@ -32,7 +32,11 @@ export function rewriteInternalLinks(html: string, options: LinkRewriteOptions):
   const bySource = new Map(options.destinations.map((destination) => [normalize(destination.sourceUrl), destination]));
   let rewritten = 0;
   let unchanged = 0;
-  for (const anchor of Array.from(document.querySelectorAll("a[href]"))) {
+  // ⚡ Bolt: Avoid Array.from allocation on NodeList for performance
+  const anchors = document.querySelectorAll("a[href]");
+  // Use forward iteration to preserve finding order (NodeList is static here)
+  for (let i = 0; i < anchors.length; i++) {
+    const anchor = anchors[i];
     const sourceHref = anchor.getAttribute("href") ?? "";
     const record = classifyUrl(sourceHref, options.sourcePageUrl);
     if (["external", "mailto", "tel", "download"].includes(record.kind)) {

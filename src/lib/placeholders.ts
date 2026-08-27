@@ -11,7 +11,11 @@ export function preserveUnsupported(html: string): {
 } {
   const doc = new DOMParser().parseFromString(html, "text/html");
   const placeholders: MigrationPlaceholder[] = [];
-  for (const el of Array.from(doc.body.querySelectorAll(UNSUPPORTED))) {
+  // ⚡ Bolt: Avoid Array.from allocation on NodeList for performance
+  const unsupportedElements = doc.body.querySelectorAll(UNSUPPORTED);
+  // Iterate forwards to keep order consistent with tests (NodeList is static here)
+  for (let i = 0; i < unsupportedElements.length; i++) {
+    const el = unsupportedElements[i];
     if (!el.isConnected || el.closest(`${UNSUPPORTED}`) !== el) continue;
     const index = placeholders.length;
     const kind = el.tagName.toLowerCase();
