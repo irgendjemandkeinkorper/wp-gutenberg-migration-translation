@@ -108,4 +108,36 @@ describe("core Gutenberg compiler", () => {
     expect(result.findings).toEqual([expect.objectContaining({ code: "unsupported-core-node", severity: "blocking" })]);
     expect(result.markup).toContain("blockifyExceptionId");
   });
+
+  it("validates href values and blocks malicious URLs while preserving safe ones", () => {
+    const maliciousLink = makeNode("rich-text-span", {
+      id: "malicious-link",
+      text: "malicious link",
+      attributes: { href: "javascript:alert(1)", title: "evil" },
+      extensions: { sourceTag: "a" },
+    });
+    const safeLink = makeNode("rich-text-span", {
+      id: "safe-link",
+      text: " safe link",
+      attributes: { href: "https://safe.test" },
+      extensions: { sourceTag: "a" },
+    });
+    const paragraph = makeNode("paragraph", { children: [maliciousLink, safeLink] });
+    const result = compileCoreNode(paragraph);
+
+    // The malicious href should be stripped, but its safe 'title' attribute can remain.
+    // The safe link should keep its href.
+    expect(result.markup).toContain('<a title="evil">malicious link</a><a href="https://safe.test"> safe link</a>');
+
+    // A blocking finding should have been generated for the unsafe href
+    expect(result.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "unsafe-link-href",
+          severity: "blocking",
+          sourceNodeId: "malicious-link",
+        }),
+      ]),
+    );
+  });
 });
