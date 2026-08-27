@@ -137,7 +137,7 @@ describe("core Gutenberg compiler", () => {
           severity: "blocking",
           sourceNodeId: "malicious-link",
         }),
-      ])
+      ]),
     );
   });
 });
