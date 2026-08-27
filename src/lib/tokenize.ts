@@ -22,17 +22,21 @@ export function tokenizeImages(html: string, baseUrl?: string): TokenizeResult {
   const body = doc.body;
 
   // 1. Remove scripts, styles, noscript, nav, and elements with role="navigation"
-  for (const el of Array.from(body.querySelectorAll("script, style, noscript, nav, [role='navigation']"))) {
-    el.remove();
+  // ⚡ Bolt: Avoid Array.from allocation on NodeList for performance
+  const removeTargets = body.querySelectorAll("script, style, noscript, nav, [role='navigation']");
+  for (let i = removeTargets.length - 1; i >= 0; i--) {
+    removeTargets[i].remove();
   }
 
   const assets: AssetRef[] = [];
   let n = 0;
 
   // 2. Query all target elements in reading order
-  const targets = Array.from(body.querySelectorAll("img, iframe, object, embed, video, audio, form"));
+  // ⚡ Bolt: Avoid Array.from allocation on NodeList for performance
+  const targets = body.querySelectorAll("img, iframe, object, embed, video, audio, form");
 
-  for (const el of targets) {
+  for (let i = 0; i < targets.length; i++) {
+    const el = targets[i];
     // Skip if element was already removed or is nested inside an already tokenized/replaced parent
     if (!el.isConnected) {
       continue;
@@ -77,7 +81,10 @@ export function tokenizeImages(html: string, baseUrl?: string): TokenizeResult {
     // Extract sanitized attributes
     const attributes: Record<string, string> = {};
     const safeAttrs = SAFE_ATTRIBUTES[tag] || [];
-    for (const attr of Array.from(el.attributes)) {
+    // ⚡ Bolt: Avoid Array.from allocation on NamedNodeMap for performance
+    const attrs = el.attributes;
+    for (let j = attrs.length - 1; j >= 0; j--) {
+      const attr = attrs[j];
       const name = attr.name.toLowerCase();
       if (safeAttrs.includes(name)) {
         const val = attr.value.trim();

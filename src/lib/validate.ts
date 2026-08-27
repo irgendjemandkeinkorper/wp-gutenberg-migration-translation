@@ -122,7 +122,10 @@ export function repairTokens(html: string, expectedIndices: number[]): { html: s
 
   const seen = new Set<number>();
   const expected = new Set(expectedIndices);
-  for (const child of Array.from(body.children)) {
+  // ⚡ Bolt: Avoid Array.from allocation on HTMLCollection for performance
+  const children = body.children;
+  for (let i = children.length - 1; i >= 0; i--) {
+    const child = children[i];
     const text = child.textContent ?? "";
     if (!isLoneToken(text)) continue;
     const idx = tokenIndices(text)[0];
@@ -209,7 +212,11 @@ function unwrapWrappers(body: HTMLElement): void {
 function enforceWhitelist(body: HTMLElement): void {
   // Snapshot first: unwrapping keeps descendants in the document, and they
   // are already in the snapshot, so one pass suffices.
-  for (const el of Array.from(body.querySelectorAll("*"))) {
+  // ⚡ Bolt: Avoid Array.from allocation on NodeList for performance
+  const elementsPass1 = body.querySelectorAll("*");
+  // Iterate backwards to handle in-place replacements safely
+  for (let i = elementsPass1.length - 1; i >= 0; i--) {
+    const el = elementsPass1[i];
     const tag = el.tagName.toLowerCase();
     if (DROP.has(tag)) {
       el.remove();
@@ -219,7 +226,12 @@ function enforceWhitelist(body: HTMLElement): void {
       unwrap(el);
     }
   }
-  for (const el of Array.from(body.querySelectorAll("*"))) {
+
+  // ⚡ Bolt: Avoid Array.from allocation on NodeList for performance
+  const elementsPass2 = body.querySelectorAll("*");
+  // Iterate backwards to handle in-place replacements safely
+  for (let i = elementsPass2.length - 1; i >= 0; i--) {
+    const el = elementsPass2[i];
     if (el.tagName.toLowerCase() === "a") {
       const href = el.getAttribute("href");
       while (el.attributes.length > 0) {
@@ -258,7 +270,11 @@ function rename(el: Element, newTag: string): void {
 function isolateTokens(body: HTMLElement): void {
   const doc = body.ownerDocument;
 
-  for (const child of Array.from(body.children)) {
+  // ⚡ Bolt: Avoid Array.from allocation on HTMLCollection for performance
+  const children1 = body.children;
+  // Iterate backwards to safely handle live DOM mutation (replaceWith)
+  for (let i = children1.length - 1; i >= 0; i--) {
+    const child = children1[i];
     if (child.tagName.toLowerCase() !== "p") continue;
     const text = child.textContent ?? "";
     if (!hasToken(text) || isLoneToken(text)) continue;
@@ -271,7 +287,11 @@ function isolateTokens(body: HTMLElement): void {
       }
       current = doc.createElement("p");
     };
-    for (const node of Array.from(child.childNodes)) {
+    // ⚡ Bolt: Avoid Array.from allocation on NodeList for performance
+    // Traverse with .firstChild and .nextSibling to handle live DOM mutation
+    let node = child.firstChild;
+    while (node) {
+      const next = node.nextSibling;
       if (node.nodeType === Node.TEXT_NODE) {
         const parts = (node.textContent ?? "").split(/(⟦ASSET_\d+⟧)/);
         for (const part of parts) {
@@ -288,6 +308,7 @@ function isolateTokens(body: HTMLElement): void {
       } else {
         current.append(node);
       }
+      node = next;
     }
     flush();
     const frag = doc.createDocumentFragment();
@@ -297,7 +318,11 @@ function isolateTokens(body: HTMLElement): void {
     child.replaceWith(frag);
   }
 
-  for (const child of Array.from(body.children)) {
+  // ⚡ Bolt: Avoid Array.from allocation on HTMLCollection for performance
+  const children2 = body.children;
+  // Use length iteration for safe additions after the current child (append does not affect current or earlier elements as we go forward, but we can iterate backward to be perfectly safe as we insert)
+  for (let i = children2.length - 1; i >= 0; i--) {
+    const child = children2[i];
     const ownText = child.textContent ?? "";
     if (isLoneToken(ownText)) continue;
     const indices: number[] = [];
