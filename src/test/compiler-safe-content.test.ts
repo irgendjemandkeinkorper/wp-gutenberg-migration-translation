@@ -75,7 +75,7 @@ describe("safe embed and unknown-content compiler", () => {
   it("blocks dangerous obfuscated URLs", () => {
     const node = makeNode(
       "embed",
-      '<iframe src="java\nscript:alert(1)"></iframe><a href="java\x00script:alert(2)">link</a>'
+      '<iframe src="java\nscript:alert(1)"></iframe><a href="java\x00script:alert(2)">link</a>',
     );
     const result = compileSafeContentNode(node);
     expect(result.findings).toEqual([expect.objectContaining({ code: "unsafe-content", severity: "blocking" })]);
