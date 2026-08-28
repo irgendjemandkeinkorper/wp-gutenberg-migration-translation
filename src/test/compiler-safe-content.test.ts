@@ -71,4 +71,13 @@ describe("safe embed and unknown-content compiler", () => {
     expect(result.markup).not.toContain("data-secret");
     expect(result.markup).not.toContain("private");
   });
+
+  it("blocks dangerous obfuscated URLs", () => {
+    const node = makeNode(
+      "embed",
+      '<iframe src="java\nscript:alert(1)"></iframe><a href="java\x00script:alert(2)">link</a>',
+    );
+    const result = compileSafeContentNode(node);
+    expect(result.findings).toEqual([expect.objectContaining({ code: "unsafe-content", severity: "blocking" })]);
+  });
 });
