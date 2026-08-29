@@ -335,11 +335,7 @@ export function SourceInputPanel({
             type="button"
             className="primary"
             onClick={() => void onConvert()}
-            disabled={
-              busy ||
-              (tab === "fetch" && !pageUrl.trim()) ||
-              (tab === "paste" && !pastedHtml.trim())
-            }
+            disabled={busy || (tab === "fetch" && !pageUrl.trim()) || (tab === "paste" && !pastedHtml.trim())}
             title={
               tab === "fetch" && !pageUrl.trim()
                 ? "Enter a URL to fetch"
