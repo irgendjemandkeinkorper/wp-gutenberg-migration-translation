@@ -32,3 +32,8 @@
 **Vulnerability:** Legitimate usage of safe `data:` URIs (such as inline images) was being blocked globally alongside dangerous payload formats to prevent XSS. A weak blocklist approach (rejecting only `text/html`, `image/svg+xml`, etc.) was originally applied which inadvertently allowed other risky payloads (like `application/xhtml+xml`) through.
 **Learning:** When evaluating `data:` URIs for XSS, blocklists are fragile because attackers can find obscure, executable MIME types. An explicit allowlist strategy (e.g., exclusively allowing `image/*`, `audio/*`, and `video/*` while expressly denying `image/svg+xml`) is much safer.
 **Prevention:** Secure URI parsers dealing with `data:` schemes must use a strict prefix allowlist for safe MIME categories rather than attempting to enumerate and block every potentially dangerous format.
+
+## 2025-03-05 - Missing explicit validation for URL attributes
+**Vulnerability:** URL attributes (`href`, `src`) in the core inline compiler (`src/lib/compiler/core.ts`) were only checked against a generic attribute name allowlist (`allowedLinkAttributes`) but their values were not strictly validated to prevent malicious payloads like `javascript:` or `data:text/html`.
+**Learning:** Checking that an attribute *name* is safe (like `href`) does not mean its *value* is safe.
+**Prevention:** Always combine attribute allowlists with value sanitization for known URL-bearing attributes, leveraging strict utilities like `isSafeUrl`.
