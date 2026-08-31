@@ -1,0 +1,39 @@
+<<<<<<< SEARCH
+        <section className="panel bundle-panel" aria-live="polite">
+          <div className="panel-heading">
+            <div>
+              <p className="section-kicker">04 · Export</p>
+              <h2>WXR migration bundle</h2>
+            </div>
+          </div>
+          <div
+            className="warn-box"
+            role="alert"
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+          >
+            <span>Bundle cleared.</span>
+            <button type="button" className="text-button" onClick={onUndoClear}>
+              Undo clear
+            </button>
+          </div>
+        </section>
+=======
+        <section className="panel bundle-panel" aria-live="polite">
+          <div className="panel-heading">
+            <div>
+              <p className="section-kicker">04 · Export</p>
+              <h2>WXR migration bundle</h2>
+            </div>
+          </div>
+          <div
+            className="warn-box"
+            role="alert"
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+          >
+            <span>WXR bundle cleared.</span>
+            <button type="button" className="text-button" onClick={onUndoClear}>
+              Undo clear
+            </button>
+          </div>
+        </section>
+>>>>>>> REPLACE
