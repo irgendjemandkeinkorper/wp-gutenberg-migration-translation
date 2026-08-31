@@ -36,4 +36,6 @@
 
 ## 2024-08-12 - Decorative Characters in UI
 **Learning:** Screen readers often announce decorative unicode characters (like '✓', '▾', '▸') in verbose or confusing ways (e.g. "black down-pointing small triangle"). When the state is already conveyed semantically (like using `aria-expanded` on an accordion toggle or explicit button text for success states), these characters add noise.
-**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.
+**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.## 2024-05-18 - Missing Screen Reader Context for Disabled Buttons
+**Learning:** Action buttons that are disabled dynamically based on missing input lack context for *why* they are disabled, leading to confusion for all users and especially screen reader users who cannot see visual error cues.
+**Action:** When a primary action (like "Convert" or "Start Batch") is disabled due to missing input (e.g., an empty URL or textarea), always apply a descriptive `title` attribute explaining the requirement, which serves as a native tooltip and accessible description.
