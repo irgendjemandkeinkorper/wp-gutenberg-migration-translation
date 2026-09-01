@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { BatchPageStatus } from "../lib/types";
 
 export type SourceTab = "paste" | "fetch" | "batch";
@@ -16,6 +17,53 @@ export interface BatchState {
   status: BatchPageStatus;
   note?: string;
 }
+
+// ⚡ Bolt: Extracted BatchListItem and wrapped with memo to prevent O(N) re-renders when other batchStatus items change
+const BatchListItem = memo(function BatchListItem({
+  page,
+  itemStatus,
+}: {
+  page: CrawledPage;
+  itemStatus?: BatchState;
+}) {
+  return (
+    <li>
+      <span>
+        {itemStatus?.status === "done" && (
+          <>
+            <span aria-hidden="true">✓ </span>
+            <span className="sr-only">Done: </span>
+          </>
+        )}
+        {itemStatus?.status === "error" && (
+          <>
+            <span aria-hidden="true">✗ </span>
+            <span className="sr-only">Error: </span>
+          </>
+        )}
+        {itemStatus?.status === "converting" && (
+          <>
+            <span aria-hidden="true">… </span>
+            <span className="sr-only">Converting: </span>
+          </>
+        )}
+        {itemStatus?.status === "cancelled" && (
+          <>
+            <span aria-hidden="true">⊘ </span>
+            <span className="sr-only">Cancelled: </span>
+          </>
+        )}
+        {itemStatus?.status === "pending" && (
+          <>
+            <span aria-hidden="true">○ </span>
+            <span className="sr-only">Pending: </span>
+          </>
+        )}
+        {page.title || page.url} {itemStatus?.note && <span className="muted">({itemStatus.note})</span>}
+      </span>
+    </li>
+  );
+});
 
 interface SourceInputPanelProps {
   tab: SourceTab;
@@ -184,47 +232,9 @@ export function SourceInputPanel({
                   {batch.length === 1 ? "" : "s"} loaded.
                 </p>
                 <ul className="bundle-list">
-                  {batch.map((page, index) => {
-                    const itemStatus = batchStatus.get(index);
-                    return (
-                      <li key={page.url}>
-                        <span>
-                          {itemStatus?.status === "done" && (
-                            <>
-                              <span aria-hidden="true">✓ </span>
-                              <span className="sr-only">Done: </span>
-                            </>
-                          )}
-                          {itemStatus?.status === "error" && (
-                            <>
-                              <span aria-hidden="true">✗ </span>
-                              <span className="sr-only">Error: </span>
-                            </>
-                          )}
-                          {itemStatus?.status === "converting" && (
-                            <>
-                              <span aria-hidden="true">… </span>
-                              <span className="sr-only">Converting: </span>
-                            </>
-                          )}
-                          {itemStatus?.status === "cancelled" && (
-                            <>
-                              <span aria-hidden="true">⊘ </span>
-                              <span className="sr-only">Cancelled: </span>
-                            </>
-                          )}
-                          {itemStatus?.status === "pending" && (
-                            <>
-                              <span aria-hidden="true">○ </span>
-                              <span className="sr-only">Pending: </span>
-                            </>
-                          )}
-                          {page.title || page.url}{" "}
-                          {itemStatus?.note && <span className="muted">({itemStatus.note})</span>}
-                        </span>
-                      </li>
-                    );
-                  })}
+                  {batch.map((page, index) => (
+                    <BatchListItem key={page.url} page={page} itemStatus={batchStatus.get(index)} />
+                  ))}
                 </ul>
                 <div className="batch-summary" style={{ background: "var(--code-bg)" }} aria-live="polite">
                   <span>Total: {batch.length}</span>
