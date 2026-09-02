@@ -1,0 +1,75 @@
+--- src/lib/validate.ts
++++ src/lib/validate.ts
+@@ -265,16 +265,22 @@
+ function isolateTokens(body: HTMLElement): void {
+   const doc = body.ownerDocument;
+
+-  for (const child of Array.from(body.children)) {
+-    if (child.tagName.toLowerCase() !== "p") continue;
++  let child = body.firstElementChild;
++  while (child) {
++    const next = child.nextElementSibling;
++    if (child.tagName.toLowerCase() !== "p") {
++      child = next;
++      continue;
++    }
+     const text = child.textContent ?? "";
+-    if (!hasToken(text) || isLoneToken(text)) continue;
++    if (!hasToken(text) || isLoneToken(text)) {
++      child = next;
++      continue;
++    }
+
+     const pieces: Node[] = [];
+     let current = doc.createElement("p");
+     const flush = () => {
+       if (current.childNodes.length && (current.textContent ?? "").trim()) {
+         pieces.push(current);
+       }
+@@ -278,7 +284,10 @@
+       }
+       current = doc.createElement("p");
+     };
+-    for (const node of Array.from(child.childNodes)) {
++
++    let node = child.firstChild;
++    while (node) {
++      const nextNode = node.nextSibling;
+       if (node.nodeType === Node.TEXT_NODE) {
+         const parts = (node.textContent ?? "").split(/(⟦ASSET_\d+⟧)/);
+         for (const part of parts) {
+@@ -295,6 +304,7 @@
+       } else {
+         current.append(node);
+       }
++      node = nextNode;
+     }
+     flush();
+     const frag = doc.createDocumentFragment();
+@@ -302,9 +312,13 @@
+       frag.appendChild(piece);
+     }
+     child.replaceWith(frag);
++    child = next;
+   }
+
+-  for (const child of Array.from(body.children)) {
++  child = body.firstElementChild;
++  while (child) {
++    const next = child.nextElementSibling;
+     const ownText = child.textContent ?? "";
+-    if (isLoneToken(ownText)) continue;
++    if (isLoneToken(ownText)) {
++      child = next;
++      continue;
++    }
+     const indices: number[] = [];
+     const walker = doc.createTreeWalker(child, NodeFilter.SHOW_TEXT);
+     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+@@ -322,5 +336,6 @@
+       anchor.after(tp);
+       anchor = tp;
+     }
++    child = next;
+   }
+ }

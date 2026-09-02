@@ -1,0 +1,93 @@
+--- src/lib/validate.ts
++++ src/lib/validate.ts
+@@ -213,7 +213,9 @@
+ function enforceWhitelist(body: HTMLElement): void {
+   // Snapshot first: unwrapping keeps descendants in the document, and they
+   // are already in the snapshot, so one pass suffices.
+-  for (const el of Array.from(body.querySelectorAll("*"))) {
++  const allElements = body.querySelectorAll("*");
++  for (let i = 0; i < allElements.length; i++) {
++    const el = allElements[i];
+     const tag = el.tagName.toLowerCase();
+     if (DROP.has(tag)) {
+       el.remove();
+@@ -223,7 +225,9 @@
+       unwrap(el);
+     }
+   }
+-  for (const el of Array.from(body.querySelectorAll("*"))) {
++  const updatedElements = body.querySelectorAll("*");
++  for (let i = 0; i < updatedElements.length; i++) {
++    const el = updatedElements[i];
+     if (el.tagName.toLowerCase() === "a") {
+       const href = el.getAttribute("href");
+       while (el.attributes.length > 0) {
+@@ -263,10 +267,16 @@
+ function isolateTokens(body: HTMLElement): void {
+   const doc = body.ownerDocument;
+
+-  for (const child of Array.from(body.children)) {
+-    if (child.tagName.toLowerCase() !== "p") continue;
++  let child = body.firstElementChild;
++  while (child) {
++    const next = child.nextElementSibling;
++    if (child.tagName.toLowerCase() !== "p") {
++      child = next;
++      continue;
++    }
+     const text = child.textContent ?? "";
+-    if (!hasToken(text) || isLoneToken(text)) continue;
++    if (!hasToken(text) || isLoneToken(text)) {
++      child = next;
++      continue;
++    }
+
+     const pieces: Node[] = [];
+     let current = doc.createElement("p");
+@@ -275,7 +285,10 @@
+       }
+       current = doc.createElement("p");
+     };
+-    for (const node of Array.from(child.childNodes)) {
++
++    let node = child.firstChild;
++    while (node) {
++      const nextNode = node.nextSibling;
+       if (node.nodeType === Node.TEXT_NODE) {
+         const parts = (node.textContent ?? "").split(/(⟦ASSET_\d+⟧)/);
+         for (const part of parts) {
+@@ -292,6 +305,7 @@
+       } else {
+         current.append(node);
+       }
++      node = nextNode;
+     }
+     flush();
+     const frag = doc.createDocumentFragment();
+@@ -299,9 +313,14 @@
+       frag.appendChild(piece);
+     }
+     child.replaceWith(frag);
++    child = next;
+   }
+
+-  for (const child of Array.from(body.children)) {
++  child = body.firstElementChild;
++  while (child) {
++    const next = child.nextElementSibling;
+     const ownText = child.textContent ?? "";
+-    if (isLoneToken(ownText)) continue;
++    if (isLoneToken(ownText)) {
++      child = next;
++      continue;
++    }
+     const indices: number[] = [];
+     const walker = doc.createTreeWalker(child, NodeFilter.SHOW_TEXT);
+     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+@@ -319,5 +338,6 @@
+       anchor.after(tp);
+       anchor = tp;
+     }
++    child = next;
+   }
+ }
