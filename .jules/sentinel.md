@@ -32,3 +32,7 @@
 **Vulnerability:** Legitimate usage of safe `data:` URIs (such as inline images) was being blocked globally alongside dangerous payload formats to prevent XSS. A weak blocklist approach (rejecting only `text/html`, `image/svg+xml`, etc.) was originally applied which inadvertently allowed other risky payloads (like `application/xhtml+xml`) through.
 **Learning:** When evaluating `data:` URIs for XSS, blocklists are fragile because attackers can find obscure, executable MIME types. An explicit allowlist strategy (e.g., exclusively allowing `image/*`, `audio/*`, and `video/*` while expressly denying `image/svg+xml`) is much safer.
 **Prevention:** Secure URI parsers dealing with `data:` schemes must use a strict prefix allowlist for safe MIME categories rather than attempting to enumerate and block every potentially dangerous format.
+## 2025-05-24 - Node.js vs Browser URL Parsing Differential (XSS Bypass)
+**Vulnerability:** The HTML sanitizer's `safeUrl` function passed raw user input directly to the Node.js `URL` constructor to check for dangerous protocols like `javascript:`.
+**Learning:** Browsers ignore spaces and control characters (like tab or newline) within the protocol segment of a URL (e.g. `java\tscript:` is executed as JS), whereas Node.js parses them differently (often as relative paths), creating a dangerous differential that bypasses the sanitizer.
+**Prevention:** Always strip whitespace and control characters (e.g. using `/[\x00-\x20\x7F-\x9F]/g`) from URL strings *before* validating their protocols with the Node.js `URL` API.
