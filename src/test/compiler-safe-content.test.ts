@@ -63,6 +63,18 @@ describe("safe embed and unknown-content compiler", () => {
     expect(result.markup).not.toContain("alert(1)");
   });
 
+  it("rejects URLs with obfuscated dangerous protocols (e.g., using control characters or whitespace)", () => {
+    // Attackers might use java\nscript:, java\x00script:, etc., to bypass naive URL parsing.
+    const node = makeNode(
+      "unknown",
+      '<div><a href="java\nscript:alert(1)">link1</a><a href="java\x00script:alert(1)">link2</a><a href=" java script:alert(1)">link3</a></div>',
+    );
+    const result = compileSafeContentNode(node);
+    expect(result.findings).toEqual([expect.objectContaining({ code: "unsafe-content", severity: "blocking" })]);
+    expect(result.markup).toContain("blockifyExceptionId");
+    expect(result.markup).not.toContain("alert(1)");
+  });
+
   it("preserves a stable exception ID without embedding original HTML", () => {
     const node = makeNode("widget", '<custom-widget data-secret="value">private</custom-widget>');
     const result = compileSafeContentNode(node);
