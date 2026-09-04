@@ -64,7 +64,6 @@ const GOLFNOW_TEMPLATES = [
   "Willow",
 ];
 
-
 // ⚡ Bolt: Extracted batch list items into a memoized component.
 // This prevents O(N) re-renders for the entire batch list whenever a single item's status updates in the batchStatus Map.
 const BatchListItem = memo(function BatchListItem({
@@ -107,8 +106,7 @@ const BatchListItem = memo(function BatchListItem({
             <span className="sr-only">Pending: </span>
           </>
         )}
-        {page.title || page.url}{" "}
-        {itemStatus?.note && <span className="muted">({itemStatus.note})</span>}
+        {page.title || page.url} {itemStatus?.note && <span className="muted">({itemStatus.note})</span>}
       </span>
     </li>
   );
@@ -236,11 +234,7 @@ export function SourceInputPanel({
                 </p>
                 <ul className="bundle-list">
                   {batch.map((page, index) => (
-                    <BatchListItem
-                      key={page.url}
-                      page={page}
-                      itemStatus={batchStatus.get(index)}
-                    />
+                    <BatchListItem key={page.url} page={page} itemStatus={batchStatus.get(index)} />
                   ))}
                 </ul>
                 <div className="batch-summary" style={{ background: "var(--code-bg)" }} aria-live="polite">
