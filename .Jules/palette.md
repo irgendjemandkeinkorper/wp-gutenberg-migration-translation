@@ -37,3 +37,6 @@
 ## 2024-08-12 - Decorative Characters in UI
 **Learning:** Screen readers often announce decorative unicode characters (like '✓', '▾', '▸') in verbose or confusing ways (e.g. "black down-pointing small triangle"). When the state is already conveyed semantically (like using `aria-expanded` on an accordion toggle or explicit button text for success states), these characters add noise.
 **Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.
+## 2024-05-14 - [Button Validation Feedback]
+**Learning:** When a primary action (like form submission or conversion) is blocked by missing input, explicitly disable the button and provide a `title` attribute explaining the requirement. Relying solely on post-click error messages causes user frustration.
+**Action:** Always compute an `isDisabled` state based on required inputs and bind it to the `<button disabled={...} title={...}>` attributes.
