@@ -277,7 +277,9 @@ function emitChildNodes(
   const nodes: SemanticNode[] = [];
   const elementOrdinals = new Map<string, number>();
   let textOrdinal = 0;
-  for (const child of Array.from(parent.childNodes)) {
+  // ⚡ Bolt: Avoid Array.from allocation on NodeList
+  for (let i = 0; i < parent.childNodes.length; i++) {
+    const child = parent.childNodes[i];
     if (child.nodeType === Node.TEXT_NODE) {
       if (!normalizeText(child.textContent ?? "")) continue;
       if (!includeTextNodes) continue;
@@ -566,7 +568,15 @@ function loneToken(element: Element): number | null {
 
 function attributesFor(element: Element): Record<string, string> {
   return sortedStringMap(
-    Object.fromEntries(Array.from(element.attributes).map((attribute) => [attribute.name, attribute.value])),
+    // ⚡ Bolt: Avoid Array.from allocation on NamedNodeMap
+    (function () {
+      const obj: Record<string, string> = {};
+      for (let i = 0; i < element.attributes.length; i++) {
+        const attr = element.attributes[i];
+        obj[attr.name] = attr.value;
+      }
+      return obj;
+    })(),
   );
 }
 
