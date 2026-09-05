@@ -325,13 +325,28 @@ export function SourceInputPanel({
                 className="primary"
                 onClick={() => void onConvertBatch()}
                 disabled={batch.length === 0}
+                title={batch.length === 0 ? "Load a crawl JSON file first" : undefined}
               >
                 {batchCounts.done === batch.length && batch.length > 0 ? "Run Batch Again" : "Start Batch"}
               </button>
             )}
           </div>
         ) : (
-          <button type="button" className="primary" onClick={() => void onConvert()} disabled={busy}>
+          <button
+            type="button"
+            className="primary"
+            onClick={() => void onConvert()}
+            disabled={busy || (tab === "fetch" && !pageUrl) || (tab === "paste" && !pastedHtml)}
+            title={
+              busy
+                ? "Conversion in progress"
+                : tab === "fetch" && !pageUrl
+                  ? "Enter a URL to fetch"
+                  : tab === "paste" && !pastedHtml
+                    ? "Paste HTML source code first"
+                    : undefined
+            }
+          >
             {busy ? "Converting…" : "Convert"}
           </button>
         )}
