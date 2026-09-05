@@ -113,7 +113,10 @@ function renderCaption(caption?: string, credit?: string, creditUrl?: string): s
   if (caption) parts.push(escapeHtml(caption));
   if (credit) {
     const creditText = escapeHtml(credit);
-    const safeUrl = creditUrl && /^(?:https?:)\/\//i.test(creditUrl) ? ` href="${escapeAttr(creditUrl)}" target="_blank" rel="noopener noreferrer"` : "";
+    const safeUrl =
+      creditUrl && /^(?:https?:)\/\//i.test(creditUrl)
+        ? ` href="${escapeAttr(creditUrl)}" target="_blank" rel="noopener noreferrer"`
+        : "";
     parts.push(
       `<span class="blockify-media-credit">Credit: ${safeUrl ? `<a${safeUrl}>${creditText}</a>` : creditText}</span>`,
     );
