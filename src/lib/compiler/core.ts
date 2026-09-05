@@ -1,4 +1,5 @@
 import type { JsonValue, SemanticNode } from "../ir/types";
+import { isSafeUrl } from "../validate";
 
 export interface CompilerFinding {
   code: string;
@@ -224,7 +225,7 @@ function sourceTag(node: SemanticNode): string {
 }
 
 function safeAttributes(node: SemanticNode, allowed: ReadonlySet<string>, findings: CompilerFinding[]): string {
-  const attributes = Object.entries(node.attributes);
+  let attributes = Object.entries(node.attributes);
   for (const [name] of attributes) {
     if (!allowed.has(name.toLowerCase())) {
       findings.push({
@@ -235,8 +236,37 @@ function safeAttributes(node: SemanticNode, allowed: ReadonlySet<string>, findin
       });
     }
   }
+
+  attributes = attributes.filter(([name, value]) => {
+    const lowerName = name.toLowerCase();
+    if (!allowed.has(lowerName)) return false;
+    if (lowerName === "href" && !isSafeUrl(value)) {
+      findings.push({
+        code: "unsafe-link-href",
+        message: `Unsafe href URL was removed by the Gutenberg inline compiler.`,
+        severity: "blocking",
+        sourceNodeId: node.id,
+      });
+      return false;
+    }
+    return true;
+  });
+
+  const targetAttr = attributes.find(([n]) => n.toLowerCase() === "target");
+  if (targetAttr && targetAttr[1].toLowerCase() === "_blank") {
+    const relIndex = attributes.findIndex(([n]) => n.toLowerCase() === "rel");
+    if (relIndex >= 0) {
+      const rels = attributes[relIndex][1].split(/\s+/);
+      const newRels = new Set(rels);
+      newRels.add("noopener");
+      newRels.add("noreferrer");
+      attributes[relIndex][1] = Array.from(newRels).filter(Boolean).join(" ");
+    } else {
+      attributes.push(["rel", "noopener noreferrer"]);
+    }
+  }
+
   return attributes
-    .filter(([name]) => allowed.has(name.toLowerCase()))
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, value]) => ` ${name}="${escapeAttr(value)}"`)
     .join("");
