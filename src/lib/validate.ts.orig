@@ -123,14 +123,13 @@ export function repairTokens(html: string, expectedIndices: number[]): { html: s
   const seen = new Set<number>();
   const expected = new Set(expectedIndices);
   const children = body.children;
-  for (let i = 0; i < children.length; i++) {
+  for (let i = children.length - 1; i >= 0; i--) {
     const child = children[i];
     const text = child.textContent ?? "";
     if (!isLoneToken(text)) continue;
     const idx = tokenIndices(text)[0];
     if (!expected.has(idx) || seen.has(idx)) {
       child.remove();
-      i--; // Adjust index because child was removed
     } else {
       seen.add(idx);
     }
