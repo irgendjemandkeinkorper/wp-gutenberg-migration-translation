@@ -71,4 +71,17 @@ describe("safe embed and unknown-content compiler", () => {
     expect(result.markup).not.toContain("data-secret");
     expect(result.markup).not.toContain("private");
   });
+
+  it("turns unsafe obfuscated URLs into a safe placeholder to prevent parser differential XSS", () => {
+    const node = makeNode(
+      "unknown",
+      '<div><a href="java script:alert(1)">Hack 1</a><a href="java\nscript:alert(2)">Hack 2</a></div>',
+    );
+    const result = compileSafeContentNode(node);
+    expect(result.findings).toEqual([expect.objectContaining({ code: "unsafe-content", severity: "blocking" })]);
+    expect(result.markup).toContain("blockifyExceptionId");
+    expect(result.markup).toContain('data-remediation="review-source-evidence"');
+    expect(result.markup).not.toContain("alert(1)");
+    expect(result.markup).not.toContain("alert(2)");
+  });
 });
