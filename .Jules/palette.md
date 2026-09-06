@@ -37,3 +37,7 @@
 ## 2024-08-12 - Decorative Characters in UI
 **Learning:** Screen readers often announce decorative unicode characters (like '✓', '▾', '▸') in verbose or confusing ways (e.g. "black down-pointing small triangle"). When the state is already conveyed semantically (like using `aria-expanded` on an accordion toggle or explicit button text for success states), these characters add noise.
 **Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.
+
+## 2024-05-20 - Explicitly Disabling Primary Actions with Context
+**Learning:** When a primary action (like a "Convert" or "Start Batch" button) relies on required input that hasn't been provided yet, users can be confused if the button either does nothing or throws an error post-click.
+**Action:** Always disable primary action buttons when required input is missing and add a descriptive `title` attribute explaining the requirement (e.g., "Please paste HTML source code first") so users immediately understand what is needed before they can proceed.

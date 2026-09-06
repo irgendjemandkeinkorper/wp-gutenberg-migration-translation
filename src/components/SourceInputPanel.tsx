@@ -98,6 +98,8 @@ export function SourceInputPanel({
   }
   const canResume = batchCounts.error > 0 || batchCounts.cancelled > 0;
 
+  const convertDisabled = busy || (tab === "paste" && !pastedHtml.trim()) || (tab === "fetch" && !pageUrl.trim());
+
   return (
     <section className="panel source-panel">
       <div className="panel-heading source-heading">
@@ -325,13 +327,26 @@ export function SourceInputPanel({
                 className="primary"
                 onClick={() => void onConvertBatch()}
                 disabled={batch.length === 0}
+                title={batch.length === 0 ? "Load a crawl JSON file first" : undefined}
               >
                 {batchCounts.done === batch.length && batch.length > 0 ? "Run Batch Again" : "Start Batch"}
               </button>
             )}
           </div>
         ) : (
-          <button type="button" className="primary" onClick={() => void onConvert()} disabled={busy}>
+          <button
+            type="button"
+            className="primary"
+            onClick={() => void onConvert()}
+            disabled={convertDisabled}
+            title={
+              convertDisabled && !busy
+                ? tab === "paste"
+                  ? "Please paste HTML source code first"
+                  : "Please enter a URL to fetch"
+                : undefined
+            }
+          >
             {busy ? "Converting…" : "Convert"}
           </button>
         )}
