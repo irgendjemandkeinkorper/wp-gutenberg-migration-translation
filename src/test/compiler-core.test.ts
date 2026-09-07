@@ -56,13 +56,13 @@ describe("core Gutenberg compiler", () => {
     expect(result.markup).toContain("<strong>&lt;bold&gt;</strong>");
     expect(result.markup).toContain('href="https://example.test/?a=1&amp;b=2"');
     expect(result.markup).not.toContain('href="javascript:alert(1)"');
-    expect(result.markup).toContain('<a>hack</a>');
+    expect(result.markup).toContain("<a>hack</a>");
     expect(result.markup).not.toContain("onclick");
     expect(result.findings).toContainEqual(
-      expect.objectContaining({ code: "unsupported-inline-attribute", severity: "warning" })
+      expect.objectContaining({ code: "unsupported-inline-attribute", severity: "warning" }),
     );
     expect(result.findings).toContainEqual(
-      expect.objectContaining({ code: "unsafe-href-attribute", severity: "warning" })
+      expect.objectContaining({ code: "unsafe-href-attribute", severity: "warning" }),
     );
 
     const heading = makeNode("heading", {
