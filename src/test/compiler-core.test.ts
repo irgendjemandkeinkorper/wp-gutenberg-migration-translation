@@ -43,16 +43,27 @@ describe("core Gutenberg compiler", () => {
       attributes: { href: "https://example.test/?a=1&b=2", onclick: "alert(1)" },
       extensions: { sourceTag: "a" },
     });
-    const paragraph = makeNode("paragraph", { text: "Intro ", children: [bold, link] });
+    const badLink = makeNode("rich-text-span", {
+      id: "badLink",
+      text: "hack",
+      attributes: { href: "javascript:alert(1)" },
+      extensions: { sourceTag: "a" },
+    });
+    const paragraph = makeNode("paragraph", { text: "Intro ", children: [bold, link, badLink] });
     const result = compileCoreNode(paragraph);
 
     expect(result.markup).toContain("Intro ");
     expect(result.markup).toContain("<strong>&lt;bold&gt;</strong>");
     expect(result.markup).toContain('href="https://example.test/?a=1&amp;b=2"');
+    expect(result.markup).not.toContain('href="javascript:alert(1)"');
+    expect(result.markup).toContain('<a>hack</a>');
     expect(result.markup).not.toContain("onclick");
-    expect(result.findings).toEqual([
-      expect.objectContaining({ code: "unsupported-inline-attribute", severity: "warning" }),
-    ]);
+    expect(result.findings).toContainEqual(
+      expect.objectContaining({ code: "unsupported-inline-attribute", severity: "warning" })
+    );
+    expect(result.findings).toContainEqual(
+      expect.objectContaining({ code: "unsafe-href-attribute", severity: "warning" })
+    );
 
     const heading = makeNode("heading", {
       id: "heading",
