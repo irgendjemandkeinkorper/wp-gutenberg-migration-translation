@@ -367,10 +367,10 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     });
 
     // Expect the undo hint to be shown
-    expect(container.textContent).toContain("WXR bundle cleared.");
+    expect(container.textContent).toContain("Bundle cleared.");
 
     const undoBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent === "Undo",
+      (btn) => btn.textContent === "Undo clear",
     ) as HTMLButtonElement;
     expect(undoBtn).not.toBeNull();
 
