@@ -36,4 +36,6 @@
 
 ## 2024-08-12 - Decorative Characters in UI
 **Learning:** Screen readers often announce decorative unicode characters (like '✓', '▾', '▸') in verbose or confusing ways (e.g. "black down-pointing small triangle"). When the state is already conveyed semantically (like using `aria-expanded` on an accordion toggle or explicit button text for success states), these characters add noise.
-**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.
+**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.## 2026-09-09 - Avoid Redundant Confirmation Dialogs
+**Learning:** Adding a `window.confirm` dialog to an action that already has a non-destructive "Undo" pattern introduces unnecessary friction and degrades the user experience.
+**Action:** Before implementing a confirmation dialog for a destructive action, verify if the system already provides a transient "Undo" option. Do not use both simultaneously.
