@@ -32,3 +32,8 @@
 **Vulnerability:** Legitimate usage of safe `data:` URIs (such as inline images) was being blocked globally alongside dangerous payload formats to prevent XSS. A weak blocklist approach (rejecting only `text/html`, `image/svg+xml`, etc.) was originally applied which inadvertently allowed other risky payloads (like `application/xhtml+xml`) through.
 **Learning:** When evaluating `data:` URIs for XSS, blocklists are fragile because attackers can find obscure, executable MIME types. An explicit allowlist strategy (e.g., exclusively allowing `image/*`, `audio/*`, and `video/*` while expressly denying `image/svg+xml`) is much safer.
 **Prevention:** Secure URI parsers dealing with `data:` schemes must use a strict prefix allowlist for safe MIME categories rather than attempting to enumerate and block every potentially dangerous format.
+
+## 2025-09-10 - Unsanitized Href attribute XSS in Core Compiler
+**Vulnerability:** Cross-Site Scripting (XSS) vulnerability during IR to Gutenberg conversion due to blind serialization of `href` attributes on `<a>` tags in `compileCoreNode` (`src/lib/compiler/core.ts`).
+**Learning:** Compilers emitting HTML markup must implement strict, independent output validation. Relying solely on input validation upstream is insufficient if the intermediate representation (IR) can be manipulated or bypassed. The core compiler allowed any value for `href`, including `javascript:alert(1)`.
+**Prevention:** Always explicitly validate URL attributes against a robust `isSafeUrl` check during the final serialization step of any compiler, and strip or reject attributes containing dangerous schemes.

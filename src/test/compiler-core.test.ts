@@ -43,13 +43,20 @@ describe("core Gutenberg compiler", () => {
       attributes: { href: "https://example.test/?a=1&b=2", onclick: "alert(1)" },
       extensions: { sourceTag: "a" },
     });
-    const paragraph = makeNode("paragraph", { text: "Intro ", children: [bold, link] });
+    const dangerousLink = makeNode("rich-text-span", {
+      id: "dangerous",
+      text: "hack",
+      attributes: { href: "javascript:alert(1)" },
+      extensions: { sourceTag: "a" },
+    });
+    const paragraph = makeNode("paragraph", { text: "Intro ", children: [bold, link, dangerousLink] });
     const result = compileCoreNode(paragraph);
 
     expect(result.markup).toContain("Intro ");
     expect(result.markup).toContain("<strong>&lt;bold&gt;</strong>");
     expect(result.markup).toContain('href="https://example.test/?a=1&amp;b=2"');
     expect(result.markup).not.toContain("onclick");
+    expect(result.markup).toContain("<a>hack</a>");
     expect(result.findings).toEqual([
       expect.objectContaining({ code: "unsupported-inline-attribute", severity: "warning" }),
     ]);

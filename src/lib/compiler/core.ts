@@ -1,4 +1,5 @@
 import type { JsonValue, SemanticNode } from "../ir/types";
+import { isSafeUrl } from "../validate";
 
 export interface CompilerFinding {
   code: string;
@@ -236,7 +237,12 @@ function safeAttributes(node: SemanticNode, allowed: ReadonlySet<string>, findin
     }
   }
   return attributes
-    .filter(([name]) => allowed.has(name.toLowerCase()))
+    .filter(([name, value]) => {
+      const lower = name.toLowerCase();
+      if (!allowed.has(lower)) return false;
+      if (lower === "href" && !isSafeUrl(value)) return false;
+      return true;
+    })
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, value]) => ` ${name}="${escapeAttr(value)}"`)
     .join("");
