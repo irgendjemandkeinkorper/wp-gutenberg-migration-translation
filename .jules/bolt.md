@@ -38,3 +38,7 @@
 **Action:** When walking or modifying large DOM trees, drop `Array.from()` and prefer iteration via `length` and index access (for NodeLists) or `firstElementChild`/`nextElementSibling` and `firstChild`/`nextSibling` properties. For safe removal of attributes from a live `NamedNodeMap` without intermediate array allocations, iterate backward (`for (let i = attrs.length - 1; i >= 0; i--)`).## 2026-08-17 - [DOM NodeList Iteration and Array Allocation Avoidance]
 **Learning:** Using `Array.from()` to convert a `NodeList` (such as the result of `querySelectorAll`) into an array before iterating causes unnecessary array allocation in memory. While not a massive bottleneck, in tight loops or repeated calls over large DOM structures, this overhead adds up.
 **Action:** When iterating over a static `NodeList` like those returned by `querySelectorAll`, avoid `Array.from()`. Instead, iterate directly using a standard `for` loop with an index and the `.length` property to eliminate the intermediate array allocation.
+
+## 2024-11-21 - [Extracting List Items to React.memo Component]
+**Learning:** Rendering complex inline JSX logic directly inside `map()` over a large and frequently updated array or list creates heavy memory usage and O(N) re-renders, causing noticeable freezes for large batch operations where status updates dynamically.
+**Action:** Always extract list items inside heavy map iterations into distinct `React.memo()` components and pass individual properties as props.
