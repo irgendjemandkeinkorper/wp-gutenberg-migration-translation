@@ -339,7 +339,13 @@ export function PageQaWorkbench({
                 ))}
               </div>
             )}
-            <button type="button" className="primary" disabled={!preview.canConfirm} onClick={confirm}>
+            <button
+              type="button"
+              className="primary"
+              disabled={!preview.canConfirm}
+              onClick={confirm}
+              title={!preview.canConfirm ? "Resolve preview diagnostics to confirm rerun" : undefined}
+            >
               Confirm targeted rerun
             </button>
           </div>
