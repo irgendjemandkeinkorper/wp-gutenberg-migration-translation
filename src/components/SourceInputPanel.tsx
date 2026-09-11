@@ -340,9 +340,9 @@ export function SourceInputPanel({
             title={
               busy
                 ? "Conversion in progress"
-                : (tab === "paste" && !pastedHtml.trim())
+                : tab === "paste" && !pastedHtml.trim()
                   ? "Please paste HTML source code to convert"
-                  : (tab === "fetch" && !pageUrl.trim())
+                  : tab === "fetch" && !pageUrl.trim()
                     ? "Please enter a URL to fetch"
                     : undefined
             }
