@@ -36,4 +36,6 @@
 
 ## 2024-08-12 - Decorative Characters in UI
 **Learning:** Screen readers often announce decorative unicode characters (like '✓', '▾', '▸') in verbose or confusing ways (e.g. "black down-pointing small triangle"). When the state is already conveyed semantically (like using `aria-expanded` on an accordion toggle or explicit button text for success states), these characters add noise.
-**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.
+**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.## 2023-10-27 - Disable Action Buttons on Missing Required Inputs
+**Learning:** Users can become frustrated when they click an action button (like "Convert") only to be met with an error or no response because they forgot a required input (like pasting HTML). Relying purely on post-click error messages is a poor UX pattern for simple, predictable constraints.
+**Action:** Always eagerly disable primary action buttons when their required inputs are missing or invalid. Complement the disabled state with a `title` attribute explaining the requirement (e.g., "Paste HTML source code to convert") so users understand exactly why the button is unavailable before they even try to interact with it.
