@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { BatchPageStatus } from "../lib/types";
 
 export type SourceTab = "paste" | "fetch" | "batch";
@@ -62,6 +63,53 @@ const GOLFNOW_TEMPLATES = [
   "Sunstone",
   "Willow",
 ];
+
+// ⚡ Bolt: Extract to memoized component to prevent O(N) re-renders during batch status updates
+const BatchListItem = memo(function BatchListItem({
+  page,
+  itemStatus,
+}: {
+  page: CrawledPage;
+  itemStatus: BatchState | undefined;
+}) {
+  return (
+    <li>
+      <span>
+        {itemStatus?.status === "done" && (
+          <>
+            <span aria-hidden="true">✓ </span>
+            <span className="sr-only">Done: </span>
+          </>
+        )}
+        {itemStatus?.status === "error" && (
+          <>
+            <span aria-hidden="true">✗ </span>
+            <span className="sr-only">Error: </span>
+          </>
+        )}
+        {itemStatus?.status === "converting" && (
+          <>
+            <span aria-hidden="true">… </span>
+            <span className="sr-only">Converting: </span>
+          </>
+        )}
+        {itemStatus?.status === "cancelled" && (
+          <>
+            <span aria-hidden="true">⊘ </span>
+            <span className="sr-only">Cancelled: </span>
+          </>
+        )}
+        {itemStatus?.status === "pending" && (
+          <>
+            <span aria-hidden="true">○ </span>
+            <span className="sr-only">Pending: </span>
+          </>
+        )}
+        {page.title || page.url} {itemStatus?.note && <span className="muted">({itemStatus.note})</span>}
+      </span>
+    </li>
+  );
+});
 
 export function SourceInputPanel({
   tab,
@@ -186,44 +234,7 @@ export function SourceInputPanel({
                 <ul className="bundle-list">
                   {batch.map((page, index) => {
                     const itemStatus = batchStatus.get(index);
-                    return (
-                      <li key={page.url}>
-                        <span>
-                          {itemStatus?.status === "done" && (
-                            <>
-                              <span aria-hidden="true">✓ </span>
-                              <span className="sr-only">Done: </span>
-                            </>
-                          )}
-                          {itemStatus?.status === "error" && (
-                            <>
-                              <span aria-hidden="true">✗ </span>
-                              <span className="sr-only">Error: </span>
-                            </>
-                          )}
-                          {itemStatus?.status === "converting" && (
-                            <>
-                              <span aria-hidden="true">… </span>
-                              <span className="sr-only">Converting: </span>
-                            </>
-                          )}
-                          {itemStatus?.status === "cancelled" && (
-                            <>
-                              <span aria-hidden="true">⊘ </span>
-                              <span className="sr-only">Cancelled: </span>
-                            </>
-                          )}
-                          {itemStatus?.status === "pending" && (
-                            <>
-                              <span aria-hidden="true">○ </span>
-                              <span className="sr-only">Pending: </span>
-                            </>
-                          )}
-                          {page.title || page.url}{" "}
-                          {itemStatus?.note && <span className="muted">({itemStatus.note})</span>}
-                        </span>
-                      </li>
-                    );
+                    return <BatchListItem key={page.url} page={page} itemStatus={itemStatus} />;
                   })}
                 </ul>
                 <div className="batch-summary" style={{ background: "var(--code-bg)" }} aria-live="polite">
