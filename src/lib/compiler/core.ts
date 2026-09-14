@@ -1,4 +1,5 @@
 import type { JsonValue, SemanticNode } from "../ir/types";
+import { isSafeUrl } from "../validate";
 
 export interface CompilerFinding {
   code: string;
@@ -225,18 +226,34 @@ function sourceTag(node: SemanticNode): string {
 
 function safeAttributes(node: SemanticNode, allowed: ReadonlySet<string>, findings: CompilerFinding[]): string {
   const attributes = Object.entries(node.attributes);
-  for (const [name] of attributes) {
-    if (!allowed.has(name.toLowerCase())) {
+  const validAttributes: [string, string][] = [];
+
+  for (const [name, value] of attributes) {
+    const lowerName = name.toLowerCase();
+    if (!allowed.has(lowerName)) {
       findings.push({
         code: "unsupported-inline-attribute",
         message: `Attribute ${name} was not supported by the Gutenberg inline compiler.`,
         severity: "warning",
         sourceNodeId: node.id,
       });
+      continue;
     }
+
+    if (lowerName === "href" && !isSafeUrl(String(value))) {
+      findings.push({
+        code: "unsafe-inline-url",
+        message: `Unsafe URL stripped from ${name} attribute.`,
+        severity: "warning",
+        sourceNodeId: node.id,
+      });
+      continue;
+    }
+
+    validAttributes.push([lowerName, String(value)]);
   }
-  return attributes
-    .filter(([name]) => allowed.has(name.toLowerCase()))
+
+  return validAttributes
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, value]) => ` ${name}="${escapeAttr(value)}"`)
     .join("");
