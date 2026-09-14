@@ -98,6 +98,14 @@ export function SourceInputPanel({
   }
   const canResume = batchCounts.error > 0 || batchCounts.cancelled > 0;
 
+  const isMissingInput = (tab === "paste" && !pastedHtml.trim()) || (tab === "fetch" && !pageUrl.trim());
+  const convertDisabled = busy || isMissingInput;
+  const convertTitle = isMissingInput
+    ? tab === "paste"
+      ? "Please paste HTML first"
+      : "Please enter a URL to fetch"
+    : undefined;
+
   return (
     <section className="panel source-panel">
       <div className="panel-heading source-heading">
@@ -331,7 +339,13 @@ export function SourceInputPanel({
             )}
           </div>
         ) : (
-          <button type="button" className="primary" onClick={() => void onConvert()} disabled={busy}>
+          <button
+            type="button"
+            className="primary"
+            onClick={() => void onConvert()}
+            disabled={convertDisabled}
+            title={convertTitle}
+          >
             {busy ? "Converting…" : "Convert"}
           </button>
         )}
