@@ -15,3 +15,6 @@
 ## 2024-08-10 - Transience and Non-blocking destructive actions
 **Learning:** For bulk data deletion (like clearing a list of imported pages), abrasive `window.confirm` dialogues interrupt workflow. Replacing these prompts with an immediate clear action that offers a highly visible, contextual "Undo" button (utilizing `aria-live` for screen readers) provides a much better and safer user experience.
 **Action:** Always favor transient state recovery ("Undo") over blocking modal confirmations for destructive actions in the UI, especially where data is primarily held in memory. Ensure the undo trigger is prominently placed where the deleted items used to be.
+## 2024-11-20 - Proactive Validation of Primary Actions
+**Learning:** Allowing users to trigger primary actions (like converting a form) when requisite input is missing only to show an error afterward is a frustrating pattern. Explicitly disabling the action button and providing a descriptive tooltip (`title`) explaining *why* it is disabled prevents interaction errors before they happen, making the interface more intuitive and accessible.
+**Action:** When a primary action depends on user input, conditionally disable the action trigger (e.g., button) and use a `title` or tooltip to explain the exact missing requirement.
