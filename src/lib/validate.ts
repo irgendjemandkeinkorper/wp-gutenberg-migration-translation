@@ -122,15 +122,21 @@ export function repairTokens(html: string, expectedIndices: number[]): { html: s
 
   const seen = new Set<number>();
   const expected = new Set(expectedIndices);
-  for (const child of Array.from(body.children)) {
+  let child = body.firstElementChild;
+  while (child) {
+    const next = child.nextElementSibling;
     const text = child.textContent ?? "";
-    if (!isLoneToken(text)) continue;
+    if (!isLoneToken(text)) {
+      child = next;
+      continue;
+    }
     const idx = tokenIndices(text)[0];
     if (!expected.has(idx) || seen.has(idx)) {
       child.remove();
     } else {
       seen.add(idx);
     }
+    child = next;
   }
 
   const lostPositions = expectedIndices.filter((i) => !seen.has(i));
@@ -209,7 +215,9 @@ function unwrapWrappers(body: HTMLElement): void {
 function enforceWhitelist(body: HTMLElement): void {
   // Snapshot first: unwrapping keeps descendants in the document, and they
   // are already in the snapshot, so one pass suffices.
-  for (const el of Array.from(body.querySelectorAll("*"))) {
+  const allEls = body.querySelectorAll("*");
+  for (let i = 0; i < allEls.length; i++) {
+    const el = allEls[i];
     const tag = el.tagName.toLowerCase();
     if (DROP.has(tag)) {
       el.remove();
@@ -219,7 +227,9 @@ function enforceWhitelist(body: HTMLElement): void {
       unwrap(el);
     }
   }
-  for (const el of Array.from(body.querySelectorAll("*"))) {
+  const allEls2 = body.querySelectorAll("*");
+  for (let i = 0; i < allEls2.length; i++) {
+    const el = allEls2[i];
     if (el.tagName.toLowerCase() === "a") {
       const href = el.getAttribute("href");
       while (el.attributes.length > 0) {
@@ -258,7 +268,9 @@ function rename(el: Element, newTag: string): void {
 function isolateTokens(body: HTMLElement): void {
   const doc = body.ownerDocument;
 
-  for (const child of Array.from(body.children)) {
+  const children1 = body.children;
+  for (let i = children1.length - 1; i >= 0; i--) {
+    const child = children1[i];
     if (child.tagName.toLowerCase() !== "p") continue;
     const text = child.textContent ?? "";
     if (!hasToken(text) || isLoneToken(text)) continue;
@@ -271,7 +283,9 @@ function isolateTokens(body: HTMLElement): void {
       }
       current = doc.createElement("p");
     };
-    for (const node of Array.from(child.childNodes)) {
+    let node = child.firstChild;
+    while (node) {
+      const nextNode = node.nextSibling;
       if (node.nodeType === Node.TEXT_NODE) {
         const parts = (node.textContent ?? "").split(/(⟦ASSET_\d+⟧)/);
         for (const part of parts) {
@@ -288,6 +302,7 @@ function isolateTokens(body: HTMLElement): void {
       } else {
         current.append(node);
       }
+      node = nextNode;
     }
     flush();
     const frag = doc.createDocumentFragment();
@@ -297,7 +312,9 @@ function isolateTokens(body: HTMLElement): void {
     child.replaceWith(frag);
   }
 
-  for (const child of Array.from(body.children)) {
+  const children2 = body.children;
+  for (let i = children2.length - 1; i >= 0; i--) {
+    const child = children2[i];
     const ownText = child.textContent ?? "";
     if (isLoneToken(ownText)) continue;
     const indices: number[] = [];
