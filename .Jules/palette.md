@@ -36,4 +36,6 @@
 
 ## 2024-08-12 - Decorative Characters in UI
 **Learning:** Screen readers often announce decorative unicode characters (like '✓', '▾', '▸') in verbose or confusing ways (e.g. "black down-pointing small triangle"). When the state is already conveyed semantically (like using `aria-expanded` on an accordion toggle or explicit button text for success states), these characters add noise.
-**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.
+**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.## 2026-08-19 - Test Suite Awareness
+**Learning:** Changing visible text in the UI can break UI test assertions if the tests aren't updated to match.
+**Action:** When updating visible text strings, always search the codebase (especially UI tests like `src/test/app.ui.test.tsx`) for references to the old string to ensure no tests break. If changing test assertions, double check that the application actually renders that text.
