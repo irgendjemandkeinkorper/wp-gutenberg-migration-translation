@@ -220,6 +220,18 @@ export function SourceInputPanel({
                             </>
                           )}
                           {page.title || page.url}{" "}
+                          {(page.parentId !== undefined || page.menuOrder !== undefined) && (
+                            <small className="muted">
+                              [
+                              {[
+                                page.parentId !== undefined ? `parentId: ${page.parentId}` : null,
+                                page.menuOrder !== undefined ? `order: ${page.menuOrder}` : null,
+                              ]
+                                .filter(Boolean)
+                                .join(", ")}
+                              ]
+                            </small>
+                          )}{" "}
                           {itemStatus?.note && <span className="muted">({itemStatus.note})</span>}
                         </span>
                       </li>
