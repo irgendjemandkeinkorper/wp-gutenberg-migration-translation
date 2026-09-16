@@ -32,3 +32,8 @@
 **Vulnerability:** Legitimate usage of safe `data:` URIs (such as inline images) was being blocked globally alongside dangerous payload formats to prevent XSS. A weak blocklist approach (rejecting only `text/html`, `image/svg+xml`, etc.) was originally applied which inadvertently allowed other risky payloads (like `application/xhtml+xml`) through.
 **Learning:** When evaluating `data:` URIs for XSS, blocklists are fragile because attackers can find obscure, executable MIME types. An explicit allowlist strategy (e.g., exclusively allowing `image/*`, `audio/*`, and `video/*` while expressly denying `image/svg+xml`) is much safer.
 **Prevention:** Secure URI parsers dealing with `data:` schemes must use a strict prefix allowlist for safe MIME categories rather than attempting to enumerate and block every potentially dangerous format.
+
+## 2025-03-03 - Parser Differential XSS in URL Validation
+**Vulnerability:** XSS filter bypass using whitespace or control characters in protocol scheme (e.g., `java\nscript:`).
+**Learning:** Node.js URL parser and web browsers parse malformed URLs differently. Node.js `new URL("java\nscript:alert(1)", "http://base")` strips the control character during parsing and sees it as a relative path (e.g., `http://base/java%0Ascript:alert(1)`). Therefore, it bypasses our `url.protocol` allowlist. However, web browsers will execute `href="java\nscript:alert(1)"` as a `javascript:` protocol.
+**Prevention:** Always explicitly strip control characters and whitespace (`/[\x00-\x20\x7F-\x9F]/g`) from the string before passing it into `new URL()` for protocol validation.
