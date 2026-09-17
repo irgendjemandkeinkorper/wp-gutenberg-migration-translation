@@ -72,3 +72,12 @@ describe("safe embed and unknown-content compiler", () => {
     expect(result.markup).not.toContain("private");
   });
 });
+
+it("turns iframe with obfuscated javascript payload into a safe placeholder", () => {
+  const node = makeNode("embed", '<iframe src="java\x00script:alert(1)"></iframe>');
+  const result = compileSafeContentNode(node);
+  expect(result.findings).toEqual([expect.objectContaining({ code: "unsafe-content", severity: "blocking" })]);
+  expect(result.markup).toContain("blockifyExceptionId");
+  expect(result.markup).toContain('data-remediation="review-source-evidence"');
+  expect(result.markup).not.toContain("alert(1)");
+});
