@@ -336,7 +336,9 @@ export function SourceInputPanel({
             type="button"
             className="primary"
             onClick={() => void onConvert()}
-            disabled={busy || (tab === "paste" && pastedHtml.trim() === "") || (tab === "fetch" && pageUrl.trim() === "")}
+            disabled={
+              busy || (tab === "paste" && pastedHtml.trim() === "") || (tab === "fetch" && pageUrl.trim() === "")
+            }
             title={
               busy
                 ? undefined
