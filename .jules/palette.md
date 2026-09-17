@@ -15,3 +15,7 @@
 ## 2024-08-10 - Transience and Non-blocking destructive actions
 **Learning:** For bulk data deletion (like clearing a list of imported pages), abrasive `window.confirm` dialogues interrupt workflow. Replacing these prompts with an immediate clear action that offers a highly visible, contextual "Undo" button (utilizing `aria-live` for screen readers) provides a much better and safer user experience.
 **Action:** Always favor transient state recovery ("Undo") over blocking modal confirmations for destructive actions in the UI, especially where data is primarily held in memory. Ensure the undo trigger is prominently placed where the deleted items used to be.
+
+## 2025-02-18 - Contextual Disabled States for Primary Actions
+**Learning:** When primary form or workflow actions (like submission or conversion triggers) are disabled due to missing mandatory inputs, relying solely on disabled styles isn't enough. Users are often left wondering why the button is inactive. Adding descriptive `title` attributes (e.g., "Please enter a page URL") directly on the disabled elements significantly reduces confusion by offering immediate, contextual feedback without requiring a full validation cycle or error banners.
+**Action:** Always provide explicit, instructional `title` attributes on disabled primary action buttons when the disabled state is driven by missing user input.
