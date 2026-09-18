@@ -88,6 +88,13 @@ export function BundleExportPanel({
                 ({page.images.length} image{page.images.length === 1 ? "" : "s"}
                 {page.targetTemplate ? ` · ${page.targetTemplate}` : ""})
               </span>
+              {(page.parentId !== undefined || page.menuOrder !== undefined) && (
+                <span className="badge asset-badge" style={{ marginLeft: "0.5rem" }}>
+                  {page.parentId !== undefined ? `parentId: ${page.parentId}` : ""}
+                  {page.parentId !== undefined && page.menuOrder !== undefined ? ", " : ""}
+                  {page.menuOrder !== undefined ? `order: ${page.menuOrder}` : ""}
+                </span>
+              )}
             </span>
             <button
               type="button"
