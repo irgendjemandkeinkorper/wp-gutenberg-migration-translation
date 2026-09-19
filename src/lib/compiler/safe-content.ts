@@ -161,7 +161,10 @@ function sanitize(rawHtml: string, options: SanitizerOptions): SanitizedContent 
 function safeUrl(value: string, options: SanitizerOptions): { safe: boolean; reason: string } {
   let url: URL;
   try {
-    url = new URL(value, "https://blockify.invalid/");
+    // Strip control characters, whitespace, and Unicode replacement characters
+    // which browsers ignore or map when parsing protocols (preventing bypass like java\x00script:)
+    const stripped = value.replace(/[\x00-\x20\x7F-\x9F\uFFFD]/g, "");
+    url = new URL(stripped, "https://blockify.invalid/");
   } catch {
     return { safe: false, reason: `URL ${value} is malformed.` };
   }

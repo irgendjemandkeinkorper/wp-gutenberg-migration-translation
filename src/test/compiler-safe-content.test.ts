@@ -71,4 +71,15 @@ describe("safe embed and unknown-content compiler", () => {
     expect(result.markup).not.toContain("data-secret");
     expect(result.markup).not.toContain("private");
   });
+
+  it("prevents obfuscated javascript URIs via control characters and unicode replacements", () => {
+    const node = makeNode(
+      "unknown",
+      '<a href="java\x00script:alert(1)">link1</a><a href="java\uFFFDscript:alert(2)">link2</a>',
+    );
+    const result = compileSafeContentNode(node);
+    expect(result.findings).toEqual([expect.objectContaining({ code: "unsafe-content", severity: "blocking" })]);
+    expect(result.markup).toContain("Protocol javascript: is not allowed");
+    expect(result.markup).not.toContain("alert");
+  });
 });

@@ -27,10 +27,10 @@ describe("validateFragment", () => {
 
   it("unwraps <a> tags with dangerous href values to prevent XSS", () => {
     const { html } = validateFragment(
-      '<p><a href="javascript:alert(1)">js</a> <a href=" vbscript:msgbox ">vbs</a> <a href="data:text/html,<html>">data-html</a> <a href="data:application/xhtml+xml,<html>">data-xhtml</a> <a href="data:image/svg+xml,<svg>">data-svg</a> <a href="java\nscript:x">hack</a> <a href="java script:x">hack2</a> <a href="http://safe.com">safe</a></p>',
+      '<p><a href="javascript:alert(1)">js</a> <a href=" vbscript:msgbox ">vbs</a> <a href="data:text/html,<html>">data-html</a> <a href="data:application/xhtml+xml,<html>">data-xhtml</a> <a href="data:image/svg+xml,<svg>">data-svg</a> <a href="java\nscript:x">hack</a> <a href="java script:x">hack2</a> <a href="java\x00script:x">hack3</a> <a href="java\uFFFDscript:x">hack4</a> <a href="http://safe.com">safe</a></p>',
       [],
     );
-    expect(html).toBe('<p>js vbs data-html data-xhtml data-svg hack hack2 <a href="http://safe.com">safe</a></p>');
+    expect(html).toBe('<p>js vbs data-html data-xhtml data-svg hack hack2 hack3 hack4 <a href="http://safe.com">safe</a></p>');
   });
 
   it("preserves <a> tags with safe data: URIs (e.g., inline images)", () => {
