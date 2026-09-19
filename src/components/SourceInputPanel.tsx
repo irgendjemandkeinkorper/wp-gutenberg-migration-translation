@@ -331,7 +331,19 @@ export function SourceInputPanel({
             )}
           </div>
         ) : (
-          <button type="button" className="primary" onClick={() => void onConvert()} disabled={busy}>
+          <button
+            type="button"
+            className="primary"
+            onClick={() => void onConvert()}
+            disabled={busy || (tab === "paste" && !pastedHtml.trim()) || (tab === "fetch" && !pageUrl.trim())}
+            title={
+              tab === "paste" && !pastedHtml.trim()
+                ? "Paste the page's HTML first"
+                : tab === "fetch" && !pageUrl.trim()
+                  ? "Enter a URL to fetch"
+                  : undefined
+            }
+          >
             {busy ? "Converting…" : "Convert"}
           </button>
         )}
