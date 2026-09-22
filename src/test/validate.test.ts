@@ -37,7 +37,7 @@ describe("validateFragment", () => {
     // The null byte \x00 gets parsed as \uFFFD by DOMParser
     const input = '<p><a href="java\x00script:alert(1)">hack</a></p>';
     const { html } = validateFragment(input, []);
-    expect(html).not.toContain('href');
+    expect(html).not.toContain("href");
   });
 
   it("preserves <a> tags with safe data: URIs (e.g., inline images)", () => {
