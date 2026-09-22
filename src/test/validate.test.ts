@@ -33,6 +33,13 @@ describe("validateFragment", () => {
     expect(html).toBe('<p>js vbs data-html data-xhtml data-svg hack hack2 <a href="http://safe.com">safe</a></p>');
   });
 
+  it("prevents obfuscated javascript via null byte that DOMParser converts to U+FFFD", () => {
+    // The null byte \x00 gets parsed as \uFFFD by DOMParser
+    const input = '<p><a href="java\x00script:alert(1)">hack</a></p>';
+    const { html } = validateFragment(input, []);
+    expect(html).not.toContain("href");
+  });
+
   it("preserves <a> tags with safe data: URIs (e.g., inline images)", () => {
     const { html } = validateFragment(
       '<p><a href="data:image/png;base64,iVBORw0KGgo...">image</a> <a href="data:audio/mp3;base64,SUQz...">audio</a></p>',
