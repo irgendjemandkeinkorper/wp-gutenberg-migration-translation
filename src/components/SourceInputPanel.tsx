@@ -64,7 +64,6 @@ const GOLFNOW_TEMPLATES = [
   "Willow",
 ];
 
-
 // ⚡ Bolt: Extract list item into a React.memo component to prevent O(N) re-renders
 // when the large batchStatus map updates frequently.
 const BatchListItem = memo(function BatchListItem({
