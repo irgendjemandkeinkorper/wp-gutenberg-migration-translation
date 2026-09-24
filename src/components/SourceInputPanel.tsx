@@ -333,7 +333,12 @@ export function SourceInputPanel({
         ) : (
           (() => {
             const isMissingInput = (tab === "paste" && !pastedHtml?.trim()) || (tab === "fetch" && !pageUrl?.trim());
-            const disabledReason = tab === "paste" && !pastedHtml?.trim() ? "Paste HTML to convert" : tab === "fetch" && !pageUrl?.trim() ? "Enter a URL to fetch" : undefined;
+            const disabledReason =
+              tab === "paste" && !pastedHtml?.trim()
+                ? "Paste HTML to convert"
+                : tab === "fetch" && !pageUrl?.trim()
+                  ? "Enter a URL to fetch"
+                  : undefined;
             return (
               <span title={!busy && isMissingInput ? disabledReason : undefined}>
                 <button
