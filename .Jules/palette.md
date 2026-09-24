@@ -37,3 +37,6 @@
 ## 2024-08-12 - Decorative Characters in UI
 **Learning:** Screen readers often announce decorative unicode characters (like '✓', '▾', '▸') in verbose or confusing ways (e.g. "black down-pointing small triangle"). When the state is already conveyed semantically (like using `aria-expanded` on an accordion toggle or explicit button text for success states), these characters add noise.
 **Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.
+## 2024-05-27 - [Convert Button Tooltip]
+**Learning:** Primary action buttons that are conditionally disabled (e.g. based on missing inputs) need an explicit explanation. Users might not know why the button is inactive if the requirement isn't visually obvious. Using a descriptive `title` attribute provides an accessible, non-intrusive tooltip that explains exactly what is needed to proceed.
+**Action:** Always add an explicit explanation to disabled primary action buttons, either via a `title` tooltip or a visible message, especially when the state depends on conditionally required user input.

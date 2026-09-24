@@ -331,9 +331,27 @@ export function SourceInputPanel({
             )}
           </div>
         ) : (
-          <button type="button" className="primary" onClick={() => void onConvert()} disabled={busy}>
-            {busy ? "Converting…" : "Convert"}
-          </button>
+          (() => {
+            const isMissingInput = (tab === "paste" && !pastedHtml?.trim()) || (tab === "fetch" && !pageUrl?.trim());
+            const disabledReason =
+              tab === "paste" && !pastedHtml?.trim()
+                ? "Paste HTML to convert"
+                : tab === "fetch" && !pageUrl?.trim()
+                  ? "Enter a URL to fetch"
+                  : undefined;
+            return (
+              <span title={!busy && isMissingInput ? disabledReason : undefined}>
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={() => void onConvert()}
+                  disabled={busy || isMissingInput}
+                >
+                  {busy ? "Converting…" : "Convert"}
+                </button>
+              </span>
+            );
+          })()
         )}
       </div>
     </section>
