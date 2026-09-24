@@ -38,3 +38,11 @@
 **Action:** When walking or modifying large DOM trees, drop `Array.from()` and prefer iteration via `length` and index access (for NodeLists) or `firstElementChild`/`nextElementSibling` and `firstChild`/`nextSibling` properties. For safe removal of attributes from a live `NamedNodeMap` without intermediate array allocations, iterate backward (`for (let i = attrs.length - 1; i >= 0; i--)`).## 2026-08-17 - [DOM NodeList Iteration and Array Allocation Avoidance]
 **Learning:** Using `Array.from()` to convert a `NodeList` (such as the result of `querySelectorAll`) into an array before iterating causes unnecessary array allocation in memory. While not a massive bottleneck, in tight loops or repeated calls over large DOM structures, this overhead adds up.
 **Action:** When iterating over a static `NodeList` like those returned by `querySelectorAll`, avoid `Array.from()`. Instead, iterate directly using a standard `for` loop with an index and the `.length` property to eliminate the intermediate array allocation.
+
+## 2024-11-21 - TypeScript Compilation and React.memo components
+**Learning:** Extracting an inline JSX list item into a `React.memo` component inside the same file can falsely trigger code review warnings about "missing type imports" if the reviewer analyzes the file purely lexically, because the necessary types (e.g. `CrawledPage` and `BatchState`) are defined directly within that file rather than imported.
+**Action:** When a reviewer raises a "missing import" error for a type, verify if the type is actually defined locally in the file before attempting to add an import statement or change the type. A quick `grep` for `interface TypeName` or `type TypeName` within the file resolves this.
+
+## 2024-11-21 - [TypeScript Command Line Verification]
+**Learning:** Attempting to verify TypeScript types for a specific file by running `pnpm exec tsc --noEmit test.ts` will fail with a `TS5112` error because passing a specific file explicitly tells the compiler to ignore the project's `tsconfig.json`. This causes it to use default rules which may fail on valid project code.
+**Action:** To verify TypeScript compilation locally across the entire project, run `pnpm exec tsc --noEmit` without specifying individual files.
