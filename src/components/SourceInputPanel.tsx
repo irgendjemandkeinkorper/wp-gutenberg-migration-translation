@@ -1,7 +1,6 @@
 import { memo } from "react";
 import type { BatchPageStatus } from "../lib/types";
 
-
 export type SourceTab = "paste" | "fetch" | "batch";
 
 export interface CrawledPage {
