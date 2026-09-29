@@ -36,4 +36,6 @@
 
 ## 2024-08-12 - Decorative Characters in UI
 **Learning:** Screen readers often announce decorative unicode characters (like '✓', '▾', '▸') in verbose or confusing ways (e.g. "black down-pointing small triangle"). When the state is already conveyed semantically (like using `aria-expanded` on an accordion toggle or explicit button text for success states), these characters add noise.
-**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.
+**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.## 2025-02-28 - Visualizing Page Hierarchy Metadata in Batch Lists
+**Learning:** When users process page hierarchies or page ordering in bulk, they need immediate visual feedback to confirm that relationships (like `parentId` or `menuOrder`) have been successfully parsed and preserved before downloading the generated bundle. Without this, users are left anxious and forced to download and inspect WXR files manually.
+**Action:** Always render explicit inline metadata badges or labels (e.g. `parentId: x`, `order: y`) directly in list views for both loaded batch pages and active bundle pages to build confidence and streamline QA workflows.
