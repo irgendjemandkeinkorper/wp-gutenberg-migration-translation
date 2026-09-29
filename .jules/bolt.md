@@ -38,3 +38,7 @@
 **Action:** When walking or modifying large DOM trees, drop `Array.from()` and prefer iteration via `length` and index access (for NodeLists) or `firstElementChild`/`nextElementSibling` and `firstChild`/`nextSibling` properties. For safe removal of attributes from a live `NamedNodeMap` without intermediate array allocations, iterate backward (`for (let i = attrs.length - 1; i >= 0; i--)`).## 2026-08-17 - [DOM NodeList Iteration and Array Allocation Avoidance]
 **Learning:** Using `Array.from()` to convert a `NodeList` (such as the result of `querySelectorAll`) into an array before iterating causes unnecessary array allocation in memory. While not a massive bottleneck, in tight loops or repeated calls over large DOM structures, this overhead adds up.
 **Action:** When iterating over a static `NodeList` like those returned by `querySelectorAll`, avoid `Array.from()`. Instead, iterate directly using a standard `for` loop with an index and the `.length` property to eliminate the intermediate array allocation.
+
+## 2025-03-02 - Ensure types are imported before declaring them
+**Learning:** Adding type annotations like `: CrawledPage` during refactoring causes TS failures if the type isn't imported, even if it was previously inferred successfully in the same file block.
+**Action:** Always run TypeScript validation (e.g., `tsc --noEmit`) immediately after a refactor, and do not commit scripts used for temporary find-and-replace.
