@@ -122,9 +122,7 @@ describe("core Gutenberg compiler", () => {
     expect(result.markup).toContain("Check this out: ");
     expect(result.markup).toContain("<a>malicious link</a>"); // href should be stripped
     expect(result.markup).not.toContain("javascript:alert(1)");
-    expect(result.findings).toEqual([
-      expect.objectContaining({ code: "unsafe-link-href", severity: "warning" }),
-    ]);
+    expect(result.findings).toEqual([expect.objectContaining({ code: "unsafe-link-href", severity: "warning" })]);
   });
 
   it("prevents array bypass of isSafeUrl", () => {
@@ -140,5 +138,4 @@ describe("core Gutenberg compiler", () => {
     expect(result.markup).toContain("<a>array bypass</a>"); // href should be stripped
     expect(result.markup).not.toContain("javascript:alert(1)");
   });
-
 });
