@@ -108,4 +108,37 @@ describe("core Gutenberg compiler", () => {
     expect(result.findings).toEqual([expect.objectContaining({ code: "unsupported-core-node", severity: "blocking" })]);
     expect(result.markup).toContain("blockifyExceptionId");
   });
+
+  it("strips malicious href attributes to prevent XSS", () => {
+    const link = makeNode("rich-text-span", {
+      id: "link",
+      text: "malicious link",
+      attributes: { href: "javascript:alert(1)" },
+      extensions: { sourceTag: "a" },
+    });
+    const paragraph = makeNode("paragraph", { text: "Check this out: ", children: [link] });
+    const result = compileCoreNode(paragraph);
+
+    expect(result.markup).toContain("Check this out: ");
+    expect(result.markup).toContain("<a>malicious link</a>"); // href should be stripped
+    expect(result.markup).not.toContain("javascript:alert(1)");
+    expect(result.findings).toEqual([
+      expect.objectContaining({ code: "unsafe-link-href", severity: "warning" }),
+    ]);
+  });
+
+  it("prevents array bypass of isSafeUrl", () => {
+    const link = makeNode("rich-text-span", {
+      id: "link",
+      text: "array bypass",
+      attributes: { href: ["javascript:alert(1)"] as any },
+      extensions: { sourceTag: "a" },
+    });
+    const paragraph = makeNode("paragraph", { text: "Check this out: ", children: [link] });
+    const result = compileCoreNode(paragraph);
+
+    expect(result.markup).toContain("<a>array bypass</a>"); // href should be stripped
+    expect(result.markup).not.toContain("javascript:alert(1)");
+  });
+
 });
