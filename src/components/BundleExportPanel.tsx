@@ -86,7 +86,11 @@ export function BundleExportPanel({
               {page.title}{" "}
               <span className="muted">
                 ({page.images.length} image{page.images.length === 1 ? "" : "s"}
-                {page.targetTemplate ? ` · ${page.targetTemplate}` : ""})
+                {page.targetTemplate ? ` · ${page.targetTemplate}` : ""}
+                {page.parentId !== undefined || page.menuOrder !== undefined
+                  ? ` · [${page.parentId !== undefined ? `parentId: ${page.parentId}` : ""}${page.parentId !== undefined && page.menuOrder !== undefined ? ", " : ""}${page.menuOrder !== undefined ? `order: ${page.menuOrder}` : ""}]`
+                  : ""}
+                )
               </span>
             </span>
             <button
