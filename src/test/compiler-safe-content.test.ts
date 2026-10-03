@@ -64,16 +64,9 @@ describe("safe embed and unknown-content compiler", () => {
   });
 
   it("handles obfuscated javascript: URIs (control chars, unicode replacement, whitespace)", () => {
-    const payloads = [
-      'java\u0000script:alert(1)',
-      'java\uFFFDscript:alert(1)',
-      ' java\nscript:alert(1) ',
-    ];
+    const payloads = ["java\u0000script:alert(1)", "java\uFFFDscript:alert(1)", " java\nscript:alert(1) "];
     for (const payload of payloads) {
-      const node = makeNode(
-        "unknown",
-        `<iframe src="${payload}"></iframe>`,
-      );
+      const node = makeNode("unknown", `<iframe src="${payload}"></iframe>`);
       const result = compileSafeContentNode(node);
       expect(result.findings).toEqual([expect.objectContaining({ code: "unsafe-content", severity: "blocking" })]);
       expect(result.markup).toContain("blockifyExceptionId");
