@@ -160,8 +160,9 @@ function sanitize(rawHtml: string, options: SanitizerOptions): SanitizedContent 
 
 function safeUrl(value: string, options: SanitizerOptions): { safe: boolean; reason: string } {
   let url: URL;
+  const normalizedValue = String(value).replace(/[\x00-\x20\x7F-\x9F\uFFFD]/g, "");
   try {
-    url = new URL(value, "https://blockify.invalid/");
+    url = new URL(normalizedValue, "https://blockify.invalid/");
   } catch {
     return { safe: false, reason: `URL ${value} is malformed.` };
   }
