@@ -122,15 +122,20 @@ export function repairTokens(html: string, expectedIndices: number[]): { html: s
 
   const seen = new Set<number>();
   const expected = new Set(expectedIndices);
-  for (const child of Array.from(body.children)) {
+  // ⚡ Bolt: Avoid Array.from() allocation on NodeList for performance
+  let child = body.firstElementChild;
+  while (child) {
+    const next = child.nextElementSibling;
     const text = child.textContent ?? "";
-    if (!isLoneToken(text)) continue;
-    const idx = tokenIndices(text)[0];
-    if (!expected.has(idx) || seen.has(idx)) {
-      child.remove();
-    } else {
-      seen.add(idx);
+    if (isLoneToken(text)) {
+      const idx = tokenIndices(text)[0];
+      if (!expected.has(idx) || seen.has(idx)) {
+        child.remove();
+      } else {
+        seen.add(idx);
+      }
     }
+    child = next;
   }
 
   const lostPositions = expectedIndices.filter((i) => !seen.has(i));
@@ -209,7 +214,10 @@ function unwrapWrappers(body: HTMLElement): void {
 function enforceWhitelist(body: HTMLElement): void {
   // Snapshot first: unwrapping keeps descendants in the document, and they
   // are already in the snapshot, so one pass suffices.
-  for (const el of Array.from(body.querySelectorAll("*"))) {
+  // ⚡ Bolt: Avoid Array.from() allocation on NodeList for performance
+  const elements = body.querySelectorAll("*");
+  for (let i = 0; i < elements.length; i++) {
+    const el = elements[i];
     const tag = el.tagName.toLowerCase();
     if (DROP.has(tag)) {
       el.remove();
@@ -219,7 +227,10 @@ function enforceWhitelist(body: HTMLElement): void {
       unwrap(el);
     }
   }
-  for (const el of Array.from(body.querySelectorAll("*"))) {
+  // ⚡ Bolt: Avoid Array.from() allocation on NodeList for performance
+  const remainingElements = body.querySelectorAll("*");
+  for (let i = 0; i < remainingElements.length; i++) {
+    const el = remainingElements[i];
     if (el.tagName.toLowerCase() === "a") {
       const href = el.getAttribute("href");
       while (el.attributes.length > 0) {
@@ -258,10 +269,19 @@ function rename(el: Element, newTag: string): void {
 function isolateTokens(body: HTMLElement): void {
   const doc = body.ownerDocument;
 
-  for (const child of Array.from(body.children)) {
-    if (child.tagName.toLowerCase() !== "p") continue;
-    const text = child.textContent ?? "";
-    if (!hasToken(text) || isLoneToken(text)) continue;
+  // ⚡ Bolt: Avoid Array.from() allocation on NodeList for performance
+  let currentChild = body.firstElementChild;
+  while (currentChild) {
+    const nextChild = currentChild.nextElementSibling;
+    if (currentChild.tagName.toLowerCase() !== "p") {
+      currentChild = nextChild;
+      continue;
+    }
+    const text = currentChild.textContent ?? "";
+    if (!hasToken(text) || isLoneToken(text)) {
+      currentChild = nextChild;
+      continue;
+    }
 
     const pieces: Node[] = [];
     let current = doc.createElement("p");
@@ -271,7 +291,11 @@ function isolateTokens(body: HTMLElement): void {
       }
       current = doc.createElement("p");
     };
-    for (const node of Array.from(child.childNodes)) {
+
+    // ⚡ Bolt: Avoid Array.from() allocation on NodeList for performance
+    let node = currentChild.firstChild;
+    while (node) {
+      const nextNode = node.nextSibling;
       if (node.nodeType === Node.TEXT_NODE) {
         const parts = (node.textContent ?? "").split(/(⟦ASSET_\d+⟧)/);
         for (const part of parts) {
@@ -288,32 +312,41 @@ function isolateTokens(body: HTMLElement): void {
       } else {
         current.append(node);
       }
+      node = nextNode;
     }
     flush();
     const frag = doc.createDocumentFragment();
     for (const piece of pieces) {
       frag.appendChild(piece);
     }
-    child.replaceWith(frag);
+    currentChild.replaceWith(frag);
+    currentChild = nextChild;
   }
 
-  for (const child of Array.from(body.children)) {
-    const ownText = child.textContent ?? "";
-    if (isLoneToken(ownText)) continue;
+  // ⚡ Bolt: Avoid Array.from() allocation on NodeList for performance
+  let anotherChild = body.firstElementChild;
+  while (anotherChild) {
+    const nextChild = anotherChild.nextElementSibling;
+    const ownText = anotherChild.textContent ?? "";
+    if (isLoneToken(ownText)) {
+      anotherChild = nextChild;
+      continue;
+    }
     const indices: number[] = [];
-    const walker = doc.createTreeWalker(child, NodeFilter.SHOW_TEXT);
+    const walker = doc.createTreeWalker(anotherChild, NodeFilter.SHOW_TEXT);
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
       const t = n.textContent ?? "";
       if (!hasToken(t)) continue;
       indices.push(...tokenIndices(t));
       n.textContent = t.replace(TOKEN_RE, "");
     }
-    let anchor: Element = child;
+    let anchor: Element = anotherChild;
     for (const idx of indices) {
       const tp = doc.createElement("p");
       tp.textContent = token(idx);
       anchor.after(tp);
       anchor = tp;
     }
+    anotherChild = nextChild;
   }
 }
