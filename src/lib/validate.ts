@@ -2,7 +2,7 @@ import { TOKEN_RE, hasToken, isLoneToken, token, tokenIndices } from "./tokens";
 
 export function isSafeUrl(url: string): boolean {
   // Strip control characters and whitespace which browsers ignore when parsing protocols
-  const normalized = url.replace(/[\x00-\x20\x7F-\x9F]/g, "").toLowerCase();
+  const normalized = url.replace(/[\x00-\x20\x7F-\x9F\uFFFD]/g, "").toLowerCase();
   if (normalized.startsWith("javascript:") || normalized.startsWith("vbscript:")) {
     return false;
   }

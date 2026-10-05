@@ -33,6 +33,11 @@ describe("validateFragment", () => {
     expect(html).toBe('<p>js vbs data-html data-xhtml data-svg hack hack2 <a href="http://safe.com">safe</a></p>');
   });
 
+  it("unwraps <a> tags with obfuscated href values containing replacement characters", () => {
+    const { html } = validateFragment('<p><a href="java\uFFFDscript:x">hack</a></p>', []);
+    expect(html).toBe("<p>hack</p>");
+  });
+
   it("preserves <a> tags with safe data: URIs (e.g., inline images)", () => {
     const { html } = validateFragment(
       '<p><a href="data:image/png;base64,iVBORw0KGgo...">image</a> <a href="data:audio/mp3;base64,SUQz...">audio</a></p>',
