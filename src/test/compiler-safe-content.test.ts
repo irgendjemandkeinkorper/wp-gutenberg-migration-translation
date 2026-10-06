@@ -73,7 +73,7 @@ describe("safe embed and unknown-content compiler", () => {
   });
 
   it("blocks obfuscated javascript URIs containing control characters", () => {
-    const node = makeNode("unknown", "<a href=\"java\x00script:alert(1)\">click me</a>");
+    const node = makeNode("unknown", '<a href="java\x00script:alert(1)">click me</a>');
     const result = compileSafeContentNode(node);
     expect(result.findings).toEqual([expect.objectContaining({ code: "unsafe-content", severity: "blocking" })]);
     expect(result.markup).toContain("blockifyExceptionId");
