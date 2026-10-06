@@ -53,7 +53,7 @@ export function BundleExportPanel({
               borderStyle: "dashed",
               background: "transparent",
               boxShadow: "none",
-              textAlign: "center"
+              textAlign: "center",
             }}
           >
             <p style={{ margin: "0 0 0.5rem" }}>
