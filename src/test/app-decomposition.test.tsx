@@ -55,7 +55,7 @@ describe("App panel composition", () => {
     expect(host.textContent).toContain("Crawl the site from a terminal");
 
     await act(async () => button(host, "Remove").click());
-    expect(host.textContent).not.toContain("WXR migration bundle");
+    expect(host.textContent).toContain("No pages in bundle.");
   });
 });
 
