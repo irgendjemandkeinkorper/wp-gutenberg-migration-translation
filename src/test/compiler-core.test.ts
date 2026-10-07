@@ -103,6 +103,25 @@ describe("core Gutenberg compiler", () => {
     expect(result.findings).toEqual([]);
   });
 
+  it("strips unsafe href attributes from inline links", () => {
+    const maliciousLink = makeNode("rich-text-span", {
+      id: "malicious-link",
+      text: "click me",
+      attributes: { href: "javascript:alert(1)", title: "Malicious" },
+      extensions: { sourceTag: "a" },
+    });
+    const paragraph = makeNode("paragraph", { text: "Link: ", children: [maliciousLink] });
+    const result = compileCoreNode(paragraph);
+
+    expect(result.markup).toContain("Link: ");
+    expect(result.markup).not.toContain("javascript:alert(1)");
+    expect(result.markup).toContain('title="Malicious"');
+
+    const finding = result.findings.find((f) => f.code === "unsafe-inline-attribute");
+    expect(finding).toBeDefined();
+    expect(finding?.severity).toBe("warning");
+  });
+
   it("fails with a blocking finding for unsupported core nodes", () => {
     const result = compileCoreNode(makeNode("widget"));
     expect(result.findings).toEqual([expect.objectContaining({ code: "unsupported-core-node", severity: "blocking" })]);
