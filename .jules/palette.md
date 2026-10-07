@@ -15,3 +15,6 @@
 ## 2024-08-10 - Transience and Non-blocking destructive actions
 **Learning:** For bulk data deletion (like clearing a list of imported pages), abrasive `window.confirm` dialogues interrupt workflow. Replacing these prompts with an immediate clear action that offers a highly visible, contextual "Undo" button (utilizing `aria-live` for screen readers) provides a much better and safer user experience.
 **Action:** Always favor transient state recovery ("Undo") over blocking modal confirmations for destructive actions in the UI, especially where data is primarily held in memory. Ensure the undo trigger is prominently placed where the deleted items used to be.
+## 2024-05-31 - Visual Empty States over Component Unmounting
+**Learning:** When conditionally rendering panels or sections based on empty data (e.g., an empty bundle in `BundleExportPanel`), unmounting the component (`return null`) causes confusing layout shifts and leaves the user without guidance.
+**Action:** Provide an explicit visual empty state with guidance and `role="status"` rather than completely unmounting the component.
