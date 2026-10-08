@@ -11,7 +11,9 @@ export function preserveUnsupported(html: string): {
 } {
   const doc = new DOMParser().parseFromString(html, "text/html");
   const placeholders: MigrationPlaceholder[] = [];
-  for (const el of Array.from(doc.body.querySelectorAll(UNSUPPORTED))) {
+  const unsupportedEls = doc.body.querySelectorAll(UNSUPPORTED);
+  for (let i = 0; i < unsupportedEls.length; i++) {
+    const el = unsupportedEls[i];
     if (!el.isConnected || el.closest(`${UNSUPPORTED}`) !== el) continue;
     const index = placeholders.length;
     const kind = el.tagName.toLowerCase();
