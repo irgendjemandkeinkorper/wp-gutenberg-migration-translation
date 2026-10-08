@@ -62,6 +62,22 @@ describe("core Gutenberg compiler", () => {
     expect(compileCoreNode(heading).markup).toContain('<h3 class="wp-block-heading">Heading</h3>');
   });
 
+  it("omits unsafe href attributes", () => {
+    const link = makeNode("rich-text-span", {
+      id: "link",
+      text: "hack",
+      attributes: { href: "javascript:alert(1)", target: "_blank" },
+      extensions: { sourceTag: "a" },
+    });
+    const paragraph = makeNode("paragraph", { text: "Link: ", children: [link] });
+    const result = compileCoreNode(paragraph);
+
+    expect(result.markup).toContain("Link: ");
+    expect(result.markup).toContain('<a target="_blank">hack</a>');
+    expect(result.markup).not.toContain("javascript:alert(1)");
+    expect(result.findings).toEqual([expect.objectContaining({ code: "unsafe-link-attribute", severity: "warning" })]);
+  });
+
   it("serializes nested ordered and unordered lists deterministically", () => {
     const nested = makeNode("list", {
       id: "nested-list",
