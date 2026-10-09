@@ -1,4 +1,5 @@
 import type { JsonValue, SemanticNode } from "../ir/types";
+import { isSafeUrl } from "../validate";
 
 export interface CompilerFinding {
   code: string;
@@ -236,7 +237,20 @@ function safeAttributes(node: SemanticNode, allowed: ReadonlySet<string>, findin
     }
   }
   return attributes
-    .filter(([name]) => allowed.has(name.toLowerCase()))
+    .filter(([name, value]) => {
+      const lowerName = name.toLowerCase();
+      if (!allowed.has(lowerName)) return false;
+      if (lowerName === "href" && !isSafeUrl(String(value))) {
+        findings.push({
+          code: "unsafe-inline-attribute",
+          message: `Attribute ${name} contained an unsafe URL and was removed.`,
+          severity: "blocking",
+          sourceNodeId: node.id,
+        });
+        return false;
+      }
+      return true;
+    })
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, value]) => ` ${name}="${escapeAttr(value)}"`)
     .join("");
