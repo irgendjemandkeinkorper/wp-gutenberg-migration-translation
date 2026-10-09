@@ -109,3 +109,16 @@ describe("core Gutenberg compiler", () => {
     expect(result.markup).toContain("blockifyExceptionId");
   });
 });
+
+it("removes href attributes that contain unsafe URLs", () => {
+  const link = makeNode("rich-text-span", {
+    id: "link",
+    text: "read",
+    attributes: { href: "javascript:alert(1)" },
+    extensions: { sourceTag: "a" },
+  });
+  const result = compileCoreNode(link);
+  expect(result.markup).not.toContain("href");
+  expect(result.markup).toContain("<a>read</a>");
+  expect(result.findings).toEqual([expect.objectContaining({ code: "unsafe-inline-attribute", severity: "blocking" })]);
+});
