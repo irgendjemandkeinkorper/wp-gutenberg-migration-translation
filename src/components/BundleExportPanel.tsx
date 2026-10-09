@@ -26,15 +26,15 @@ export function BundleExportPanel({
   const [sideload, setSideload] = useState(true);
 
   if (bundle.length === 0) {
-    if (canUndoClear && onUndoClear) {
-      return (
-        <section className="panel bundle-panel" aria-live="polite">
-          <div className="panel-heading">
-            <div>
-              <p className="section-kicker">04 · Export</p>
-              <h2>WXR migration bundle</h2>
-            </div>
+    return (
+      <section className="panel bundle-panel" aria-live="polite" role="status">
+        <div className="panel-heading">
+          <div>
+            <p className="section-kicker">04 · Export</p>
+            <h2>WXR migration bundle</h2>
           </div>
+        </div>
+        {canUndoClear && onUndoClear ? (
           <div
             className="warn-box"
             role="alert"
@@ -45,10 +45,11 @@ export function BundleExportPanel({
               Undo clear
             </button>
           </div>
-        </section>
-      );
-    }
-    return null;
+        ) : (
+          <p className="hint">No pages in bundle. Convert a page and add it to the bundle to export it here.</p>
+        )}
+      </section>
+    );
   }
 
   function downloadWxr() {
