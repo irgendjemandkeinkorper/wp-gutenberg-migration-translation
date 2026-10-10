@@ -19,13 +19,7 @@ export interface BatchState {
 }
 
 // ⚡ Bolt: Memoize list items to prevent O(N) re-renders when batchStatus changes
-const BatchItem = memo(function BatchItem({
-  page,
-  itemStatus,
-}: {
-  page: CrawledPage;
-  itemStatus?: BatchState;
-}) {
+const BatchItem = memo(function BatchItem({ page, itemStatus }: { page: CrawledPage; itemStatus?: BatchState }) {
   return (
     <li>
       <span>
@@ -59,8 +53,7 @@ const BatchItem = memo(function BatchItem({
             <span className="sr-only">Pending: </span>
           </>
         )}
-        {page.title || page.url}{" "}
-        {itemStatus?.note && <span className="muted">({itemStatus.note})</span>}
+        {page.title || page.url} {itemStatus?.note && <span className="muted">({itemStatus.note})</span>}
       </span>
     </li>
   );
