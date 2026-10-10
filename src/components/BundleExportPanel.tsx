@@ -48,7 +48,19 @@ export function BundleExportPanel({
         </section>
       );
     }
-    return null;
+    return (
+      <section className="panel bundle-panel" aria-live="polite">
+        <div className="panel-heading">
+          <div>
+            <p className="section-kicker">04 · Export</p>
+            <h2>WXR migration bundle</h2>
+          </div>
+        </div>
+        <div className="warn-box" role="status">
+          <span>Your bundle is empty. Convert pages and add them here to generate a WXR export.</span>
+        </div>
+      </section>
+    );
   }
 
   function downloadWxr() {
