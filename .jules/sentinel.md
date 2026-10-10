@@ -32,3 +32,7 @@
 **Vulnerability:** Legitimate usage of safe `data:` URIs (such as inline images) was being blocked globally alongside dangerous payload formats to prevent XSS. A weak blocklist approach (rejecting only `text/html`, `image/svg+xml`, etc.) was originally applied which inadvertently allowed other risky payloads (like `application/xhtml+xml`) through.
 **Learning:** When evaluating `data:` URIs for XSS, blocklists are fragile because attackers can find obscure, executable MIME types. An explicit allowlist strategy (e.g., exclusively allowing `image/*`, `audio/*`, and `video/*` while expressly denying `image/svg+xml`) is much safer.
 **Prevention:** Secure URI parsers dealing with `data:` schemes must use a strict prefix allowlist for safe MIME categories rather than attempting to enumerate and block every potentially dangerous format.
+## 2025-10-10 - Missing rel="noopener noreferrer" in blockify media credit links
+**Vulnerability:** External links generated dynamically by `blockify` via `renderCaption` in `src/lib/compiler/media.ts` lacked the `target="_blank"` (when opening in a new tab) and `rel="noopener noreferrer"` attributes, leading to potential reverse tabnabbing and tracking information disclosure.
+**Learning:** Any dynamically rendered anchor element using `href` pointing to user-defined domains MUST include `target="_blank"` alongside `rel="noopener noreferrer"`.
+**Prevention:** Always hardcode `target="_blank" rel="noopener noreferrer"` for external dynamic link rendering.
