@@ -115,7 +115,7 @@ function renderCaption(caption?: string, credit?: string, creditUrl?: string): s
     const creditText = escapeHtml(credit);
     const safeUrl = creditUrl && /^(?:https?:)\/\//i.test(creditUrl) ? ` href="${escapeAttr(creditUrl)}"` : "";
     parts.push(
-      `<span class="blockify-media-credit">Credit: ${safeUrl ? `<a${safeUrl}>${creditText}</a>` : creditText}</span>`,
+      `<span class="blockify-media-credit">Credit: ${safeUrl ? `<a${safeUrl} target="_blank" rel="noopener noreferrer">${creditText}</a>` : creditText}</span>`,
     );
   }
   return parts.length ? `<figcaption class="wp-element-caption">${parts.join(" ")}</figcaption>` : "";
