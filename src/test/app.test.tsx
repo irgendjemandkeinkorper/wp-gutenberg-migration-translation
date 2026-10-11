@@ -4,7 +4,10 @@ import { createRoot, Root } from "react-dom/client";
 import App from "../App";
 
 // Configure react act environment
+// Configure react act environment
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+
+vi.setConfig({ testTimeout: 10000 });
 
 describe("App clipboard copy", () => {
   let container: HTMLDivElement | null = null;

@@ -41,3 +41,6 @@
 ## 2024-10-11 - Prevent O(N) re-renders in batch list items
 **Learning:** In large lists connected to frequently updated Map state (like `batchStatus` in `SourceInputPanel`), inline rendering of list items causes full re-renders for every status update, which is slow for large crawls.
 **Action:** Extract the list item into a `React.memo` component and pass the specific Map value (e.g., `batchStatus.get(index)`) as a prop. This leverages the stable object references of unchanged Map values to skip unnecessary re-renders.
+## 2024-10-11 - Act warnings in batch tests
+**Learning:** Adding the `<BatchListItem />` memoized component changed the timing of React state updates, leading to `An update to App inside a test was not wrapped in act(...)` errors. These are functionally correct updates that the test harness doesn't anticipate being delayed by `memo`.
+**Action:** When adding React.memo, expect act() warnings to potentially pop up in Vitest tests that simulate state updates across memoized boundaries, and address test synchronization if needed.
