@@ -36,4 +36,6 @@
 
 ## 2024-08-12 - Decorative Characters in UI
 **Learning:** Screen readers often announce decorative unicode characters (like '✓', '▾', '▸') in verbose or confusing ways (e.g. "black down-pointing small triangle"). When the state is already conveyed semantically (like using `aria-expanded` on an accordion toggle or explicit button text for success states), these characters add noise.
-**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.
+**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.## $(date +%Y-%m-%d) - Add explicit empty state for bundle export
+**Learning:** Returning `null` for empty states in a panel layout causes confusing layout shifts and leaves the user without guidance.
+**Action:** Provide an explicit visual empty state with guidance and `role="status"` to maintain layout stability and guide the user on how to populate the panel.
