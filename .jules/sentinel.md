@@ -32,3 +32,7 @@
 **Vulnerability:** Legitimate usage of safe `data:` URIs (such as inline images) was being blocked globally alongside dangerous payload formats to prevent XSS. A weak blocklist approach (rejecting only `text/html`, `image/svg+xml`, etc.) was originally applied which inadvertently allowed other risky payloads (like `application/xhtml+xml`) through.
 **Learning:** When evaluating `data:` URIs for XSS, blocklists are fragile because attackers can find obscure, executable MIME types. An explicit allowlist strategy (e.g., exclusively allowing `image/*`, `audio/*`, and `video/*` while expressly denying `image/svg+xml`) is much safer.
 **Prevention:** Secure URI parsers dealing with `data:` schemes must use a strict prefix allowlist for safe MIME categories rather than attempting to enumerate and block every potentially dangerous format.
+## 2024-05-24 - Fix DOMParser null byte obfuscation XSS bypass
+**Vulnerability:** `isSafeUrl` function could be bypassed by XSS payloads using null bytes (e.g., `java\x00script:alert(1)`), which `DOMParser` converts to the Unicode replacement character (`\uFFFD`) internally.
+**Learning:** Browsers and `DOMParser` silently convert invalid null bytes to `\uFFFD`. If a validation regex only strips whitespace and control characters *excluding* `\uFFFD`, the modified payload can slip past validation checks but still execute in certain downstream contexts.
+**Prevention:** Always explicitly strip `\uFFFD` alongside control characters and whitespace when sanitizing protocol strings before URL parsing or evaluation.
