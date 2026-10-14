@@ -37,3 +37,6 @@
 ## 2024-08-12 - Decorative Characters in UI
 **Learning:** Screen readers often announce decorative unicode characters (like '✓', '▾', '▸') in verbose or confusing ways (e.g. "black down-pointing small triangle"). When the state is already conveyed semantically (like using `aria-expanded` on an accordion toggle or explicit button text for success states), these characters add noise.
 **Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.
+## 2024-10-14 - Add empty state to BundleExportPanel
+**Learning:** Returning `null` for conditionally rendered sections creates confusing layout shifts and poor UX. It's better to render an explicit empty state component to guide the user.
+**Action:** Use empty states with `role="status"` instead of unmounting the component entirely when there is no data to display.
