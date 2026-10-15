@@ -48,7 +48,17 @@ export function BundleExportPanel({
         </section>
       );
     }
-    return null;
+    return (
+      <section className="panel bundle-panel" role="status">
+        <div className="panel-heading">
+          <div>
+            <p className="section-kicker">04 · Export</p>
+            <h2>WXR migration bundle</h2>
+            <p className="muted">Bundle is empty. Add pages from the review panel.</p>
+          </div>
+        </div>
+      </section>
+    );
   }
 
   function downloadWxr() {
