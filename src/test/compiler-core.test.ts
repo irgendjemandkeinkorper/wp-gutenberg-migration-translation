@@ -54,6 +54,20 @@ describe("core Gutenberg compiler", () => {
       expect.objectContaining({ code: "unsupported-inline-attribute", severity: "warning" }),
     ]);
 
+    const maliciousLink = makeNode("rich-text-span", {
+      id: "malicious-link",
+      text: "click me",
+      attributes: { href: "javascript:alert(1)" },
+      extensions: { sourceTag: "a" },
+    });
+    const maliciousParagraph = makeNode("paragraph", { text: "", children: [maliciousLink] });
+    const maliciousResult = compileCoreNode(maliciousParagraph);
+    expect(maliciousResult.markup).not.toContain('href="javascript:alert(1)"');
+    expect(maliciousResult.markup).toContain("<a>click me</a>");
+    expect(maliciousResult.findings).toEqual([
+      expect.objectContaining({ code: "unsafe-link-attribute", severity: "warning" }),
+    ]);
+
     const heading = makeNode("heading", {
       id: "heading",
       source: { ...paragraph.source, locator: { kind: "structural-path", value: "/body[1]/h3[1]" } },
