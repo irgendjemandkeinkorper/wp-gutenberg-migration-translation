@@ -32,3 +32,8 @@
 **Vulnerability:** Legitimate usage of safe `data:` URIs (such as inline images) was being blocked globally alongside dangerous payload formats to prevent XSS. A weak blocklist approach (rejecting only `text/html`, `image/svg+xml`, etc.) was originally applied which inadvertently allowed other risky payloads (like `application/xhtml+xml`) through.
 **Learning:** When evaluating `data:` URIs for XSS, blocklists are fragile because attackers can find obscure, executable MIME types. An explicit allowlist strategy (e.g., exclusively allowing `image/*`, `audio/*`, and `video/*` while expressly denying `image/svg+xml`) is much safer.
 **Prevention:** Secure URI parsers dealing with `data:` schemes must use a strict prefix allowlist for safe MIME categories rather than attempting to enumerate and block every potentially dangerous format.
+
+## 2024-10-15 - Prevent XSS in Semantic Node URL Attributes
+**Vulnerability:** The core Gutenberg compiler allowed unsafe URLs like `javascript:` and malicious `data:` URIs in `href` attributes.
+**Learning:** When compiling HTML attributes from semantic nodes, URL attributes must be explicitly validated against `isSafeUrl` to prevent XSS vulnerabilities, as attribute allowlists alone do not prevent malicious URIs like `javascript:` from being rendered.
+**Prevention:** Always sanitize attribute values, particularly `href` and `src`, using a well-tested URL validator that strips control characters before evaluation.
