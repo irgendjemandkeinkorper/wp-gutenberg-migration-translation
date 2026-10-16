@@ -1,4 +1,5 @@
 import type { JsonValue, SemanticNode } from "../ir/types";
+import { isSafeUrl } from "../validate";
 
 export interface CompilerFinding {
   code: string;
@@ -236,9 +237,22 @@ function safeAttributes(node: SemanticNode, allowed: ReadonlySet<string>, findin
     }
   }
   return attributes
-    .filter(([name]) => allowed.has(name.toLowerCase()))
+    .filter(([name, value]) => {
+      const lowerName = name.toLowerCase();
+      if (!allowed.has(lowerName)) return false;
+      if (lowerName === "href" && !isSafeUrl(String(value))) {
+        findings.push({
+          code: "unsafe-link",
+          message: `Unsafe URL scheme rejected: ${value}`,
+          severity: "warning",
+          sourceNodeId: node.id,
+        });
+        return false;
+      }
+      return true;
+    })
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([name, value]) => ` ${name}="${escapeAttr(value)}"`)
+    .map(([name, value]) => ` ${name}="${escapeAttr(String(value))}"`)
     .join("");
 }
 

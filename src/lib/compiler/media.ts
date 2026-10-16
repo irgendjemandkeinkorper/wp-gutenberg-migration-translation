@@ -1,4 +1,5 @@
 import type { SemanticNode } from "../ir/types";
+import { isSafeUrl } from "../validate";
 
 export interface MediaIdentity {
   assetId: string;
@@ -113,7 +114,7 @@ function renderCaption(caption?: string, credit?: string, creditUrl?: string): s
   if (caption) parts.push(escapeHtml(caption));
   if (credit) {
     const creditText = escapeHtml(credit);
-    const safeUrl = creditUrl && /^(?:https?:)\/\//i.test(creditUrl) ? ` href="${escapeAttr(creditUrl)}"` : "";
+    const safeUrl = creditUrl && isSafeUrl(String(creditUrl)) ? ` href="${escapeAttr(String(creditUrl))}"` : "";
     parts.push(
       `<span class="blockify-media-credit">Credit: ${safeUrl ? `<a${safeUrl}>${creditText}</a>` : creditText}</span>`,
     );
