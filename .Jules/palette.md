@@ -37,3 +37,6 @@
 ## 2024-08-12 - Decorative Characters in UI
 **Learning:** Screen readers often announce decorative unicode characters (like '✓', '▾', '▸') in verbose or confusing ways (e.g. "black down-pointing small triangle"). When the state is already conveyed semantically (like using `aria-expanded` on an accordion toggle or explicit button text for success states), these characters add noise.
 **Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.
+## 2025-03-03 - Added missing Playwright Checkbox Knowledge
+**Learning:** When using Playwright to interact with UI checkboxes that are wrapped inside semantic labels (such as `<label><input type="checkbox"/><span>Text</span></label>`), attempting to locate the element with `.get_by_role('button')` will fail. Instead, use `.get_by_text('Text').click()` or explicitly target the `checkbox` role.
+**Action:** When automating Playwright tests, ensure to correctly use `get_by_text` when clicking custom UI checkbox wraps instead of `get_by_role('button')`.
