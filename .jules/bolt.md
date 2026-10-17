@@ -38,3 +38,7 @@
 **Action:** When walking or modifying large DOM trees, drop `Array.from()` and prefer iteration via `length` and index access (for NodeLists) or `firstElementChild`/`nextElementSibling` and `firstChild`/`nextSibling` properties. For safe removal of attributes from a live `NamedNodeMap` without intermediate array allocations, iterate backward (`for (let i = attrs.length - 1; i >= 0; i--)`).## 2026-08-17 - [DOM NodeList Iteration and Array Allocation Avoidance]
 **Learning:** Using `Array.from()` to convert a `NodeList` (such as the result of `querySelectorAll`) into an array before iterating causes unnecessary array allocation in memory. While not a massive bottleneck, in tight loops or repeated calls over large DOM structures, this overhead adds up.
 **Action:** When iterating over a static `NodeList` like those returned by `querySelectorAll`, avoid `Array.from()`. Instead, iterate directly using a standard `for` loop with an index and the `.length` property to eliminate the intermediate array allocation.
+
+## 2024-05-18 - ReferenceError with NodeFilter in JSDOM
+**Learning:** Accessing `NodeFilter` constants (like `NodeFilter.SHOW_TEXT`) as global variables in DOM manipulation logic can throw a `ReferenceError` when running tests in Node.js/JSDOM environments (e.g. Vitest), even if it works in actual browsers.
+**Action:** When using `document.createTreeWalker`, prefer using raw integer bitmask values (e.g., `4` instead of `NodeFilter.SHOW_TEXT`) in cross-environment library code to ensure compatibility and prevent test crashes.
