@@ -122,15 +122,19 @@ export function repairTokens(html: string, expectedIndices: number[]): { html: s
 
   const seen = new Set<number>();
   const expected = new Set(expectedIndices);
-  for (const child of Array.from(body.children)) {
+  let child = body.firstElementChild;
+  while (child) {
+    const next = child.nextElementSibling;
     const text = child.textContent ?? "";
-    if (!isLoneToken(text)) continue;
-    const idx = tokenIndices(text)[0];
-    if (!expected.has(idx) || seen.has(idx)) {
-      child.remove();
-    } else {
-      seen.add(idx);
+    if (isLoneToken(text)) {
+      const idx = tokenIndices(text)[0];
+      if (!expected.has(idx) || seen.has(idx)) {
+        child.remove();
+      } else {
+        seen.add(idx);
+      }
     }
+    child = next;
   }
 
   const lostPositions = expectedIndices.filter((i) => !seen.has(i));
@@ -209,7 +213,9 @@ function unwrapWrappers(body: HTMLElement): void {
 function enforceWhitelist(body: HTMLElement): void {
   // Snapshot first: unwrapping keeps descendants in the document, and they
   // are already in the snapshot, so one pass suffices.
-  for (const el of Array.from(body.querySelectorAll("*"))) {
+  const elements = body.querySelectorAll("*");
+  for (let i = 0; i < elements.length; i++) {
+    const el = elements[i];
     const tag = el.tagName.toLowerCase();
     if (DROP.has(tag)) {
       el.remove();
@@ -219,7 +225,10 @@ function enforceWhitelist(body: HTMLElement): void {
       unwrap(el);
     }
   }
-  for (const el of Array.from(body.querySelectorAll("*"))) {
+
+  const updatedElements = body.querySelectorAll("*");
+  for (let i = 0; i < updatedElements.length; i++) {
+    const el = updatedElements[i];
     if (el.tagName.toLowerCase() === "a") {
       const href = el.getAttribute("href");
       while (el.attributes.length > 0) {
@@ -258,62 +267,74 @@ function rename(el: Element, newTag: string): void {
 function isolateTokens(body: HTMLElement): void {
   const doc = body.ownerDocument;
 
-  for (const child of Array.from(body.children)) {
-    if (child.tagName.toLowerCase() !== "p") continue;
-    const text = child.textContent ?? "";
-    if (!hasToken(text) || isLoneToken(text)) continue;
-
-    const pieces: Node[] = [];
-    let current = doc.createElement("p");
-    const flush = () => {
-      if (current.childNodes.length && (current.textContent ?? "").trim()) {
-        pieces.push(current);
-      }
-      current = doc.createElement("p");
-    };
-    for (const node of Array.from(child.childNodes)) {
-      if (node.nodeType === Node.TEXT_NODE) {
-        const parts = (node.textContent ?? "").split(/(⟦ASSET_\d+⟧)/);
-        for (const part of parts) {
-          if (!part) continue;
-          if (isLoneToken(part)) {
-            flush();
-            const tp = doc.createElement("p");
-            tp.textContent = part;
-            pieces.push(tp);
-          } else {
-            current.append(doc.createTextNode(part));
+  let child = body.firstElementChild;
+  while (child) {
+    const next = child.nextElementSibling;
+    if (child.tagName.toLowerCase() === "p") {
+      const text = child.textContent ?? "";
+      if (hasToken(text) && !isLoneToken(text)) {
+        const pieces: Node[] = [];
+        let current = doc.createElement("p");
+        const flush = () => {
+          if (current.childNodes.length && (current.textContent ?? "").trim()) {
+            pieces.push(current);
           }
+          current = doc.createElement("p");
+        };
+        let node = child.firstChild;
+        while (node) {
+          const nextNode = node.nextSibling;
+          if (node.nodeType === Node.TEXT_NODE) {
+            const parts = (node.textContent ?? "").split(/(⟦ASSET_\d+⟧)/);
+            for (const part of parts) {
+              if (!part) continue;
+              if (isLoneToken(part)) {
+                flush();
+                const tp = doc.createElement("p");
+                tp.textContent = part;
+                pieces.push(tp);
+              } else {
+                current.append(doc.createTextNode(part));
+              }
+            }
+          } else {
+            current.append(node);
+          }
+          node = nextNode;
         }
-      } else {
-        current.append(node);
+        flush();
+        const frag = doc.createDocumentFragment();
+        for (const piece of pieces) {
+          frag.appendChild(piece);
+        }
+        child.replaceWith(frag);
       }
     }
-    flush();
-    const frag = doc.createDocumentFragment();
-    for (const piece of pieces) {
-      frag.appendChild(piece);
-    }
-    child.replaceWith(frag);
+    child = next;
   }
 
-  for (const child of Array.from(body.children)) {
-    const ownText = child.textContent ?? "";
-    if (isLoneToken(ownText)) continue;
-    const indices: number[] = [];
-    const walker = doc.createTreeWalker(child, NodeFilter.SHOW_TEXT);
-    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-      const t = n.textContent ?? "";
-      if (!hasToken(t)) continue;
-      indices.push(...tokenIndices(t));
-      n.textContent = t.replace(TOKEN_RE, "");
+  let finalChild = body.firstElementChild;
+  while (finalChild) {
+    const next = finalChild.nextElementSibling;
+    const ownText = finalChild.textContent ?? "";
+    if (!isLoneToken(ownText)) {
+      const indices: number[] = [];
+      // ⚡ Bolt: Using raw bitmask 4 (NodeFilter.SHOW_TEXT) to avoid ReferenceError in JSDOM environments
+      const walker = doc.createTreeWalker(finalChild, 4);
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        const t = n.textContent ?? "";
+        if (!hasToken(t)) continue;
+        indices.push(...tokenIndices(t));
+        n.textContent = t.replace(TOKEN_RE, "");
+      }
+      let anchor: Element = finalChild;
+      for (const idx of indices) {
+        const tp = doc.createElement("p");
+        tp.textContent = token(idx);
+        anchor.after(tp);
+        anchor = tp;
+      }
     }
-    let anchor: Element = child;
-    for (const idx of indices) {
-      const tp = doc.createElement("p");
-      tp.textContent = token(idx);
-      anchor.after(tp);
-      anchor = tp;
-    }
+    finalChild = next;
   }
 }
