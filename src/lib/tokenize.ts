@@ -22,21 +22,17 @@ export function tokenizeImages(html: string, baseUrl?: string): TokenizeResult {
   const body = doc.body;
 
   // 1. Remove scripts, styles, noscript, nav, and elements with role="navigation"
-  // ⚡ Bolt: Avoid Array.from allocation on NodeList for performance
-  const junkNodes = body.querySelectorAll("script, style, noscript, nav, [role='navigation']");
-  for (let i = 0; i < junkNodes.length; i++) {
-    junkNodes[i].remove();
+  for (const el of Array.from(body.querySelectorAll("script, style, noscript, nav, [role='navigation']"))) {
+    el.remove();
   }
 
   const assets: AssetRef[] = [];
   let n = 0;
 
   // 2. Query all target elements in reading order
-  // ⚡ Bolt: Avoid Array.from allocation on NodeList for performance
-  const targets = body.querySelectorAll("img, iframe, object, embed, video, audio, form");
+  const targets = Array.from(body.querySelectorAll("img, iframe, object, embed, video, audio, form"));
 
-  for (let i = 0; i < targets.length; i++) {
-    const el = targets[i];
+  for (const el of targets) {
     // Skip if element was already removed or is nested inside an already tokenized/replaced parent
     if (!el.isConnected) {
       continue;
