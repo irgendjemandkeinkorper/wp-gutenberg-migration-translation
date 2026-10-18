@@ -95,4 +95,15 @@ describe("tokenizeImages", () => {
     expect(images).toHaveLength(1);
     expect(images[0].type).toBe("form");
   });
+
+  it("strips obfuscated dangerous URIs from attributes", () => {
+    const { images } = tokenizeImages(
+      '<iframe src="java\x00script:alert(1)"></iframe>' +
+        '<iframe src="java\uFFFDscript:alert(1)"></iframe>' +
+        '<iframe src=" vbscript:msgbox "></iframe>',
+    );
+    expect(images[0].attributes).not.toHaveProperty("src");
+    expect(images[1].attributes).not.toHaveProperty("src");
+    expect(images[2].attributes).not.toHaveProperty("src");
+  });
 });
