@@ -104,8 +104,7 @@ const BatchListItem = memo(function BatchListItem({
             <span className="sr-only">Pending: </span>
           </>
         )}
-        {page.title || page.url}{" "}
-        {itemStatus?.note && <span className="muted">({itemStatus.note})</span>}
+        {page.title || page.url} {itemStatus?.note && <span className="muted">({itemStatus.note})</span>}
       </span>
     </li>
   );
