@@ -1,13 +1,5 @@
 export type UrlKind =
-  | "requested"
-  | "canonical"
-  | "redirected"
-  | "fragment"
-  | "download"
-  | "mailto"
-  | "tel"
-  | "external"
-  | "malformed";
+  "requested" | "canonical" | "redirected" | "fragment" | "download" | "mailto" | "tel" | "external" | "malformed";
 
 export interface UrlObservation {
   requestedUrl: string;

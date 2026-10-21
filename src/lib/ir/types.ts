@@ -89,13 +89,7 @@ export interface Classification {
 }
 
 export type TransformationEventType =
-  | "extracted"
-  | "classified"
-  | "normalized"
-  | "preserved"
-  | "migrated"
-  | "operator-override"
-  | "warning";
+  "extracted" | "classified" | "normalized" | "preserved" | "migrated" | "operator-override" | "warning";
 
 export interface TransformationEvent {
   type: TransformationEventType;
