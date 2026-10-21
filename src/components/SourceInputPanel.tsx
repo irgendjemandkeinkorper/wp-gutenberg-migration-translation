@@ -226,7 +226,9 @@ export function SourceInputPanel({
                               {[
                                 page.parentId !== undefined ? `parent: ${page.parentId}` : null,
                                 page.menuOrder !== undefined ? `order: ${page.menuOrder}` : null,
-                              ].filter(Boolean).join(", ")}
+                              ]
+                                .filter(Boolean)
+                                .join(", ")}
                             </span>
                           )}
                         </span>
