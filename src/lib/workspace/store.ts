@@ -295,7 +295,8 @@ export class WorkspaceStore {
     const store = new WorkspaceStore(rootDir, database, options.faultInjector);
     try {
       const existing = database.prepare("SELECT serialized_json FROM store_manifest WHERE id = 1").get() as
-        ManifestRow | undefined;
+        | ManifestRow
+        | undefined;
       if (existing === undefined) {
         const initial = options.manifest ?? (await recoverManifestFile(store.manifestPath));
         if (initial === undefined)
@@ -319,7 +320,8 @@ export class WorkspaceStore {
 
   getManifest(): WorkspaceManifest {
     const row = this.database.prepare("SELECT serialized_json FROM store_manifest WHERE id = 1").get() as
-      ManifestRow | undefined;
+      | ManifestRow
+      | undefined;
     if (row === undefined) throw new WorkspaceStoreError("missing-manifest", "Workspace manifest row is missing.");
     return parseStoredManifest(row.serialized_json);
   }
@@ -551,7 +553,8 @@ export class WorkspaceStore {
         if (!file.isFile() || !SHA256_HEX.test(file.name) || file.name.slice(0, 2) !== entry.name) continue;
         const hash = file.name;
         const registered = this.database.prepare("SELECT hash FROM blobs WHERE hash = ?").get(hash) as
-          { hash: string } | undefined;
+          | { hash: string }
+          | undefined;
         if (registered !== undefined) continue;
         const bytes = new Uint8Array(await readFile(join(directory, file.name)));
         if (sha256(bytes) !== hash) continue;
