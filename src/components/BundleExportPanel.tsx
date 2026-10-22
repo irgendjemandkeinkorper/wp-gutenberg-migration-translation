@@ -84,6 +84,16 @@ export function BundleExportPanel({
           <li key={`${page.link}-${index}`}>
             <span>
               {page.title}{" "}
+              {(page.parentId !== undefined || page.menuOrder !== undefined) && (
+                <span className="badge">
+                  {[
+                    page.parentId !== undefined ? `parent: ${page.parentId}` : null,
+                    page.menuOrder !== undefined ? `order: ${page.menuOrder}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(", ")}
+                </span>
+              )}{" "}
               <span className="muted">
                 ({page.images.length} image{page.images.length === 1 ? "" : "s"}
                 {page.targetTemplate ? ` · ${page.targetTemplate}` : ""})
