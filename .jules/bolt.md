@@ -38,3 +38,7 @@
 **Action:** When walking or modifying large DOM trees, drop `Array.from()` and prefer iteration via `length` and index access (for NodeLists) or `firstElementChild`/`nextElementSibling` and `firstChild`/`nextSibling` properties. For safe removal of attributes from a live `NamedNodeMap` without intermediate array allocations, iterate backward (`for (let i = attrs.length - 1; i >= 0; i--)`).## 2026-08-17 - [DOM NodeList Iteration and Array Allocation Avoidance]
 **Learning:** Using `Array.from()` to convert a `NodeList` (such as the result of `querySelectorAll`) into an array before iterating causes unnecessary array allocation in memory. While not a massive bottleneck, in tight loops or repeated calls over large DOM structures, this overhead adds up.
 **Action:** When iterating over a static `NodeList` like those returned by `querySelectorAll`, avoid `Array.from()`. Instead, iterate directly using a standard `for` loop with an index and the `.length` property to eliminate the intermediate array allocation.
+
+## 2024-11-23 - Prevent O(N) Re-renders in Large Batch Lists
+**Learning:** Rendering a large list directly inside a component where items derive their state from a frequently updating `Map` causes O(N) re-renders, as every item is re-rendered whenever the parent state updates.
+**Action:** Extract the list item into a `React.memo` component and pass the specific Map value (e.g., `batchStatus.get(index)`) as a prop. This leverages the stable object references of unchanged Map values to skip unnecessary re-renders.
