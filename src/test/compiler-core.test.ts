@@ -109,3 +109,22 @@ describe("core Gutenberg compiler", () => {
     expect(result.markup).toContain("blockifyExceptionId");
   });
 });
+it("strips unsafe href attributes from links", () => {
+  const safeLink = makeNode("rich-text-span", {
+    id: "safe-link",
+    text: "Safe",
+    attributes: { href: "https://example.test/" },
+    extensions: { sourceTag: "a" },
+  });
+  const unsafeLink = makeNode("rich-text-span", {
+    id: "unsafe-link",
+    text: "Unsafe",
+    attributes: { href: "javascript:alert(1)" },
+    extensions: { sourceTag: "a" },
+  });
+  const paragraph = makeNode("paragraph", { children: [safeLink, unsafeLink] });
+  const result = compileCoreNode(paragraph);
+
+  expect(result.markup).toContain('href="https://example.test/"');
+  expect(result.markup).not.toContain("javascript:alert");
+});
