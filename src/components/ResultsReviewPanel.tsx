@@ -168,10 +168,16 @@ export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle
         <span aria-hidden="true">{showIntermediate ? "▾ " : "▸ "}</span>
         Intermediate HTML
       </button>
-      {showIntermediate && <pre className="code-view" tabIndex={0}>{result.intermediateHtml}</pre>}
+      {showIntermediate && (
+        <pre className="code-view" tabIndex={0}>
+          {result.intermediateHtml}
+        </pre>
+      )}
       <details>
         <summary>Original source HTML (retained in WXR metadata)</summary>
-        <pre className="code-view" tabIndex={0}>{result.sourceHtml}</pre>
+        <pre className="code-view" tabIndex={0}>
+          {result.sourceHtml}
+        </pre>
       </details>
     </section>
   );
