@@ -36,4 +36,6 @@
 
 ## 2024-08-12 - Decorative Characters in UI
 **Learning:** Screen readers often announce decorative unicode characters (like '✓', '▾', '▸') in verbose or confusing ways (e.g. "black down-pointing small triangle"). When the state is already conveyed semantically (like using `aria-expanded` on an accordion toggle or explicit button text for success states), these characters add noise.
-**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.
+**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.## 2023-10-24 - Empty State Guidance
+**Learning:** Returning `null` to unmount components when their backing data is empty can cause confusing layout shifts and leave users wondering where the functionality went. Providing an explicit empty state with `role="status"` gives them context and actionable next steps.
+**Action:** Always provide explicit visual empty states rather than `return null` for main application panels. Update corresponding string assertions in tests to check for this new empty state.
