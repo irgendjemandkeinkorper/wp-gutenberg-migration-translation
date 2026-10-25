@@ -63,6 +63,24 @@ describe("safe embed and unknown-content compiler", () => {
     expect(result.markup).not.toContain("alert(1)");
   });
 
+  it("blocks obfuscated XSS payloads that bypass DOMParser or URL via spaces and control characters", () => {
+    // Tests for parser differentials. E.g. DOMParser converts `\x00` to `\uFFFD`, and Node URL parses spaced/tabbed protocols as relative paths.
+    const payloads = [
+      '<a href="java script:alert(1)">link</a>',
+      '<a href="java\tscript:alert(1)">link</a>',
+      '<a href="java\x00script:alert(1)">link</a>',
+      '<a href="java\uFFFDscript:alert(1)">link</a>',
+    ];
+
+    for (const payload of payloads) {
+      const node = makeNode("unknown", payload);
+      const result = compileSafeContentNode(node);
+      expect(result.findings).toEqual([expect.objectContaining({ code: "unsafe-content", severity: "blocking" })]);
+      expect(result.markup).toContain("blockifyExceptionId");
+      expect(result.markup).not.toContain("alert(1)");
+    }
+  });
+
   it("preserves a stable exception ID without embedding original HTML", () => {
     const node = makeNode("widget", '<custom-widget data-secret="value">private</custom-widget>');
     const result = compileSafeContentNode(node);
