@@ -22,46 +22,43 @@ export interface BatchState {
 // during batch processing. By memoizing the item based on its specific `page`
 // and `itemStatus`, we ensure that only the item currently being converted
 // re-renders, rather than the entire list of N items. Impact: O(1) rendering cost per status update.
-const BatchListItem = memo(
-  ({ page, itemStatus }: { page: CrawledPage; itemStatus?: BatchState }) => (
-    <li>
-      <span>
-        {itemStatus?.status === "done" && (
-          <>
-            <span aria-hidden="true">✓ </span>
-            <span className="sr-only">Done: </span>
-          </>
-        )}
-        {itemStatus?.status === "error" && (
-          <>
-            <span aria-hidden="true">✗ </span>
-            <span className="sr-only">Error: </span>
-          </>
-        )}
-        {itemStatus?.status === "converting" && (
-          <>
-            <span aria-hidden="true">… </span>
-            <span className="sr-only">Converting: </span>
-          </>
-        )}
-        {itemStatus?.status === "cancelled" && (
-          <>
-            <span aria-hidden="true">⊘ </span>
-            <span className="sr-only">Cancelled: </span>
-          </>
-        )}
-        {itemStatus?.status === "pending" && (
-          <>
-            <span aria-hidden="true">○ </span>
-            <span className="sr-only">Pending: </span>
-          </>
-        )}
-        {page.title || page.url}{" "}
-        {itemStatus?.note && <span className="muted">({itemStatus.note})</span>}
-      </span>
-    </li>
-  )
-);
+const BatchListItem = memo(({ page, itemStatus }: { page: CrawledPage; itemStatus?: BatchState }) => (
+  <li>
+    <span>
+      {itemStatus?.status === "done" && (
+        <>
+          <span aria-hidden="true">✓ </span>
+          <span className="sr-only">Done: </span>
+        </>
+      )}
+      {itemStatus?.status === "error" && (
+        <>
+          <span aria-hidden="true">✗ </span>
+          <span className="sr-only">Error: </span>
+        </>
+      )}
+      {itemStatus?.status === "converting" && (
+        <>
+          <span aria-hidden="true">… </span>
+          <span className="sr-only">Converting: </span>
+        </>
+      )}
+      {itemStatus?.status === "cancelled" && (
+        <>
+          <span aria-hidden="true">⊘ </span>
+          <span className="sr-only">Cancelled: </span>
+        </>
+      )}
+      {itemStatus?.status === "pending" && (
+        <>
+          <span aria-hidden="true">○ </span>
+          <span className="sr-only">Pending: </span>
+        </>
+      )}
+      {page.title || page.url} {itemStatus?.note && <span className="muted">({itemStatus.note})</span>}
+    </span>
+  </li>
+));
 BatchListItem.displayName = "BatchListItem";
 
 interface SourceInputPanelProps {
