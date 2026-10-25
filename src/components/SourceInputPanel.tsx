@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { BatchPageStatus } from "../lib/types";
 
 export type SourceTab = "paste" | "fetch" | "batch";
@@ -16,6 +17,52 @@ export interface BatchState {
   status: BatchPageStatus;
   note?: string;
 }
+
+// ⚡ Bolt: Extract batch list item to memo component to prevent O(N) re-renders
+// during batch processing. By memoizing the item based on its specific `page`
+// and `itemStatus`, we ensure that only the item currently being converted
+// re-renders, rather than the entire list of N items. Impact: O(1) rendering cost per status update.
+const BatchListItem = memo(
+  ({ page, itemStatus }: { page: CrawledPage; itemStatus?: BatchState }) => (
+    <li>
+      <span>
+        {itemStatus?.status === "done" && (
+          <>
+            <span aria-hidden="true">✓ </span>
+            <span className="sr-only">Done: </span>
+          </>
+        )}
+        {itemStatus?.status === "error" && (
+          <>
+            <span aria-hidden="true">✗ </span>
+            <span className="sr-only">Error: </span>
+          </>
+        )}
+        {itemStatus?.status === "converting" && (
+          <>
+            <span aria-hidden="true">… </span>
+            <span className="sr-only">Converting: </span>
+          </>
+        )}
+        {itemStatus?.status === "cancelled" && (
+          <>
+            <span aria-hidden="true">⊘ </span>
+            <span className="sr-only">Cancelled: </span>
+          </>
+        )}
+        {itemStatus?.status === "pending" && (
+          <>
+            <span aria-hidden="true">○ </span>
+            <span className="sr-only">Pending: </span>
+          </>
+        )}
+        {page.title || page.url}{" "}
+        {itemStatus?.note && <span className="muted">({itemStatus.note})</span>}
+      </span>
+    </li>
+  )
+);
+BatchListItem.displayName = "BatchListItem";
 
 interface SourceInputPanelProps {
   tab: SourceTab;
@@ -184,47 +231,9 @@ export function SourceInputPanel({
                   {batch.length === 1 ? "" : "s"} loaded.
                 </p>
                 <ul className="bundle-list">
-                  {batch.map((page, index) => {
-                    const itemStatus = batchStatus.get(index);
-                    return (
-                      <li key={page.url}>
-                        <span>
-                          {itemStatus?.status === "done" && (
-                            <>
-                              <span aria-hidden="true">✓ </span>
-                              <span className="sr-only">Done: </span>
-                            </>
-                          )}
-                          {itemStatus?.status === "error" && (
-                            <>
-                              <span aria-hidden="true">✗ </span>
-                              <span className="sr-only">Error: </span>
-                            </>
-                          )}
-                          {itemStatus?.status === "converting" && (
-                            <>
-                              <span aria-hidden="true">… </span>
-                              <span className="sr-only">Converting: </span>
-                            </>
-                          )}
-                          {itemStatus?.status === "cancelled" && (
-                            <>
-                              <span aria-hidden="true">⊘ </span>
-                              <span className="sr-only">Cancelled: </span>
-                            </>
-                          )}
-                          {itemStatus?.status === "pending" && (
-                            <>
-                              <span aria-hidden="true">○ </span>
-                              <span className="sr-only">Pending: </span>
-                            </>
-                          )}
-                          {page.title || page.url}{" "}
-                          {itemStatus?.note && <span className="muted">({itemStatus.note})</span>}
-                        </span>
-                      </li>
-                    );
-                  })}
+                  {batch.map((page, index) => (
+                    <BatchListItem key={page.url} page={page} itemStatus={batchStatus.get(index)} />
+                  ))}
                 </ul>
                 <div className="batch-summary" style={{ background: "var(--code-bg)" }} aria-live="polite">
                   <span>Total: {batch.length}</span>
