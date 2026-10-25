@@ -36,4 +36,6 @@
 
 ## 2024-08-12 - Decorative Characters in UI
 **Learning:** Screen readers often announce decorative unicode characters (like '✓', '▾', '▸') in verbose or confusing ways (e.g. "black down-pointing small triangle"). When the state is already conveyed semantically (like using `aria-expanded` on an accordion toggle or explicit button text for success states), these characters add noise.
-**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.
+**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.## 2025-03-03 - Focusable Scrollable Code Blocks
+**Learning:** Any scrollable element or container containing text or code (like a `<pre>` block with CSS overflow) needs `tabIndex={0}` to ensure it is keyboard-focusable and scrollable for users relying on keyboard navigation. Otherwise, keyboard-only users cannot access the overflowed content.
+**Action:** Always add `tabIndex={0}` to scrollable containers, specifically `<pre className="code-view">` elements which often overflow their max-height.
