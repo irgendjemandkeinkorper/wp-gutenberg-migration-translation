@@ -210,7 +210,7 @@ export function PageQaWorkbench({
           </p>
         )}
         {record.current.destination.preview && (
-          <pre className="code-view">{record.current.destination.preview.excerpt}</pre>
+          <pre className="code-view" tabIndex={0}>{record.current.destination.preview.excerpt}</pre>
         )}
       </details>
 
