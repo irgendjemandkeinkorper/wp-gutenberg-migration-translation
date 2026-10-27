@@ -221,6 +221,11 @@ export function SourceInputPanel({
                           )}
                           {page.title || page.url}{" "}
                           {itemStatus?.note && <span className="muted">({itemStatus.note})</span>}
+                          {(page.parentId !== undefined || page.menuOrder !== undefined) && (
+                            <span className="badge" style={{ marginLeft: "0.5rem" }}>
+                              [parentId: {page.parentId ?? "none"}, order: {page.menuOrder ?? "none"}]
+                            </span>
+                          )}
                         </span>
                       </li>
                     );
