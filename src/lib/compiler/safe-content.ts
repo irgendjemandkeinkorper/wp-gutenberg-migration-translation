@@ -165,7 +165,19 @@ function safeUrl(value: string, options: SanitizerOptions): { safe: boolean; rea
   } catch {
     return { safe: false, reason: `URL ${value} is malformed.` };
   }
-  if (!options.allowedProtocols.has(url.protocol))
+
+  // Also check the protocol *after* aggressively stripping whitespace, control characters,
+  // and \uFFFD. DOMParser replaces null bytes with \uFFFD. The URL constructor might treat
+  // the string as a relative path (falling back to the base https: protocol), masking the
+  // malicious javascript: scheme that might still execute when re-injected into the DOM.
+  let normalizedUrl: URL;
+  try {
+    normalizedUrl = new URL(value.replace(/[\x00-\x20\x7F-\x9F\uFFFD]/g, ""), "https://blockify.invalid/");
+  } catch {
+    return { safe: false, reason: `URL ${value} is malformed.` };
+  }
+
+  if (!options.allowedProtocols.has(url.protocol) || !options.allowedProtocols.has(normalizedUrl.protocol))
     return { safe: false, reason: `Protocol ${url.protocol} is not allowed.` };
   if (url.hostname !== "blockify.invalid" && !options.allowedHosts.has(url.hostname.toLowerCase())) {
     return { safe: false, reason: `Host ${url.hostname} is not in the safe-content allowlist.` };
