@@ -1,3 +1,4 @@
+import { isSafeUrl } from "../validate";
 import type { JsonValue, SemanticNode } from "../ir/types";
 
 export interface CompilerFinding {
@@ -237,6 +238,11 @@ function safeAttributes(node: SemanticNode, allowed: ReadonlySet<string>, findin
   }
   return attributes
     .filter(([name]) => allowed.has(name.toLowerCase()))
+    .filter(([name, value]) => {
+      const lowerName = name.toLowerCase();
+      if (lowerName === "href" || lowerName === "src") return isSafeUrl(String(value));
+      return true;
+    })
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, value]) => ` ${name}="${escapeAttr(value)}"`)
     .join("");
