@@ -43,9 +43,7 @@ describe("core Gutenberg compiler", () => {
     expect(result.markup).toContain("Link: ");
     expect(result.markup).toContain('<a target="_blank">hack</a>');
     expect(result.markup).not.toContain("javascript:alert");
-    expect(result.findings).toEqual([
-      expect.objectContaining({ code: "unsafe-attribute-value", severity: "warning" }),
-    ]);
+    expect(result.findings).toEqual([expect.objectContaining({ code: "unsafe-attribute-value", severity: "warning" })]);
   });
 
   it("preserves inline marks, links, heading levels, and escaping", () => {
@@ -55,7 +53,6 @@ describe("core Gutenberg compiler", () => {
       attributes: {},
       extensions: { sourceTag: "strong" },
     });
-
 
     const link = makeNode("rich-text-span", {
       id: "link",
