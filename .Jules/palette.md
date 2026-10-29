@@ -36,4 +36,6 @@
 
 ## 2024-08-12 - Decorative Characters in UI
 **Learning:** Screen readers often announce decorative unicode characters (like '✓', '▾', '▸') in verbose or confusing ways (e.g. "black down-pointing small triangle"). When the state is already conveyed semantically (like using `aria-expanded` on an accordion toggle or explicit button text for success states), these characters add noise.
-**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.
+**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.## 2024-05-18 - Keyboard Navigation for Scrollable Elements
+**Learning:** Any scrollable element or container containing text or code (like a `<pre>` block or table with CSS overflow) needs to be keyboard-focusable. Users relying on keyboard navigation must be able to scroll to see the entire content, and without a `tabIndex`, these areas are entirely inaccessible.
+**Action:** Audit CSS for classes like `overflow: auto` or `overflow: scroll` (such as `.code-view` and `.table-scroll`), and explicitly set `tabIndex={0}` on the elements that use them to ensure they can receive focus and be scrolled via keyboard.

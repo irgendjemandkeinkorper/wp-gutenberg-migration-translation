@@ -173,7 +173,7 @@ export function PageQaWorkbench({
 
       <details open>
         <summary>Block mapping</summary>
-        <div className="table-scroll">
+        <div className="table-scroll" tabIndex={0}>
           <table className="images-table">
             <thead>
               <tr>
