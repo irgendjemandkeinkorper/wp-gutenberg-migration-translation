@@ -116,7 +116,7 @@ export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle
         Asset Manifest / Audit ({result.images.length})
       </button>
       {showImages && result.images.length > 0 && (
-        <div className="table-scroll">
+        <div className="table-scroll" tabIndex={0}>
           <table className="images-table">
             <thead>
               <tr>
