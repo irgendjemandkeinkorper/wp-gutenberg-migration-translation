@@ -30,6 +30,24 @@ function makeNode(kind: NodeKind, overrides: Partial<SemanticNode> = {}): Semant
 }
 
 describe("core Gutenberg compiler", () => {
+  it("strips unsafe urls from inline link attributes", () => {
+    const link = makeNode("rich-text-span", {
+      id: "link-unsafe",
+      text: "hack",
+      attributes: { href: "javascript:alert(1)", target: "_blank" },
+      extensions: { sourceTag: "a" },
+    });
+    const paragraph = makeNode("paragraph", { text: "Link: ", children: [link] });
+    const result = compileCoreNode(paragraph);
+
+    expect(result.markup).toContain("Link: ");
+    expect(result.markup).toContain('<a target="_blank">hack</a>');
+    expect(result.markup).not.toContain("javascript:alert");
+    expect(result.findings).toEqual([
+      expect.objectContaining({ code: "unsafe-attribute-value", severity: "warning" }),
+    ]);
+  });
+
   it("preserves inline marks, links, heading levels, and escaping", () => {
     const bold = makeNode("rich-text-span", {
       id: "bold",
@@ -37,6 +55,8 @@ describe("core Gutenberg compiler", () => {
       attributes: {},
       extensions: { sourceTag: "strong" },
     });
+
+
     const link = makeNode("rich-text-span", {
       id: "link",
       text: "read",
