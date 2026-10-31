@@ -370,7 +370,7 @@ describe("Blockify Web Application Smoke & Accessibility Tests", () => {
     expect(container.textContent).toContain("WXR bundle cleared.");
 
     const undoBtn = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent === "Undo",
+      (btn) => btn.textContent === "Undo clear",
     ) as HTMLButtonElement;
     expect(undoBtn).not.toBeNull();
 

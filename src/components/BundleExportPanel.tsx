@@ -40,7 +40,7 @@ export function BundleExportPanel({
             role="alert"
             style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
           >
-            <span>Bundle cleared.</span>
+            <span>WXR bundle cleared.</span>
             <button type="button" className="text-button" onClick={onUndoClear}>
               Undo clear
             </button>
@@ -48,7 +48,19 @@ export function BundleExportPanel({
         </section>
       );
     }
-    return null;
+    return (
+      <section className="panel bundle-panel" aria-live="polite">
+        <div className="panel-heading">
+          <div>
+            <p className="section-kicker">04 · Export</p>
+            <h2>WXR migration bundle</h2>
+          </div>
+        </div>
+        <div className="empty-state" role="status">
+          <p>No pages in the bundle. Convert and add pages to export.</p>
+        </div>
+      </section>
+    );
   }
 
   function downloadWxr() {

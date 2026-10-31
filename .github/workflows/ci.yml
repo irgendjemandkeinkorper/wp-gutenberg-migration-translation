@@ -16,13 +16,16 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run verify
-      - run: npm run check:bundle
-      - run: npm audit --audit-level=high
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          cache: pnpm
+      - run: pnpm install
+      - run: pnpm run format:check
+      - run: pnpm run lint
+      - run: pnpm run verify
+      - run: pnpm run check:bundle
+      - run: pnpm audit --audit-level=high
 
   template-match-e2e:
     name: Template-match E2E
@@ -34,12 +37,15 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          cache: pnpm
+      - run: pnpm install
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - name: Run template-match E2E suite
-        run: npm run test:e2e
+        run: pnpm run test:e2e
       - name: Upload Playwright traces
         if: failure()
         uses: actions/upload-artifact@v7
@@ -60,14 +66,17 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          cache: pnpm
+      - run: pnpm install
       - name: Validate harness configuration
-        run: npm run test:wordpress -- --dry-run
+        run: pnpm run test:wordpress -- --dry-run
       - name: Run checkpoint integration
-        run: npm run test:checkpoint
+        run: pnpm run test:checkpoint
       - name: Run disposable WordPress import
-        run: npm run test:wordpress
+        run: pnpm run test:wordpress
       - name: Upload harness diagnostics
         if: always()
         uses: actions/upload-artifact@v7
