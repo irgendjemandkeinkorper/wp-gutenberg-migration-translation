@@ -36,4 +36,6 @@
 
 ## 2024-08-12 - Decorative Characters in UI
 **Learning:** Screen readers often announce decorative unicode characters (like '✓', '▾', '▸') in verbose or confusing ways (e.g. "black down-pointing small triangle"). When the state is already conveyed semantically (like using `aria-expanded` on an accordion toggle or explicit button text for success states), these characters add noise.
-**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.
+**Action:** Wrap purely decorative characters in `<span aria-hidden="true">` to hide them from screen readers while preserving the visual indicator for sighted users.## 2024-11-01 - Preventing Layout Shifts and Orientation Loss with Empty States
+**Learning:** When a UI panel or list is driven by a data collection (like an export bundle), completely unmounting the component (`return null`) when the collection is empty causes abrupt layout shifts. This forces users to lose their place on the page and provides zero context about why the panel disappeared or how to get it back.
+**Action:** Instead of returning `null`, render a structural skeleton of the component (e.g., the panel container and heading) alongside an explicit empty state message with `role="status"`. This maintains visual stability and provides clear guidance on how to populate the panel.
