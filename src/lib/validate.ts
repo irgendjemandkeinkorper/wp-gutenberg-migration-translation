@@ -209,7 +209,9 @@ function unwrapWrappers(body: HTMLElement): void {
 function enforceWhitelist(body: HTMLElement): void {
   // Snapshot first: unwrapping keeps descendants in the document, and they
   // are already in the snapshot, so one pass suffices.
-  for (const el of Array.from(body.querySelectorAll("*"))) {
+  const allElements = body.querySelectorAll("*");
+  for (let i = 0; i < allElements.length; i++) {
+    const el = allElements[i];
     const tag = el.tagName.toLowerCase();
     if (DROP.has(tag)) {
       el.remove();
@@ -219,7 +221,9 @@ function enforceWhitelist(body: HTMLElement): void {
       unwrap(el);
     }
   }
-  for (const el of Array.from(body.querySelectorAll("*"))) {
+  const processedElements = body.querySelectorAll("*");
+  for (let i = 0; i < processedElements.length; i++) {
+    const el = processedElements[i];
     if (el.tagName.toLowerCase() === "a") {
       const href = el.getAttribute("href");
       while (el.attributes.length > 0) {
