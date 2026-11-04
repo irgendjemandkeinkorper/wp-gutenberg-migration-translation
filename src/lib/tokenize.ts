@@ -81,7 +81,7 @@ export function tokenizeImages(html: string, baseUrl?: string): TokenizeResult {
       const name = attr.name.toLowerCase();
       if (safeAttrs.includes(name)) {
         const val = attr.value.trim();
-        const normalizedVal = val.replace(/[\x00-\x20\x7F-\x9F]/g, "").toLowerCase();
+        const normalizedVal = val.replace(/[\x00-\x20\x7F-\x9F\uFFFD]/g, "").toLowerCase();
 
         // Block dangerous protocols like javascript: and vbscript:.
         // We only block data: URIs if they are being used to execute scripts or embed HTML.
