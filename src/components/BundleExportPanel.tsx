@@ -48,7 +48,18 @@ export function BundleExportPanel({
         </section>
       );
     }
-    return null;
+    return (
+      <section className="panel bundle-panel" role="status">
+        <div className="panel-heading">
+          <div>
+            <p className="section-kicker">04 · Export</p>
+            <h2>WXR migration bundle</h2>
+            <p>Package reviewed pages for WordPress Tools → Import.</p>
+          </div>
+        </div>
+        <p className="hint">No pages in bundle. Convert and add pages to build your WXR export.</p>
+      </section>
+    );
   }
 
   function downloadWxr() {
