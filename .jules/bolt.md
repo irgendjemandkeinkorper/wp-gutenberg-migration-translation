@@ -39,6 +39,6 @@
 **Learning:** Using `Array.from()` to convert a `NodeList` (such as the result of `querySelectorAll`) into an array before iterating causes unnecessary array allocation in memory. While not a massive bottleneck, in tight loops or repeated calls over large DOM structures, this overhead adds up.
 **Action:** When iterating over a static `NodeList` like those returned by `querySelectorAll`, avoid `Array.from()`. Instead, iterate directly using a standard `for` loop with an index and the `.length` property to eliminate the intermediate array allocation.
 
-## 2024-11-21 - [DOM NodeList Iteration and Array Allocation Avoidance]
-**Learning:** Using `Array.from()` to convert a `NodeList` (such as the result of `querySelectorAll`) into an array before iterating causes unnecessary array allocation in memory. Using a standard `for...of` loop directly on the `NodeList` (e.g., `for (const el of document.querySelectorAll("*"))`) maintains readability while entirely avoiding the intermediate array allocation, as `NodeList` is inherently iterable.
-**Action:** When iterating over a static `NodeList` like those returned by `querySelectorAll`, always avoid `Array.from()`. Iterate directly using a `for...of` loop to eliminate the intermediate array allocation while preserving readable code.
+## 2026-08-17 - [DOM NodeList Iteration and Array Allocation Avoidance]
+**Learning:** Using `Array.from()` to convert a `NodeList` (such as the result of `querySelectorAll`) into an array before iterating causes unnecessary array allocation in memory. While not a massive bottleneck, in tight loops or repeated calls over large DOM structures, this overhead adds up.
+**Action:** When iterating over a static `NodeList` like those returned by `querySelectorAll`, avoid `Array.from()`. Instead, iterate directly using a standard `for` loop with an index and the `.length` property to eliminate the intermediate array allocation.
