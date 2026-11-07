@@ -271,9 +271,15 @@ function isolateTokens(body: HTMLElement): void {
   let isolateChild = body.firstElementChild;
   while (isolateChild) {
     const nextChild = isolateChild.nextElementSibling;
-    if (isolateChild.tagName.toLowerCase() !== "p") { isolateChild = nextChild; continue; }
+    if (isolateChild.tagName.toLowerCase() !== "p") {
+      isolateChild = nextChild;
+      continue;
+    }
     const text = isolateChild.textContent ?? "";
-    if (!hasToken(text) || isLoneToken(text)) { isolateChild = nextChild; continue; }
+    if (!hasToken(text) || isLoneToken(text)) {
+      isolateChild = nextChild;
+      continue;
+    }
 
     const pieces: Node[] = [];
     let current = doc.createElement("p");
@@ -318,7 +324,10 @@ function isolateTokens(body: HTMLElement): void {
   while (isolateChild2) {
     const nextChild2 = isolateChild2.nextElementSibling;
     const ownText = isolateChild2.textContent ?? "";
-    if (isLoneToken(ownText)) { isolateChild2 = nextChild2; continue; }
+    if (isLoneToken(ownText)) {
+      isolateChild2 = nextChild2;
+      continue;
+    }
     const indices: number[] = [];
     const walker = doc.createTreeWalker(isolateChild2, 4); // 4 is NodeFilter.SHOW_TEXT
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
