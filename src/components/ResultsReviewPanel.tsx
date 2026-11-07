@@ -146,7 +146,7 @@ export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle
                         <div className="asset-details">
                           <strong>Attributes:</strong> <code>{JSON.stringify(image.attributes)}</code>
                           <br />
-                          <strong>Excerpt:</strong> <pre>{image.excerpt}</pre>
+                          <strong>Excerpt:</strong> <pre tabIndex={0}>{image.excerpt}</pre>
                         </div>
                       </details>
                     )}
@@ -168,10 +168,10 @@ export function ResultsReviewPanel({ result, title, onTitleChange, onAddToBundle
         <span aria-hidden="true">{showIntermediate ? "▾ " : "▸ "}</span>
         Intermediate HTML
       </button>
-      {showIntermediate && <pre className="code-view">{result.intermediateHtml}</pre>}
+      {showIntermediate && <pre className="code-view" tabIndex={0}>{result.intermediateHtml}</pre>}
       <details>
         <summary>Original source HTML (retained in WXR metadata)</summary>
-        <pre className="code-view">{result.sourceHtml}</pre>
+        <pre className="code-view" tabIndex={0}>{result.sourceHtml}</pre>
       </details>
     </section>
   );
