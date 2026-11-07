@@ -122,15 +122,21 @@ export function repairTokens(html: string, expectedIndices: number[]): { html: s
 
   const seen = new Set<number>();
   const expected = new Set(expectedIndices);
-  for (const child of Array.from(body.children)) {
-    const text = child.textContent ?? "";
-    if (!isLoneToken(text)) continue;
+  let repairChild = body.firstElementChild;
+  while (repairChild) {
+    const nextChild = repairChild.nextElementSibling;
+    const text = repairChild.textContent ?? "";
+    if (!isLoneToken(text)) {
+      repairChild = nextChild;
+      continue;
+    }
     const idx = tokenIndices(text)[0];
     if (!expected.has(idx) || seen.has(idx)) {
-      child.remove();
+      repairChild.remove();
     } else {
       seen.add(idx);
     }
+    repairChild = nextChild;
   }
 
   const lostPositions = expectedIndices.filter((i) => !seen.has(i));
@@ -209,7 +215,9 @@ function unwrapWrappers(body: HTMLElement): void {
 function enforceWhitelist(body: HTMLElement): void {
   // Snapshot first: unwrapping keeps descendants in the document, and they
   // are already in the snapshot, so one pass suffices.
-  for (const el of Array.from(body.querySelectorAll("*"))) {
+  const allElements = body.querySelectorAll("*");
+  for (let i = 0; i < allElements.length; i++) {
+    const el = allElements[i];
     const tag = el.tagName.toLowerCase();
     if (DROP.has(tag)) {
       el.remove();
@@ -219,7 +227,9 @@ function enforceWhitelist(body: HTMLElement): void {
       unwrap(el);
     }
   }
-  for (const el of Array.from(body.querySelectorAll("*"))) {
+  const allElementsPass2 = body.querySelectorAll("*");
+  for (let i = 0; i < allElementsPass2.length; i++) {
+    const el = allElementsPass2[i];
     if (el.tagName.toLowerCase() === "a") {
       const href = el.getAttribute("href");
       while (el.attributes.length > 0) {
@@ -258,10 +268,18 @@ function rename(el: Element, newTag: string): void {
 function isolateTokens(body: HTMLElement): void {
   const doc = body.ownerDocument;
 
-  for (const child of Array.from(body.children)) {
-    if (child.tagName.toLowerCase() !== "p") continue;
-    const text = child.textContent ?? "";
-    if (!hasToken(text) || isLoneToken(text)) continue;
+  let isolateChild = body.firstElementChild;
+  while (isolateChild) {
+    const nextChild = isolateChild.nextElementSibling;
+    if (isolateChild.tagName.toLowerCase() !== "p") {
+      isolateChild = nextChild;
+      continue;
+    }
+    const text = isolateChild.textContent ?? "";
+    if (!hasToken(text) || isLoneToken(text)) {
+      isolateChild = nextChild;
+      continue;
+    }
 
     const pieces: Node[] = [];
     let current = doc.createElement("p");
@@ -271,7 +289,10 @@ function isolateTokens(body: HTMLElement): void {
       }
       current = doc.createElement("p");
     };
-    for (const node of Array.from(child.childNodes)) {
+
+    let node = isolateChild.firstChild;
+    while (node) {
+      const nextNode = node.nextSibling;
       if (node.nodeType === Node.TEXT_NODE) {
         const parts = (node.textContent ?? "").split(/(⟦ASSET_\d+⟧)/);
         for (const part of parts) {
@@ -288,32 +309,40 @@ function isolateTokens(body: HTMLElement): void {
       } else {
         current.append(node);
       }
+      node = nextNode;
     }
     flush();
     const frag = doc.createDocumentFragment();
     for (const piece of pieces) {
       frag.appendChild(piece);
     }
-    child.replaceWith(frag);
+    isolateChild.replaceWith(frag);
+    isolateChild = nextChild;
   }
 
-  for (const child of Array.from(body.children)) {
-    const ownText = child.textContent ?? "";
-    if (isLoneToken(ownText)) continue;
+  let isolateChild2 = body.firstElementChild;
+  while (isolateChild2) {
+    const nextChild2 = isolateChild2.nextElementSibling;
+    const ownText = isolateChild2.textContent ?? "";
+    if (isLoneToken(ownText)) {
+      isolateChild2 = nextChild2;
+      continue;
+    }
     const indices: number[] = [];
-    const walker = doc.createTreeWalker(child, NodeFilter.SHOW_TEXT);
+    const walker = doc.createTreeWalker(isolateChild2, 4); // 4 is NodeFilter.SHOW_TEXT
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
       const t = n.textContent ?? "";
       if (!hasToken(t)) continue;
       indices.push(...tokenIndices(t));
       n.textContent = t.replace(TOKEN_RE, "");
     }
-    let anchor: Element = child;
+    let anchor: Element = isolateChild2;
     for (const idx of indices) {
       const tp = doc.createElement("p");
       tp.textContent = token(idx);
       anchor.after(tp);
       anchor = tp;
     }
+    isolateChild2 = nextChild2;
   }
 }
