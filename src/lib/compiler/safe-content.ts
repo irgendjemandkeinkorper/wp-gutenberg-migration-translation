@@ -165,8 +165,8 @@ function safeUrl(value: string, options: SanitizerOptions): { safe: boolean; rea
   } catch {
     return { safe: false, reason: `URL ${value} is malformed.` };
   }
-  if (!options.allowedProtocols.has(url.protocol))
-    return { safe: false, reason: `Protocol ${url.protocol} is not allowed.` };
+  const protocol = url.protocol.replace(/[\x00-\x20\x7F-\x9F\uFFFD]/g, "");
+  if (!options.allowedProtocols.has(protocol)) return { safe: false, reason: `Protocol ${protocol} is not allowed.` };
   if (url.hostname !== "blockify.invalid" && !options.allowedHosts.has(url.hostname.toLowerCase())) {
     return { safe: false, reason: `Host ${url.hostname} is not in the safe-content allowlist.` };
   }
