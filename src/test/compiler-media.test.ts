@@ -94,4 +94,15 @@ describe("media Gutenberg compiler", () => {
     expect(result.markup).toContain(`data-exception-id="blockify-${node.id}"`);
     expect(result.markup).toContain("Media identity missing has no delivery URL.");
   });
+
+  it("sanitizes javascript: links from credit URL", () => {
+    const node = makeNode("image", {
+      assetRefs: [{ assetId: "asset-hero", role: "content-image", ordinal: 0, extensions: {} }],
+      attributes: { credit: "Photographer", creditUrl: "javascript:alert(1)" },
+    });
+    const result = compileMediaNode(node, { identities });
+    expect(result.markup).toContain("Credit: Photographer");
+    expect(result.markup).not.toContain("javascript:");
+    expect(result.markup).not.toContain("<a");
+  });
 });

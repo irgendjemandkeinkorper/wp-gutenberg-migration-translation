@@ -108,4 +108,21 @@ describe("core Gutenberg compiler", () => {
     expect(result.findings).toEqual([expect.objectContaining({ code: "unsupported-core-node", severity: "blocking" })]);
     expect(result.markup).toContain("blockifyExceptionId");
   });
+
+  it("blocks javascript: and other unsafe URLs in links", () => {
+    const link = makeNode("rich-text-span", {
+      id: "link",
+      text: "read",
+      attributes: { href: "javascript:alert(1)" },
+      extensions: { sourceTag: "a" },
+    });
+    const paragraph = makeNode("paragraph", { text: "Intro ", children: [link] });
+    const result = compileCoreNode(paragraph);
+
+    expect(result.markup).toContain("Intro ");
+    expect(result.markup).not.toContain("javascript:alert(1)");
+    expect(result.findings).toEqual([
+      expect.objectContaining({ code: "unsafe-inline-attribute", severity: "warning" }),
+    ]);
+  });
 });
