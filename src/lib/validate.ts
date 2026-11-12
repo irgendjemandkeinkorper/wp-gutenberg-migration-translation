@@ -122,15 +122,20 @@ export function repairTokens(html: string, expectedIndices: number[]): { html: s
 
   const seen = new Set<number>();
   const expected = new Set(expectedIndices);
-  for (const child of Array.from(body.children)) {
+  // ⚡ Bolt: Avoid Array.from allocation on live collection
+  let child = body.firstElementChild;
+  while (child) {
+    const next = child.nextElementSibling;
     const text = child.textContent ?? "";
-    if (!isLoneToken(text)) continue;
-    const idx = tokenIndices(text)[0];
-    if (!expected.has(idx) || seen.has(idx)) {
-      child.remove();
-    } else {
-      seen.add(idx);
+    if (isLoneToken(text)) {
+      const idx = tokenIndices(text)[0];
+      if (!expected.has(idx) || seen.has(idx)) {
+        child.remove();
+      } else {
+        seen.add(idx);
+      }
     }
+    child = next;
   }
 
   const lostPositions = expectedIndices.filter((i) => !seen.has(i));
@@ -207,9 +212,10 @@ function unwrapWrappers(body: HTMLElement): void {
 }
 
 function enforceWhitelist(body: HTMLElement): void {
+  // ⚡ Bolt: Avoid Array.from allocation on static NodeList for performance
   // Snapshot first: unwrapping keeps descendants in the document, and they
   // are already in the snapshot, so one pass suffices.
-  for (const el of Array.from(body.querySelectorAll("*"))) {
+  for (const el of body.querySelectorAll("*")) {
     const tag = el.tagName.toLowerCase();
     if (DROP.has(tag)) {
       el.remove();
@@ -219,7 +225,8 @@ function enforceWhitelist(body: HTMLElement): void {
       unwrap(el);
     }
   }
-  for (const el of Array.from(body.querySelectorAll("*"))) {
+  // ⚡ Bolt: Avoid Array.from allocation on static NodeList for performance
+  for (const el of body.querySelectorAll("*")) {
     if (el.tagName.toLowerCase() === "a") {
       const href = el.getAttribute("href");
       while (el.attributes.length > 0) {
@@ -258,10 +265,19 @@ function rename(el: Element, newTag: string): void {
 function isolateTokens(body: HTMLElement): void {
   const doc = body.ownerDocument;
 
-  for (const child of Array.from(body.children)) {
-    if (child.tagName.toLowerCase() !== "p") continue;
+  // ⚡ Bolt: Avoid Array.from allocation on live collection
+  let child = body.firstElementChild;
+  while (child) {
+    const next = child.nextElementSibling;
+    if (child.tagName.toLowerCase() !== "p") {
+      child = next;
+      continue;
+    }
     const text = child.textContent ?? "";
-    if (!hasToken(text) || isLoneToken(text)) continue;
+    if (!hasToken(text) || isLoneToken(text)) {
+      child = next;
+      continue;
+    }
 
     const pieces: Node[] = [];
     let current = doc.createElement("p");
@@ -271,7 +287,11 @@ function isolateTokens(body: HTMLElement): void {
       }
       current = doc.createElement("p");
     };
-    for (const node of Array.from(child.childNodes)) {
+
+    // ⚡ Bolt: Avoid Array.from allocation on live childNodes
+    let node = child.firstChild;
+    while (node) {
+      const nextNode = node.nextSibling;
       if (node.nodeType === Node.TEXT_NODE) {
         const parts = (node.textContent ?? "").split(/(⟦ASSET_\d+⟧)/);
         for (const part of parts) {
@@ -288,6 +308,7 @@ function isolateTokens(body: HTMLElement): void {
       } else {
         current.append(node);
       }
+      node = nextNode;
     }
     flush();
     const frag = doc.createDocumentFragment();
@@ -295,11 +316,18 @@ function isolateTokens(body: HTMLElement): void {
       frag.appendChild(piece);
     }
     child.replaceWith(frag);
+    child = next;
   }
 
-  for (const child of Array.from(body.children)) {
+  // ⚡ Bolt: Avoid Array.from allocation on live collection
+  child = body.firstElementChild;
+  while (child) {
+    const next = child.nextElementSibling;
     const ownText = child.textContent ?? "";
-    if (isLoneToken(ownText)) continue;
+    if (isLoneToken(ownText)) {
+      child = next;
+      continue;
+    }
     const indices: number[] = [];
     const walker = doc.createTreeWalker(child, NodeFilter.SHOW_TEXT);
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
@@ -315,5 +343,6 @@ function isolateTokens(body: HTMLElement): void {
       anchor.after(tp);
       anchor = tp;
     }
+    child = next;
   }
 }
